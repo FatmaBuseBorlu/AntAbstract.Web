@@ -1428,6 +1428,144 @@
         margin-bottom: 20px;
     }
 
+    /* ── Testimonials ── */
+    .testimonials-section {
+        background: #ffffff;
+    }
+
+    .testimonial-card {
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 20px;
+        padding: 32px;
+        height: 100%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .testimonial-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+        border-color: rgba(0, 174, 239, 0.2);
+    }
+
+    .testimonial-quote {
+        color: #334155;
+        font-size: 0.92rem;
+        line-height: 1.75;
+        margin-bottom: 20px;
+        font-style: italic;
+    }
+
+    .testimonial-quote::before {
+        content: "\201C";
+        font-size: 2.5rem;
+        color: #00aeef;
+        font-weight: 900;
+        line-height: 0;
+        vertical-align: -0.6em;
+        margin-right: 4px;
+        font-style: normal;
+    }
+
+    .testimonial-author {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .testimonial-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00aeef, #0284c7);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .testimonial-name {
+        font-weight: 800;
+        font-size: 0.88rem;
+        color: #0f172a;
+        margin-bottom: 2px;
+    }
+
+    .testimonial-role {
+        font-size: 0.78rem;
+        color: #94a3b8;
+    }
+
+    /* ── FAQ ── */
+    .faq-section {
+        background: #f8fafc;
+    }
+
+    .faq-item {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .faq-item:hover {
+        border-color: rgba(0, 174, 239, 0.3);
+    }
+
+    .faq-question {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+        gap: 16px;
+    }
+
+    .faq-question span {
+        font-weight: 800;
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+
+    .faq-question i {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .faq-item.active .faq-question i {
+        transform: rotate(180deg);
+        color: #00aeef;
+    }
+
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.35s ease;
+    }
+
+    .faq-item.active .faq-answer {
+        max-height: 300px;
+    }
+
+    .faq-answer-inner {
+        padding: 0 24px 20px;
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.75;
+    }
+
     .cta-section {
         background: radial-gradient(circle at top left, rgba(0, 174, 239, 0.16), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
@@ -2279,6 +2417,166 @@
         </div>
     </section>
 
+    <!-- ── Referanslar / Testimonials ── -->
+    <section class="testimonials-section py-5">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <div class="section-kicker mb-3">
+                    <i class="fas fa-quote-left"></i> @L("TestimonialsKicker", "Referanslar")
+                </div>
+                <h2 class="section-title display-6 mb-2">
+                    @L("TestimonialsTitle", "Organizatörler Ne Diyor?")
+                </h2>
+                <p class="section-description mx-auto">
+                    @L("TestimonialsLead", "AntAbstract ile kongrelerini yöneten akademisyenlerin deneyimleri.")
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="100">
+                    <div class="testimonial-card">
+                        <p class="testimonial-quote">
+                            @L("Testimonial1Quote", "Bildiri sürecini, hakem atamalarını ve sertifika üretimini tek panelden yönettik. Ekip olarak büyük kolaylık sağladı.")
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">AY</div>
+                            <div>
+                                <div class="testimonial-name">Prof. Dr. Ayşe Yılmaz</div>
+                                <div class="testimonial-role">@L("Testimonial1Role", "Kongre Başkanı, ICSS 2025")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="250">
+                    <div class="testimonial-card">
+                        <p class="testimonial-quote">
+                            @L("Testimonial2Quote", "Katılımcı kayıtları ve ödeme takibi çok pratikti. Özellikle çoklu ödeme desteği işimizi kolaylaştırdı.")
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">MK</div>
+                            <div>
+                                <div class="testimonial-name">Doç. Dr. Mehmet Kaya</div>
+                                <div class="testimonial-role">@L("Testimonial2Role", "Organizasyon Komitesi, EABC 2024")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6" data-animate="fade-up" data-delay="400">
+                    <div class="testimonial-card">
+                        <p class="testimonial-quote">
+                            @L("Testimonial3Quote", "Çok dilli yapısı uluslararası kongremiz için ideal oldu. Katılımcılardan çok olumlu geri dönüşler aldık.")
+                        </p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">EÖ</div>
+                            <div>
+                                <div class="testimonial-name">Dr. Elif Özdemir</div>
+                                <div class="testimonial-role">@L("Testimonial3Role", "Bilim Kurulu Üyesi, WCME 2025")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── SSS / FAQ ── -->
+    <section class="faq-section py-5">
+        <div class="container py-4">
+            <div class="row g-5">
+                <div class="col-lg-4">
+                    <div class="section-kicker mb-3">
+                        <i class="fas fa-question-circle"></i> @L("FaqKicker", "SSS")
+                    </div>
+                    <h2 class="section-title display-6 mb-3">
+                        @L("FaqTitle", "Sıkça Sorulan Sorular")
+                    </h2>
+                    <p class="section-description">
+                        @L("FaqLead", "Merak ettiğiniz soruların yanıtlarını burada bulabilirsiniz. Daha fazla bilgi için bize ulaşın.")
+                    </p>
+                    <a href="/contact" class="primary-pill-btn mt-3" style="font-size:.85rem;padding:12px 22px;">
+                        <i class="fas fa-envelope"></i> @L("FaqContactBtn", "Bize Sorun")
+                    </a>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="faq-item active" data-animate>
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>@L("Faq1Q", "AntAbstract nedir ve ne işe yarar?")</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <div class="faq-answer-inner">
+                                @L("Faq1A", "AntAbstract, bilimsel kongre ve konferansların dijital olarak yönetilmesini sağlayan bir SaaS platformudur. Bildiri gönderimi, hakem değerlendirme, katılımcı kaydı, ödeme, program ve sertifika süreçlerini tek panelden yönetmenize olanak tanır.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item" data-animate>
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>@L("Faq2Q", "Bildiri gönderimi nasıl yapılır?")</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <div class="faq-answer-inner">
+                                @L("Faq2A", "Yazarlar, kongre sayfası üzerinden başlık, özet, anahtar kelimeler ve PDF dosyası ile bildirilerini gönderebilir. Sürükle-bırak dosya yükleme desteği mevcuttur.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item" data-animate>
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>@L("Faq3Q", "Hangi ödeme yöntemlerini destekliyorsunuz?")</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <div class="faq-answer-inner">
+                                @L("Faq3A", "Stripe (uluslararası kredi kartı), PayTR (Türkiye kredi kartı) ve banka havalesi/EFT ile ödeme kabul edebilirsiniz. Makbuz yükleme ve admin onayı da desteklenir.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item" data-animate>
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>@L("Faq4Q", "Kör hakemlik (blind review) destekleniyor mu?")</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <div class="faq-answer-inner">
+                                @L("Faq4A", "Evet. Kör hakemlik açıldığında bildiri dosyalarından yazar bilgileri otomatik olarak temizlenir ve hakemlere anonim şekilde sunulur.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item" data-animate>
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>@L("Faq5Q", "Kongrem için özel web sitesi oluşturabilir miyim?")</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <div class="faq-answer-inner">
+                                @L("Faq5A", "Evet. Her kongre için özel sayfa, içerik blokları, konuşmacılar, sponsorlar ve program bilgilerini içeren dinamik bir web sitesi otomatik oluşturulur.")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="faq-item" data-animate>
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>@L("Faq6Q", "Ücretsiz deneme var mı?")</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <div class="faq-answer-inner">
+                                @L("Faq6A", "Platformu değerlendirmek için demo talep edebilirsiniz. İletişim sayfamızdan bize ulaşarak detaylı bilgi alabilirsiniz.")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="stats-modern py-5">
         <div class="container py-4">
             <div class="row text-center">
@@ -2430,6 +2728,14 @@
 
 @section Scripts {
 <script>
+/* ── FAQ toggle ── */
+function toggleFaq(btn) {
+    var item = btn.parentElement;
+    var wasActive = item.classList.contains('active');
+    item.parentElement.querySelectorAll('.faq-item').forEach(function (el) { el.classList.remove('active'); });
+    if (!wasActive) item.classList.add('active');
+}
+
 /* ── Animasyon motoru ──────────────────────────────────────────────── */
 (function () {
     function initAnimations() {
