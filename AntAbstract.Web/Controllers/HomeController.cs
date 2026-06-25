@@ -212,6 +212,7 @@ namespace AntAbstract.Web.Controllers
             var institutionNotSpecifiedText = T("InstitutionNotSpecified", "Kurum belirtilmedi");
             var reviewDetailsText = T("ReviewForDetails", "Detaylar için inceleyiniz.");
             var onlineText = T("Online", "Online");
+            var isEn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
 
             var lastSubmissions = await _context.Submissions
                 .IgnoreQueryFilters()
@@ -255,12 +256,14 @@ namespace AntAbstract.Web.Controllers
                 {
                     Id = c.Id,
 
-                    Title = c.Title,
+                    Title = isEn && !string.IsNullOrWhiteSpace(c.TitleEn) ? c.TitleEn : c.Title,
 
                     Description = Shorten(
-                        ToPlainText(string.IsNullOrWhiteSpace(c.Description)
-                            ? reviewDetailsText
-                            : c.Description),
+                        ToPlainText(isEn && !string.IsNullOrWhiteSpace(c.DescriptionEn)
+                            ? c.DescriptionEn
+                            : string.IsNullOrWhiteSpace(c.Description)
+                                ? reviewDetailsText
+                                : c.Description),
                         90
                     ),
 
@@ -270,7 +273,9 @@ namespace AntAbstract.Web.Controllers
 
                     Location = string.IsNullOrWhiteSpace(c.City)
                         ? onlineText
-                        : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
+                        : isEn
+                            ? $"{(string.IsNullOrWhiteSpace(c.CityEn) ? c.City : c.CityEn)}{(string.IsNullOrWhiteSpace(c.CountryEn) ? (string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country) : " / " + c.CountryEn)}"
+                            : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
 
                     ImageUrl = string.IsNullOrWhiteSpace(c.BannerPath)
                         ? "/abstract/upload/img/resimyok3.png"
@@ -294,11 +299,11 @@ namespace AntAbstract.Web.Controllers
                 PastCongresses = pastConferences.Select(c => new CongressCardDto
                 {
                     Id = c.Id,
-                    Title = c.Title,
-                    Description = Shorten(ToPlainText(string.IsNullOrWhiteSpace(c.Description) ? reviewDetailsText : c.Description), 90),
+                    Title = isEn && !string.IsNullOrWhiteSpace(c.TitleEn) ? c.TitleEn : c.Title,
+                    Description = Shorten(ToPlainText(isEn && !string.IsNullOrWhiteSpace(c.DescriptionEn) ? c.DescriptionEn : string.IsNullOrWhiteSpace(c.Description) ? reviewDetailsText : c.Description), 90),
                     StartDate = c.StartDate,
                     EndDate = c.EndDate,
-                    Location = string.IsNullOrWhiteSpace(c.City) ? onlineText : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
+                    Location = string.IsNullOrWhiteSpace(c.City) ? onlineText : isEn ? $"{(string.IsNullOrWhiteSpace(c.CityEn) ? c.City : c.CityEn)}{(string.IsNullOrWhiteSpace(c.CountryEn) ? (string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country) : " / " + c.CountryEn)}" : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}",
                     ImageUrl = string.IsNullOrWhiteSpace(c.BannerPath) ? "/abstract/upload/img/resimyok3.png" : c.BannerPath,
                     Slug = c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug) ? c.Tenant.Slug : !string.IsNullOrWhiteSpace(c.Slug) ? c.Slug : c.Id.ToString(),
                     IsRegistered = registeredIds.Contains(c.Id),
@@ -310,13 +315,13 @@ namespace AntAbstract.Web.Controllers
                 ProceedingBooks = proceedingBooks.Select(c => new ProceedingBookCardDto
                 {
                     ConferenceId = c.Id,
-                    ConferenceTitle = c.Title,
+                    ConferenceTitle = isEn && !string.IsNullOrWhiteSpace(c.TitleEn) ? c.TitleEn : c.Title,
                     Slug = c.Tenant != null && !string.IsNullOrWhiteSpace(c.Tenant.Slug) ? c.Tenant.Slug : !string.IsNullOrWhiteSpace(c.Slug) ? c.Slug : c.Id.ToString(),
                     PublishedDate = c.ProceedingBookPublishedDate,
                     FilePath = c.ProceedingBookFilePath,
                     StartDate = c.StartDate,
                     EndDate = c.EndDate,
-                    Location = string.IsNullOrWhiteSpace(c.City) ? onlineText : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}"
+                    Location = string.IsNullOrWhiteSpace(c.City) ? onlineText : isEn ? $"{(string.IsNullOrWhiteSpace(c.CityEn) ? c.City : c.CityEn)}{(string.IsNullOrWhiteSpace(c.CountryEn) ? (string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country) : " / " + c.CountryEn)}" : $"{c.City}{(string.IsNullOrWhiteSpace(c.Country) ? "" : " / " + c.Country)}"
                 }).ToList(),
 
                 LastSubmissions = lastSubmissions

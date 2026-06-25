@@ -58,11 +58,17 @@
                         </div>
                     </div>
                     <div class="modern-card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small text-muted">@Localizer["TitleLabel"]</label>
-                            <input asp-for="Title" class="form-control form-control-lg"
-                                   placeholder="@Localizer["TitlePlaceholder"]" required />
-                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["TitleLabel"] (TR)</label>
+                                <input asp-for="Title" class="form-control form-control-lg"
+                                       placeholder="@Localizer["TitlePlaceholder"]" required />
+                                <span asp-validation-for="Title" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["TitleLabel"] (EN)</label>
+                                <input asp-for="TitleEn" class="form-control form-control-lg" placeholder="English title" />
+                            </div>
                         </div>
 
                         <div class="row">
@@ -79,27 +85,47 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-muted">@Localizer["City"]</label>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["City"] (TR)</label>
                                 <input asp-for="City" class="form-control" placeholder="İstanbul" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-muted">@Localizer["Country"]</label>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["City"] (EN)</label>
+                                <input asp-for="CityEn" class="form-control" placeholder="Istanbul" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["Country"] (TR)</label>
                                 <input asp-for="Country" class="form-control" placeholder="Türkiye" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["Country"] (EN)</label>
+                                <input asp-for="CountryEn" class="form-control" placeholder="Turkey" />
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small text-muted">@Localizer["VenueLabel"]</label>
-                            <input asp-for="Venue" class="form-control" placeholder="@Localizer["VenuePlaceholder"]" />
-                            <span asp-validation-for="Venue" class="text-danger small"></span>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["VenueLabel"] (TR)</label>
+                                <input asp-for="Venue" class="form-control" placeholder="@Localizer["VenuePlaceholder"]" />
+                                <span asp-validation-for="Venue" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["VenueLabel"] (EN)</label>
+                                <input asp-for="VenueEn" class="form-control" placeholder="English venue" />
+                            </div>
                         </div>
 
-                        <div class="mb-0">
-                            <label class="form-label fw-semibold small text-muted">@Localizer["DescriptionLabel"]</label>
-                            <textarea asp-for="Description" class="form-control" rows="4"
-                                      placeholder="@Localizer["DescriptionPlaceholder"]"></textarea>
-                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["DescriptionLabel"] (TR)</label>
+                                <textarea asp-for="Description" class="form-control" rows="4"
+                                          placeholder="@Localizer["DescriptionPlaceholder"]"></textarea>
+                                <span asp-validation-for="Description" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-0">
+                                <label class="form-label fw-semibold small text-muted">@Localizer["DescriptionLabel"] (EN)</label>
+                                <textarea asp-for="DescriptionEn" class="form-control" rows="4" placeholder="English description"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>

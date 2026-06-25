@@ -367,12 +367,16 @@
                         var conferenceId = GetGuid(item, "Id", "ConferenceId", "CongressId");
                         var isRegistered = conferenceId.HasValue && registrationsByConference.ContainsKey(conferenceId.Value);
 
-                        var title = GetText(item, "Kongre", "Title", "ConferenceTitle", "Name", "CongressName");
+                        var isEn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+                        var titleEn = GetText(item, "", "TitleEn");
+                        var title = isEn && !string.IsNullOrWhiteSpace(titleEn) ? titleEn : GetText(item, "Kongre", "Title", "ConferenceTitle", "Name", "CongressName");
                         var slug = GetSlug(item);
 
                         var tenantName = GetNestedText(item, "Tenant", "", "Name", "TenantName");
-                        var city = GetText(item, "", "City", "LocationCity", "CongressCity");
-                        var country = GetText(item, "Turkey", "Country", "LocationCountry", "CongressCountry");
+                        var cityEn = GetText(item, "", "CityEn");
+                        var city = isEn && !string.IsNullOrWhiteSpace(cityEn) ? cityEn : GetText(item, "", "City", "LocationCity", "CongressCity");
+                        var countryEn = GetText(item, "", "CountryEn");
+                        var country = isEn && !string.IsNullOrWhiteSpace(countryEn) ? countryEn : GetText(item, "Turkey", "Country", "LocationCountry", "CongressCountry");
 
                         if (string.IsNullOrWhiteSpace(city))
                         {
@@ -392,15 +396,18 @@
 
                         var monthText = GetMonthShort(startDate);
 
-                        var rawDescription = GetText(
-                        item,
-                        !string.IsNullOrWhiteSpace(tenantName)
-                        ? $"{tenantName} {Localizer.GetString("OrganizedByDesc").Value}"
-                        : Localizer.GetString("DefaultDescription").Value,
-                        "Description",
-                        "ShortDescription",
-                        "Summary",
-                        "About"
+                        var descEn = GetText(item, "", "DescriptionEn");
+                        var rawDescription = isEn && !string.IsNullOrWhiteSpace(descEn)
+                        ? descEn
+                        : GetText(
+                            item,
+                            !string.IsNullOrWhiteSpace(tenantName)
+                            ? $"{tenantName} {Localizer.GetString("OrganizedByDesc").Value}"
+                            : Localizer.GetString("DefaultDescription").Value,
+                            "Description",
+                            "ShortDescription",
+                            "Summary",
+                            "About"
                         );
 
                         var description = CleanHtmlText(rawDescription, 110);
