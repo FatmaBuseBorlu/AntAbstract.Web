@@ -8,6 +8,7 @@ using AntAbstract.Infrastructure.Services.Invoice;
 using AntAbstract.Infrastructure.Services.Payment;
 using AntAbstract.Infrastructure.Services.DependencyInjection;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -76,6 +77,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/login";
     options.AccessDeniedPath = "/access-denied";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.HttpOnly = true;
 });
 
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "AntAbstract-Default-Key-Change-In-Production-2026!";
@@ -384,6 +388,10 @@ builder.Services.AddRazorPages(options =>
         route: "access-denied"
     );
 });
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys")))
+    .SetApplicationName("AntAbstract");
 
 #endregion
 
