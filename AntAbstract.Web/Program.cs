@@ -418,22 +418,17 @@ if (!app.Environment.IsEnvironment("Testing"))
             //     --startup-project AntAbstract.Web
             // Development ortamında kolaylık için migration uygulanır.
             // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
-            if (app.Environment.IsDevelopment())
+            if (!app.Environment.IsEnvironment("Testing"))
             {
-                await context.Database.MigrateAsync();
-            }
-            else if (!app.Environment.IsEnvironment("Testing"))
-            {
-                // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
                 var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
                 if (pendingMigrations.Any())
                 {
-                    startupLogger.LogCritical(
-                        "Bekleyen {Count} migration var: {Names}. Uygulamayı başlatmadan önce " +
-                        "'dotnet ef database update' komutunu çalıştırın.",
+                    startupLogger.LogWarning(
+                        "Bekleyen {Count} migration uygulanıyor: {Names}",
                         pendingMigrations.Count(),
                         string.Join(", ", pendingMigrations));
-                    throw new InvalidOperationException("Veritabanı şeması güncel değil. Uygulama başlatılamadı.");
+                    await context.Database.MigrateAsync();
+                    startupLogger.LogInformation("Migration'lar başarıyla uygulandı.");
                 }
             }
 

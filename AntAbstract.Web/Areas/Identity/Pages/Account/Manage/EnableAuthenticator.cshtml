@@ -1,9 +1,16 @@
 @page
 @model EnableAuthenticatorModel
+@using System
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    Func<string, string, string> L = (key, fallback) =>
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
+
+    ViewData["Title"] = L("PageTitle", "Kimlik Doğrulayıcı Uygulamayı Yapılandır");
     ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
@@ -18,7 +25,7 @@
                 </div>
                 <div>
                     <h4 class="fw-bold mb-0">@Localizer["PageTitle"]</h4>
-                    <p class="text-muted mb-0 small">Google Authenticator veya benzeri bir uygulama kullanın</p>
+                    <p class="text-muted mb-0 small">@L("Subtitle", "Google Authenticator veya benzeri bir uygulama kullanın")</p>
                 </div>
             </div>
 
@@ -88,7 +95,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
-                            <i class="fas fa-check-circle me-2"></i>Doğrula ve Etkinleştir
+                            <i class="fas fa-check-circle me-2"></i>@L("VerifyAndEnableButton", "Doğrula ve Etkinleştir")
                         </button>
 
                         <div asp-validation-summary="ModelOnly" class="text-danger mt-2" role="alert"></div>
