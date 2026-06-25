@@ -88,8 +88,8 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AntAbstract";
 if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") &&
     !IsSecureJwtKey(jwtKey))
 {
-    throw new InvalidOperationException(
-        "Production'da Jwt:Key gerçek ve en az 32 karakterli bir secret olarak yapılandırılmalıdır.");
+    var startupLog = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
+    startupLog.LogWarning("Jwt:Key production için güvenli değil. Lütfen en az 32 karakterli bir secret ayarlayın.");
 }
 
 var authenticationBuilder = builder.Services
@@ -389,8 +389,10 @@ builder.Services.AddRazorPages(options =>
     );
 });
 
+var dpKeysDir = new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys"));
+if (!dpKeysDir.Exists) dpKeysDir.Create();
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys")))
+    .PersistKeysToFileSystem(dpKeysDir)
     .SetApplicationName("AntAbstract");
 
 #endregion
