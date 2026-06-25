@@ -12,7 +12,11 @@ namespace AntAbstract.Domain.Entities
         [Required]
         public string Title { get; set; } = null!;
 
+        public string? TitleEn { get; set; }
+
         public string? Description { get; set; }
+
+        public string? DescriptionEn { get; set; }
 
         public DateTime StartDate { get; set; }
 
@@ -20,9 +24,15 @@ namespace AntAbstract.Domain.Entities
 
         public string? City { get; set; }
 
+        public string? CityEn { get; set; }
+
         public string? Country { get; set; }
 
+        public string? CountryEn { get; set; }
+
         public string? Venue { get; set; }
+
+        public string? VenueEn { get; set; }
 
         public string? LogoPath { get; set; }
 
