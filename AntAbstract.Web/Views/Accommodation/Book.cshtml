@@ -1,7 +1,14 @@
 @model AntAbstract.Domain.Entities.RoomType
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "Oda Rezervasyonu";
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+        return string.Equals(value, key, StringComparison.Ordinal) ? fallback : value;
+    }
+
+    ViewData["Title"] = L("PageTitle", "Oda Rezervasyonu");
     Layout = "_LayoutDashboard";
 
     var slug = ViewBag.Slug as string ?? "";
@@ -16,8 +23,8 @@
 
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb small">
-            <li class="breadcrumb-item"><a href="/@slug/Accommodation?conferenceId=@conferenceId">Konaklama</a></li>
-            <li class="breadcrumb-item active">Rezervasyon</li>
+            <li class="breadcrumb-item"><a href="/@slug/Accommodation?conferenceId=@conferenceId">@L("Accommodation", "Konaklama")</a></li>
+            <li class="breadcrumb-item active">@L("Reservation", "Rezervasyon")</li>
         </ol>
     </nav>
 
@@ -38,19 +45,19 @@
                 <div class="col-4">
                     <div class="text-center p-3 rounded-3 bg-light">
                         <div class="fs-5 fw-bold text-primary">@Model.Price @Model.Currency</div>
-                        <div class="small text-muted">/ gece</div>
+                        <div class="small text-muted">@L("PerNight", "/ gece")</div>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="text-center p-3 rounded-3 bg-light">
                         <div class="fs-5 fw-bold text-dark">@Model.Capacity kişi</div>
-                        <div class="small text-muted">kapasite</div>
+                        <div class="small text-muted">@L("Capacity", "kapasite")</div>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="text-center p-3 rounded-3 bg-light">
                         <div class="fs-5 fw-bold text-success">@Model.TotalQuota</div>
-                        <div class="small text-muted">kontenjan</div>
+                        <div class="small text-muted">@L("Quota", "kontenjan")</div>
                     </div>
                 </div>
             </div>
@@ -61,14 +68,14 @@
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Giriş Tarihi</label>
+                        <label class="form-label fw-semibold">@L("CheckInDate", "Giriş Tarihi")</label>
                         <input type="date" name="checkInDate" class="form-control"
                                min="@confStart.ToString("yyyy-MM-dd")"
                                max="@confEnd.ToString("yyyy-MM-dd")"
                                value="@confStart.ToString("yyyy-MM-dd")" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Çıkış Tarihi</label>
+                        <label class="form-label fw-semibold">@L("CheckOutDate", "Çıkış Tarihi")</label>
                         <input type="date" name="checkOutDate" class="form-control"
                                min="@confStart.AddDays(1).ToString("yyyy-MM-dd")"
                                max="@confEnd.AddDays(3).ToString("yyyy-MM-dd")"
@@ -79,18 +86,18 @@
                 @if (Model.Capacity > 1)
                 {
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Oda Arkadaşı Adı <span class="text-muted fw-normal">(opsiyonel)</span></label>
+                        <label class="form-label fw-semibold">@L("RoommateName", "Oda Arkadaşı Adı") <span class="text-muted fw-normal">@L("Optional", "(opsiyonel)")</span></label>
                         <input type="text" name="roommateName" class="form-control"
-                               placeholder="Ad Soyad" maxlength="200" />
+                               placeholder="@L("FullNamePlaceholder", "Ad Soyad")" maxlength="200" />
                     </div>
                 }
 
                 @if (transfers.Any())
                 {
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Transfer Seçeneği <span class="text-muted fw-normal">(opsiyonel)</span></label>
+                        <label class="form-label fw-semibold">@L("TransferOption", "Transfer Seçeneği") <span class="text-muted fw-normal">@L("Optional", "(opsiyonel)")</span></label>
                         <select name="transferOptionId" class="form-select">
-                            <option value="">Transfer istemiyorum</option>
+                            <option value="">@L("NoTransfer", "Transfer istemiyorum")</option>
                             @foreach (var t in transfers)
                             {
                                 <option value="@t.Id">@t.Name — @t.Price @t.Currency</option>
@@ -101,10 +108,10 @@
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary btn-lg fw-bold">
-                        <i class="fas fa-calendar-check me-2"></i>Rezervasyonu Tamamla
+                        <i class="fas fa-calendar-check me-2"></i>@L("CompleteReservation", "Rezervasyonu Tamamla")
                     </button>
                     <a href="/@slug/Accommodation?conferenceId=@conferenceId" class="btn btn-outline-secondary">
-                        
+                        @L("BackToAccommodation", "Konaklamaya Geri Dön")
                     </a>
                 </div>
             </form>
@@ -113,6 +120,6 @@
 
     <p class="text-muted small text-center">
         <i class="fas fa-info-circle me-1"></i>
-        
+        @L("ReservationInfo", "Rezervasyonunuz oluşturulduktan sonra ödeme ve onay durumunu konaklama sayfanızdan takip edebilirsiniz.")
     </p>
 </div>

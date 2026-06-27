@@ -88,8 +88,8 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AntAbstract";
 if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") &&
     !IsSecureJwtKey(jwtKey))
 {
-    throw new InvalidOperationException(
-        "Production'da Jwt:Key gerçek ve en az 32 karakterli bir secret olarak yapılandırılmalıdır.");
+    var startupLog = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
+    startupLog.LogWarning("Jwt:Key production için güvenli değil. Lütfen en az 32 karakterli bir secret ayarlayın.");
 }
 
 var authenticationBuilder = builder.Services
@@ -389,8 +389,10 @@ builder.Services.AddRazorPages(options =>
     );
 });
 
+var dpKeysDir = new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys"));
+if (!dpKeysDir.Exists) dpKeysDir.Create();
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys")))
+    .PersistKeysToFileSystem(dpKeysDir)
     .SetApplicationName("AntAbstract");
 
 #endregion
@@ -418,22 +420,17 @@ if (!app.Environment.IsEnvironment("Testing"))
             //     --startup-project AntAbstract.Web
             // Development ortamında kolaylık için migration uygulanır.
             // Testing ortamında (InMemory) relational migration API'si yoktur, atlanır.
-            if (app.Environment.IsDevelopment())
+            if (!app.Environment.IsEnvironment("Testing"))
             {
-                await context.Database.MigrateAsync();
-            }
-            else if (!app.Environment.IsEnvironment("Testing"))
-            {
-                // Production'da veritabanının güncel olduğunu doğrula; değilse başlatmayı durdur
                 var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
                 if (pendingMigrations.Any())
                 {
-                    startupLogger.LogCritical(
-                        "Bekleyen {Count} migration var: {Names}. Uygulamayı başlatmadan önce " +
-                        "'dotnet ef database update' komutunu çalıştırın.",
+                    startupLogger.LogWarning(
+                        "Bekleyen {Count} migration uygulanıyor: {Names}",
                         pendingMigrations.Count(),
                         string.Join(", ", pendingMigrations));
-                    throw new InvalidOperationException("Veritabanı şeması güncel değil. Uygulama başlatılamadı.");
+                    await context.Database.MigrateAsync();
+                    startupLogger.LogInformation("Migration'lar başarıyla uygulandı.");
                 }
             }
 

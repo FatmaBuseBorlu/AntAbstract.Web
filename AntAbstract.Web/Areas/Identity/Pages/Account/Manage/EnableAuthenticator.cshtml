@@ -1,9 +1,16 @@
 @page
 @model EnableAuthenticatorModel
+@using System
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    Func<string, string, string> L = (key, fallback) =>
+    {
+        var text = Localizer[key].Value;
+        return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
+    };
+
+    ViewData["Title"] = L("PageTitle", "Kimlik Doğrulayıcı Uygulamayı Yapılandır");
     ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
@@ -18,7 +25,7 @@
                 </div>
                 <div>
                     <h4 class="fw-bold mb-0">@Localizer["PageTitle"]</h4>
-                    <p class="text-muted mb-0 small">Google Authenticator veya benzeri bir uygulama kullanın</p>
+                    <p class="text-muted mb-0 small">@L("Subtitle", "Google Authenticator veya benzeri bir uygulama kullanın")</p>
                 </div>
             </div>
 
@@ -27,10 +34,10 @@
                     <div class="mb-4">
                         <h6 class="fw-bold mb-2">
                             <span class="badge bg-primary rounded-pill me-1">1</span>
-                            
+                            @L("Step1Title", "Uygulamayı indirin")
                         </h6>
                         <p class="text-muted small mb-2">
-                            
+                            @L("Step1Description", "Telefonunuza Google Authenticator, Microsoft Authenticator veya benzeri bir iki faktörlü doğrulama uygulaması kurun.")
                         </p>
                         <div class="d-flex gap-2 flex-wrap">
                             <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank"
@@ -47,7 +54,7 @@
                     <div class="mb-4">
                         <h6 class="fw-bold mb-2">
                             <span class="badge bg-primary rounded-pill me-1">2</span>
-                            
+                            @L("Step2Title", "QR kodu tarayın")
                         </h6>
                         <div class="border rounded-3 p-3 text-center bg-white" style="max-width:200px;">
                             <div id="qrCode"></div>
@@ -56,7 +63,7 @@
                         <div class="mt-2">
                             <details class="small">
                                 <summary class="text-muted fw-semibold" style="cursor:pointer">
-                                    
+                                    @L("ManualKeySummary", "QR kodu tarayamıyor musunuz? Manuel anahtarı göster")
                                 </summary>
                                 <code class="d-block mt-1 p-2 bg-light rounded" style="word-break:break-all;font-size:0.8rem;">
                                     @Model.SharedKey
@@ -69,10 +76,10 @@
                 <div class="col-md-6">
                     <h6 class="fw-bold mb-3">
                         <span class="badge bg-primary rounded-pill me-1">3</span>
-                        
+                        @L("Step3Title", "Doğrulama kodunu girin")
                     </h6>
                     <p class="text-muted small">
-                        
+                        @L("Step3Description", "Uygulamada görünen 6 haneli kodu aşağıya girerek iki faktörlü doğrulamayı etkinleştirin.")
                     </p>
 
                     <form id="send-code" method="post">
@@ -88,7 +95,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
-                            <i class="fas fa-check-circle me-2"></i>Doğrula ve Etkinleştir
+                            <i class="fas fa-check-circle me-2"></i>@L("VerifyAndEnableButton", "Doğrula ve Etkinleştir")
                         </button>
 
                         <div asp-validation-summary="ModelOnly" class="text-danger mt-2" role="alert"></div>
@@ -96,8 +103,7 @@
 
                     <div class="alert alert-info border-0 mt-4 small">
                         <i class="fas fa-info-circle me-1"></i>
-                        
-                        
+                        @L("SecurityNote", "Bu işlemi tamamladıktan sonra giriş yaparken şifrenize ek olarak authenticator kodu istenir. Kurtarma kodlarınızı güvenli bir yerde saklayın.")
                     </div>
                 </div>
             </div>

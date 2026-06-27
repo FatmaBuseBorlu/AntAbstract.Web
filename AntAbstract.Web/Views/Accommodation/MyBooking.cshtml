@@ -1,7 +1,14 @@
 @model AntAbstract.Domain.Entities.AccommodationBooking
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = "";
+    string L(string key, string fallback)
+    {
+        var value = Localizer[key].Value;
+        return string.Equals(value, key, StringComparison.Ordinal) ? fallback : value;
+    }
+
+    ViewData["Title"] = L("PageTitle", "Rezervasyonum");
     Layout = "_LayoutDashboard";
 
     var slug = ViewBag.Slug as string ?? "";
@@ -13,8 +20,8 @@
 
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb small">
-            <li class="breadcrumb-item"><a href="/@slug/Accommodation?conferenceId=@Model.ConferenceId">Konaklama</a></li>
-            <li class="breadcrumb-item active"></li>
+            <li class="breadcrumb-item"><a href="/@slug/Accommodation?conferenceId=@Model.ConferenceId">@L("Accommodation", "Konaklama")</a></li>
+            <li class="breadcrumb-item active">@L("MyReservation", "Rezervasyonum")</li>
         </ol>
     </nav>
 
@@ -31,7 +38,7 @@
              style="background:linear-gradient(135deg,@(Model.IsPaid ? "#16a34a,#22c55e" : "#f59e0b,#fbbf24"));">
             <i class="fas fa-@(Model.IsPaid ? "check-circle" : "clock") fa-2x"></i>
             <div>
-                <h5 class="fw-bold mb-0">@(Model.IsPaid ? "Onaylandı" : "Ödeme Bekleniyor")</h5>
+                <h5 class="fw-bold mb-0">@(Model.IsPaid ? L("Approved", "Onaylandı") : L("PaymentPending", "Ödeme Bekleniyor"))</h5>
                 <p class="mb-0 small opacity-80">@conferenceTitle</p>
             </div>
         </div>
@@ -40,32 +47,32 @@
             <div class="row g-3">
                 <div class="col-12">
                     <div class="p-3 rounded-3 bg-light">
-                        <div class="small text-muted fw-semibold mb-1">Otel & Oda</div>
+                        <div class="small text-muted fw-semibold mb-1">@L("HotelAndRoom", "Otel & Oda")</div>
                         <div class="fw-bold">@Model.RoomType.Hotel.Name</div>
-                        <div class="text-muted">@Model.RoomType.Name — @Model.RoomType.Price @Model.RoomType.Currency / gece</div>
+                        <div class="text-muted">@Model.RoomType.Name — @Model.RoomType.Price @Model.RoomType.Currency @L("PerNight", "/ gece")</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 rounded-3 bg-light">
-                        <div class="small text-muted fw-semibold mb-1">Giriş Tarihi</div>
+                        <div class="small text-muted fw-semibold mb-1">@L("CheckInDate", "Giriş Tarihi")</div>
                         <div class="fw-bold">@Model.CheckInDate.ToString("dd MMMM yyyy")</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 rounded-3 bg-light">
-                        <div class="small text-muted fw-semibold mb-1">Çıkış Tarihi</div>
+                        <div class="small text-muted fw-semibold mb-1">@L("CheckOutDate", "Çıkış Tarihi")</div>
                         <div class="fw-bold">@Model.CheckOutDate.ToString("dd MMMM yyyy")</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 rounded-3 bg-light">
-                        <div class="small text-muted fw-semibold mb-1">Konaklama Süresi</div>
-                        <div class="fw-bold">@nights gece</div>
+                        <div class="small text-muted fw-semibold mb-1">@L("StayDuration", "Konaklama Süresi")</div>
+                        <div class="fw-bold">@string.Format(L("Nights", "{0} gece"), nights)</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 rounded-3 bg-light">
-                        <div class="small text-muted fw-semibold mb-1">Toplam Tutar</div>
+                        <div class="small text-muted fw-semibold mb-1">@L("TotalAmount", "Toplam Tutar")</div>
                         <div class="fw-bold text-primary fs-5">@Model.TotalAmount.ToString("N2") TL</div>
                     </div>
                 </div>
@@ -73,7 +80,7 @@
                 {
                     <div class="col-12">
                         <div class="p-3 rounded-3 bg-light">
-                            <div class="small text-muted fw-semibold mb-1">Oda Arkadaşı</div>
+                            <div class="small text-muted fw-semibold mb-1">@L("Roommate", "Oda Arkadaşı")</div>
                             <div class="fw-bold">@Model.RoommateName</div>
                         </div>
                     </div>
@@ -82,7 +89,7 @@
                 {
                     <div class="col-12">
                         <div class="p-3 rounded-3 bg-light">
-                            <div class="small text-muted fw-semibold mb-1">Transfer</div>
+                            <div class="small text-muted fw-semibold mb-1">@L("Transfer", "Transfer")</div>
                             <div class="fw-bold">@Model.TransferOption.Name — @Model.TransferOption.Price @Model.TransferOption.Currency</div>
                         </div>
                     </div>
@@ -95,8 +102,7 @@
                      style="border-radius:12px;background:#fffbeb;border-left:4px solid #f59e0b;color:#92400e;">
                     <i class="fas fa-exclamation-triangle fa-lg"></i>
                     <div class="small">
-                        
-                        
+                        @L("PaymentPendingInfo", "Rezervasyonunuz oluşturuldu. Ödeme onayı tamamlandıktan sonra konaklama kaydınız kesinleşir.")
                     </div>
                 </div>
             }

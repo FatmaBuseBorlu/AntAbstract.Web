@@ -20,7 +20,7 @@ echo ""
 # ── 1. Restore ────────────────────────────────────────────────────────────────
 echo "▶ [1/5] Restore..."
 dotnet restore "$ROOT_DIR/AntAbstract.Web.sln" --verbosity quiet
-dotnet restore "$PROJECT" -r linux-x64 --verbosity quiet
+dotnet restore "$PROJECT" -r win-x64 --verbosity quiet
 
 # ── 2. Build (Release) ────────────────────────────────────────────────────────
 echo "▶ [2/5] Build (Release)..."
@@ -32,8 +32,8 @@ rm -rf "$OUTPUT"
 dotnet publish "$PROJECT" \
   -c Release \
   --no-restore \
-  -r linux-x64 \
-  --self-contained false \
+  -r win-x64 \
+  --self-contained true \
   -p:PublishReadyToRun=false \
   -o "$OUTPUT" \
   --verbosity quiet
