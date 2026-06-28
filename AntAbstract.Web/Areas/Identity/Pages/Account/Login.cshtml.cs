@@ -85,7 +85,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 // PasswordSignInAsync ile giriş denemesi
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
 
                 if (result.Succeeded)
                 {

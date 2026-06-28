@@ -1208,7 +1208,7 @@
                             if (aboutContent != null)
                             {
                                 <div class="content-text">
-                                    @Html.Raw(aboutContent.Description?.Replace("\n", "<br/>"))
+                                    @Html.Raw(HtmlSanitizer.Sanitize(aboutContent.Description?.Replace("\n", "<br/>") ?? ""))
                                 </div>
 
                                 @if (aboutContent.Features != null && aboutContent.Features.Any(f => !string.IsNullOrWhiteSpace(f)))
@@ -1232,7 +1232,7 @@
                             <div class="content-text">
                                 @if (!string.IsNullOrEmpty(b.Subtitle))
                                 {
-                                    @Html.Raw(b.Subtitle.Replace("\n", "<br/>"))
+                                    @Html.Raw(HtmlSanitizer.Sanitize(b.Subtitle.Replace("\n", "<br/>")))
                                 }
                             </div>
                         }

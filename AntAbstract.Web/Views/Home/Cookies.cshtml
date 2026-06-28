@@ -1047,7 +1047,7 @@ Güncel metin, AntAbstract web sitesi üzerinde yayımlandığı tarihten itibar
                 {
                     <section id="@item.Id" class="legal-section">
                         <h2>@item.Title</h2>
-                        @Html.Raw(item.Html)
+                        @Html.Raw(HtmlSanitizer.Sanitize(item.Html))
                     </section>
                 }
 
