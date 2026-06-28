@@ -30,6 +30,24 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<Ganss.Xss.HtmlSanitizer>(sp =>
+{
+    var s = new Ganss.Xss.HtmlSanitizer();
+    s.AllowedTags.Add("br");
+    s.AllowedTags.Add("p");
+    s.AllowedTags.Add("strong");
+    s.AllowedTags.Add("em");
+    s.AllowedTags.Add("ul");
+    s.AllowedTags.Add("ol");
+    s.AllowedTags.Add("li");
+    s.AllowedTags.Add("h1");
+    s.AllowedTags.Add("h2");
+    s.AllowedTags.Add("h3");
+    s.AllowedTags.Add("h4");
+    s.AllowedTags.Add("a");
+    return s;
+});
+
 #region 1. Veritaban� ve Temel Servisler
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -389,11 +407,19 @@ builder.Services.AddRazorPages(options =>
     );
 });
 
-var dpKeysDir = new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys"));
-if (!dpKeysDir.Exists) dpKeysDir.Create();
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(dpKeysDir)
-    .SetApplicationName("AntAbstract");
+try
+{
+    var dpKeysDir = new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys"));
+    if (!dpKeysDir.Exists) dpKeysDir.Create();
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(dpKeysDir)
+        .SetApplicationName("AntAbstract");
+}
+catch
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("AntAbstract");
+}
 
 #endregion
 

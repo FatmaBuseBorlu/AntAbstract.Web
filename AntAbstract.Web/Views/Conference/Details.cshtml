@@ -242,11 +242,11 @@
 
                             @if (aboutBlock != null && !string.IsNullOrEmpty(aboutBlock.Subtitle))
                             {
-                                <p>@Html.Raw(aboutBlock.Subtitle.Replace("\n", "<br/>"))</p>
+                                <p>@Html.Raw(HtmlSanitizer.Sanitize(aboutBlock.Subtitle.Replace("\n", "<br/>")))</p>
                             }
                             else if (!string.IsNullOrEmpty(Model.Description))
                             {
-                                @Html.Raw(Model.Description)
+                                @Html.Raw(HtmlSanitizer.Sanitize(Model.Description))
                             }
                             else
                             {
@@ -265,7 +265,7 @@
                             <h4 class="fw-bold text-dark mb-4">@b.Title</h4>
                             @if (!string.IsNullOrEmpty(b.Subtitle))
                             {
-                                <p class="text-muted">@Html.Raw(b.Subtitle.Replace("\n", "<br/>"))</p>
+                                <p class="text-muted">@Html.Raw(HtmlSanitizer.Sanitize(b.Subtitle.Replace("\n", "<br/>")))</p>
                             }
                             <div class="small text-muted">
                                 <i class="fas fa-code"></i> @Localizer["FutureJsonContentText_Part1"] <b>@b.BlockType</b> @Localizer["FutureJsonContentText_Part2"]
