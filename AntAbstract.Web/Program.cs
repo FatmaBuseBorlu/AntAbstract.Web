@@ -103,12 +103,13 @@ builder.Services.ConfigureApplicationCookie(options =>
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "AntAbstract-Default-Key-Change-In-Production-2026!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AntAbstract";
 
-if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") &&
-    !IsSecureJwtKey(jwtKey))
+var isJwtSecure = IsSecureJwtKey(jwtKey);
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") && !isJwtSecure)
 {
     var startupLog = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
-    startupLog.LogWarning("Jwt:Key production için güvenli değil. Lütfen en az 32 karakterli bir secret ayarlayın.");
+    startupLog.LogWarning("Jwt:Key production için güvenli değil. API auth devre dışı. En az 32 karakterli bir secret ayarlayın.");
 }
+builder.Services.AddSingleton(new JwtStatus { IsConfigured = isJwtSecure });
 
 var authenticationBuilder = builder.Services
     .AddAuthentication()
@@ -762,3 +763,8 @@ static bool IsSecureJwtKey(string? value)
 }
 
 public partial class Program { }
+
+public class JwtStatus
+{
+    public bool IsConfigured { get; set; }
+}

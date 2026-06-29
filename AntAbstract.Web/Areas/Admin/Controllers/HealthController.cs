@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdmin)]
+    [Authorize(Roles = "SuperAdmin")]
     public class HealthController : Controller
     {
         private readonly AppDbContext _context;

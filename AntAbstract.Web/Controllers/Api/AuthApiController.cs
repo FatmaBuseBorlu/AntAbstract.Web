@@ -19,15 +19,18 @@ namespace AntAbstract.Web.Controllers.Api
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
         private readonly IConfiguration _config;
+        private readonly JwtStatus _jwtStatus;
 
         public AuthApiController(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
-            IConfiguration config)
+            IConfiguration config,
+            JwtStatus jwtStatus)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _config = config;
+            _jwtStatus = jwtStatus;
         }
 
         public class LoginRequest
@@ -42,6 +45,9 @@ namespace AntAbstract.Web.Controllers.Api
         [EnableRateLimiting("api-auth")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            if (!_jwtStatus.IsConfigured)
+                return StatusCode(503, new { error = "API auth is not configured. Set a secure Jwt:Key." });
+
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
                 return Unauthorized(new { error = "Geçersiz e-posta veya şifre." });
