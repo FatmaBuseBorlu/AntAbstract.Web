@@ -435,14 +435,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .AsNoTracking()
                 .CountAsync(c => c.UserId == userId);
 
-            var recentLogins = await _context.AuditLogs
-                .AsNoTracking()
-                .Where(a => a.UserId == userId && a.Category == "Login" && a.Action == "Login")
-                .OrderByDescending(a => a.CreatedAt)
-                .Take(20)
-                .Select(a => new { a.CreatedAt, a.IpAddress, a.Description })
-                .ToListAsync();
-
             ViewBag.User = user;
             ViewBag.Roles = roles.Where(IsAllowedRole).ToList();
             ViewBag.SubmissionCount = submissionCount;
@@ -451,8 +443,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.IsLockedOut = user.LockoutEnabled &&
                                    user.LockoutEnd.HasValue &&
                                    user.LockoutEnd.Value > DateTimeOffset.UtcNow;
-            ViewBag.RecentLogins = recentLogins;
-            ViewBag.LoginCount = recentLogins.Count;
 
             return View();
         }
