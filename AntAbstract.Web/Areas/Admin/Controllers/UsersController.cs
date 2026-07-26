@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Web.Models.ViewModels.Admin.Users;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Infrastructure.Context;
@@ -445,6 +447,61 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                                    user.LockoutEnd.Value > DateTimeOffset.UtcNow;
 
             return View();
+        }
+
+        // ── Export Login History ──────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Users/ExportLoginHistory")]
+        [HttpGet("/{slug}/Admin/Users/ExportLoginHistory")]
+        public async Task<IActionResult> ExportLoginHistory(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return NotFound();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            var logs = await _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.UserId == userId && a.Category == "Login" && a.Action == "Login")
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new { a.CreatedAt, a.IpAddress, a.Description })
+                .ToListAsync();
+
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Giriş Geçmişi");
+
+            // Başlık satırı
+            ws.Cell(1, 1).Value = "Tarih";
+            ws.Cell(1, 2).Value = "Saat";
+            ws.Cell(1, 3).Value = "IP Adresi";
+            ws.Cell(1, 4).Value = "Açıklama";
+
+            var headerRow = ws.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#0f172a");
+            headerRow.Style.Font.FontColor = XLColor.White;
+
+            for (int i = 0; i < logs.Count; i++)
+            {
+                var localTime = logs[i].CreatedAt.AddHours(3);
+                ws.Cell(i + 2, 1).Value = localTime.ToString("dd.MM.yyyy");
+                ws.Cell(i + 2, 2).Value = localTime.ToString("HH:mm:ss");
+                ws.Cell(i + 2, 3).Value = logs[i].IpAddress ?? "";
+                ws.Cell(i + 2, 4).Value = logs[i].Description ?? "";
+            }
+
+            ws.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            var safeName = $"{user.FirstName}_{user.LastName}_giris_gecmisi_{DateTime.Now:yyyyMMdd}.xlsx"
+                .Replace(" ", "_");
+
+            return File(ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                safeName);
         }
 
         // ── Login History ─────────────────────────────────────────────────────────
