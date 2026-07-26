@@ -1,4 +1,5 @@
-﻿using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Infrastructure.Context;
 using AntAbstract.WebUI.Models.ViewModels.Admin.AllConferences;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -128,6 +129,48 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
                 .ToListAsync();
 
             return View(conferences);
+        }
+
+        [HttpGet("Create")]
+        public async Task<IActionResult> Create()
+        {
+            await FillTenantsAsync();
+            return View(new Conference { StartDate = DateTime.Today, EndDate = DateTime.Today });
+        }
+
+        [HttpPost("Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Conference conference)
+        {
+            if (conference.TenantId == Guid.Empty)
+                ModelState.AddModelError("TenantId", "Kurum seçmelisiniz.");
+
+            if (!ModelState.IsValid)
+            {
+                await FillTenantsAsync(conference.TenantId);
+                return View(conference);
+            }
+
+            conference.Id = Guid.NewGuid();
+            _context.Conferences.Add(conference);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Kongre başarıyla oluşturuldu.";
+            return RedirectToAction("Index");
+        }
+
+        private async Task FillTenantsAsync(Guid? selectedId = null)
+        {
+            ViewBag.Tenants = await _context.Tenants
+                .AsNoTracking()
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem
+                {
+                    Value = x.Id.ToString(),
+                    Text = x.Name,
+                    Selected = selectedId.HasValue && x.Id == selectedId.Value
+                })
+                .ToListAsync();
         }
     }
 }
