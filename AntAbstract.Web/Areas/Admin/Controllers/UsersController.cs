@@ -99,10 +99,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
+            var userIds = users.Select(u => u.Id).ToList();
+
+            var loginStats = await _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.Category == "Login" && a.Action == "Login" && a.UserId != null && userIds.Contains(a.UserId))
+                .GroupBy(a => a.UserId!)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    LastLoginAt = g.Max(a => a.CreatedAt),
+                    LoginCount = g.Count(),
+                    LastLoginIp = g.OrderByDescending(a => a.CreatedAt).Select(a => a.IpAddress).FirstOrDefault()
+                })
+                .ToDictionaryAsync(x => x.UserId);
+
             var allUsersModel = users.Select(user =>
             {
                 var userRoles = userRoleMap.TryGetValue(user.Id, out var r) ? r : new List<string>();
                 var fullName = $"{user.FirstName} {user.LastName}".Trim();
+                loginStats.TryGetValue(user.Id, out var stats);
                 return new UserListItemViewModel
                 {
                     UserId = user.Id,
@@ -115,7 +131,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     IsLockedOut = user.LockoutEnabled &&
                                   user.LockoutEnd.HasValue &&
                                   user.LockoutEnd.Value > DateTimeOffset.UtcNow,
-                    EmailConfirmed = user.EmailConfirmed
+                    EmailConfirmed = user.EmailConfirmed,
+                    LastLoginAt = stats?.LastLoginAt,
+                    LastLoginIp = stats?.LastLoginIp,
+                    LoginCount = stats?.LoginCount ?? 0
                 };
             }).ToList();
 
@@ -416,6 +435,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .AsNoTracking()
                 .CountAsync(c => c.UserId == userId);
 
+            var recentLogins = await _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.UserId == userId && a.Category == "Login" && a.Action == "Login")
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(20)
+                .Select(a => new { a.CreatedAt, a.IpAddress, a.Description })
+                .ToListAsync();
+
             ViewBag.User = user;
             ViewBag.Roles = roles.Where(IsAllowedRole).ToList();
             ViewBag.SubmissionCount = submissionCount;
@@ -424,6 +451,41 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.IsLockedOut = user.LockoutEnabled &&
                                    user.LockoutEnd.HasValue &&
                                    user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+            ViewBag.RecentLogins = recentLogins;
+            ViewBag.LoginCount = recentLogins.Count;
+
+            return View();
+        }
+
+        // ── Login History ─────────────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Users/LoginHistory")]
+        public async Task<IActionResult> LoginHistory(string? userId, int page = 1)
+        {
+            const int pageSize = 50;
+
+            var query = _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.Category == "Login" && a.Action == "Login");
+
+            if (!string.IsNullOrWhiteSpace(userId))
+                query = query.Where(a => a.UserId == userId);
+
+            var total = await query.CountAsync();
+
+            var logs = await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(a => new { a.UserId, a.UserName, a.CreatedAt, a.IpAddress, a.Description })
+                .ToListAsync();
+
+            ViewBag.Logs = logs;
+            ViewBag.Total = total;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)total / pageSize);
+            ViewBag.FilterUserId = userId;
 
             return View();
         }

@@ -968,7 +968,11 @@
                                 @Localizer["Status"]
                             </th>
 
-                            <th class="pe-4 text-end" style="min-width: 280px;">
+                            <th style="width: 14%;">
+                                Son Giriş
+                            </th>
+
+                            <th class="pe-4 text-end" style="min-width: 360px;">
                                 @Localizer["Actions"]
                             </th>
                         </tr>
@@ -1071,6 +1075,24 @@
                                             <i class="fas fa-check-circle"></i>
                                             @Localizer["Active"]
                                         </span>
+                                    }
+                                </td>
+
+                                <td style="font-size:0.78rem; color:#64748b;">
+                                    @if (item.LastLoginAt.HasValue)
+                                    {
+                                        var localTime = item.LastLoginAt.Value.AddHours(3); // UTC+3
+                                        <div class="fw-semibold text-dark">@localTime.ToString("dd.MM.yyyy")</div>
+                                        <div>@localTime.ToString("HH:mm")</div>
+                                        @if (!string.IsNullOrWhiteSpace(item.LastLoginIp))
+                                        {
+                                            <div class="text-muted" style="font-size:0.7rem;">@item.LastLoginIp</div>
+                                        }
+                                        <div class="text-muted" style="font-size:0.7rem;">@item.LoginCount giriş</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
                                     }
                                 </td>
 
