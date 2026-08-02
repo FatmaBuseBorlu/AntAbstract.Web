@@ -717,12 +717,17 @@
           asp-controller="CentralVitrin"
           asp-action="EditBlock"
           asp-route-id="@Model.Id"
-          method="post">
+          method="post"
+          data-repeater-form>
 
         @Html.AntiForgeryToken()
 
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="ConferenceId" />
+
+        @* Satır adlarını gönderim anında JS üretiyor. JS çalışmazsa bu alan boş
+           kalır ve sunucu mevcut içeriği korur — sessiz veri kaybı olmaz. *@
+        <input type="hidden" name="repeaterReady" value="" data-repeater-ready />
 
         <div class="edit-form-grid">
 
@@ -822,15 +827,14 @@
                             </div>
 
                             <label class="edit-label">Konu Başlıkları</label>
-                            <div class="repeater" data-repeater="topics">
+                            <div class="repeater" data-repeater="topics" data-repeater-name="topicsContent.Items">
                                 @foreach (var (item, i) in topicsContent.Items.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
-                                        <input type="hidden" name="topicsContent.Items.Index" value="@i" />
                                         <div class="repeater-fields">
-                                            <input name="topicsContent.Items[@i].Name" value="@item.Name"
+                                            <input data-field="Name" value="@item.Name"
                                                    class="form-control edit-form-control" placeholder="Konu başlığı" />
-                                            <input name="topicsContent.Items[@i].Description" value="@item.Description"
+                                            <input data-field="Description" value="@item.Description"
                                                    class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
                                         </div>
                                         <button type="button" class="repeater-remove" title="Satırı sil">
@@ -842,11 +846,10 @@
 
                             <template data-repeater-template="topics">
                                 <div class="repeater-row">
-                                    <input type="hidden" name="topicsContent.Items.Index" value="__IDX__" />
                                     <div class="repeater-fields">
-                                        <input name="topicsContent.Items[__IDX__].Name"
+                                        <input data-field="Name"
                                                class="form-control edit-form-control" placeholder="Konu başlığı" />
-                                        <input name="topicsContent.Items[__IDX__].Description"
+                                        <input data-field="Description"
                                                class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
                                     </div>
                                     <button type="button" class="repeater-remove" title="Satırı sil">
@@ -871,21 +874,20 @@
                                 </div>
                             </div>
 
-                            <div class="repeater" data-repeater="dates">
+                            <div class="repeater" data-repeater="dates" data-repeater-name="datesContent.Items">
                                 @foreach (var (item, i) in datesContent.Items.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
-                                        <input type="hidden" name="datesContent.Items.Index" value="@i" />
                                         <div class="repeater-fields">
-                                            <input name="datesContent.Items[@i].Label" value="@item.Label"
+                                            <input data-field="Label" value="@item.Label"
                                                    class="form-control edit-form-control" placeholder="Örn: Bildiri Son Gönderim" />
-                                            <input name="datesContent.Items[@i].Date" value="@item.Date"
+                                            <input data-field="Date" value="@item.Date"
                                                    class="form-control edit-form-control" placeholder="Örn: 15 Ağustos 2026" />
-                                            <input name="datesContent.Items[@i].Description" value="@item.Description"
+                                            <input data-field="Description" value="@item.Description"
                                                    class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
                                         </div>
                                         <label class="repeater-check" title="Tarihi geçti olarak işaretle">
-                                            <input type="checkbox" name="datesContent.Items[@i].IsPassed"
+                                            <input type="checkbox" data-field="IsPassed"
                                                    value="true" @(item.IsPassed ? "checked" : "") />
                                             <span>Geçti</span>
                                         </label>
@@ -898,17 +900,16 @@
 
                             <template data-repeater-template="dates">
                                 <div class="repeater-row">
-                                    <input type="hidden" name="datesContent.Items.Index" value="__IDX__" />
                                     <div class="repeater-fields">
-                                        <input name="datesContent.Items[__IDX__].Label"
+                                        <input data-field="Label"
                                                class="form-control edit-form-control" placeholder="Örn: Bildiri Son Gönderim" />
-                                        <input name="datesContent.Items[__IDX__].Date"
+                                        <input data-field="Date"
                                                class="form-control edit-form-control" placeholder="Örn: 15 Ağustos 2026" />
-                                        <input name="datesContent.Items[__IDX__].Description"
+                                        <input data-field="Description"
                                                class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
                                     </div>
                                     <label class="repeater-check" title="Tarihi geçti olarak işaretle">
-                                        <input type="checkbox" name="datesContent.Items[__IDX__].IsPassed" value="true" />
+                                        <input type="checkbox" data-field="IsPassed" value="true" />
                                         <span>Geçti</span>
                                     </label>
                                     <button type="button" class="repeater-remove" title="Satırı sil">
@@ -952,23 +953,22 @@
                             </div>
 
                             <label class="edit-label">Ücret Kalemleri</label>
-                            <div class="repeater" data-repeater="fees">
+                            <div class="repeater" data-repeater="fees" data-repeater-name="feesContent.Items">
                                 @foreach (var (item, i) in feesContent.Items.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
-                                        <input type="hidden" name="feesContent.Items.Index" value="@i" />
                                         <div class="repeater-fields">
-                                            <input name="feesContent.Items[@i].Name" value="@item.Name"
+                                            <input data-field="Name" value="@item.Name"
                                                    class="form-control edit-form-control" placeholder="Örn: Öğrenci" />
-                                            <input name="feesContent.Items[@i].Price" value="@item.Price"
+                                            <input data-field="Price" value="@item.Price"
                                                    class="form-control edit-form-control" placeholder="Örn: 1500" />
-                                            <input name="feesContent.Items[@i].Deadline" value="@item.Deadline"
+                                            <input data-field="Deadline" value="@item.Deadline"
                                                    class="form-control edit-form-control" placeholder="Son tarih (isteğe bağlı)" />
-                                            <input name="feesContent.Items[@i].Description" value="@item.Description"
+                                            <input data-field="Description" value="@item.Description"
                                                    class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
                                         </div>
                                         <label class="repeater-check" title="Tabloda öne çıkar">
-                                            <input type="checkbox" name="feesContent.Items[@i].IsHighlighted"
+                                            <input type="checkbox" data-field="IsHighlighted"
                                                    value="true" @(item.IsHighlighted ? "checked" : "") />
                                             <span>Öne çıkar</span>
                                         </label>
@@ -981,19 +981,18 @@
 
                             <template data-repeater-template="fees">
                                 <div class="repeater-row">
-                                    <input type="hidden" name="feesContent.Items.Index" value="__IDX__" />
                                     <div class="repeater-fields">
-                                        <input name="feesContent.Items[__IDX__].Name"
+                                        <input data-field="Name"
                                                class="form-control edit-form-control" placeholder="Örn: Öğrenci" />
-                                        <input name="feesContent.Items[__IDX__].Price"
+                                        <input data-field="Price"
                                                class="form-control edit-form-control" placeholder="Örn: 1500" />
-                                        <input name="feesContent.Items[__IDX__].Deadline"
+                                        <input data-field="Deadline"
                                                class="form-control edit-form-control" placeholder="Son tarih (isteğe bağlı)" />
-                                        <input name="feesContent.Items[__IDX__].Description"
+                                        <input data-field="Description"
                                                class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
                                     </div>
                                     <label class="repeater-check" title="Tabloda öne çıkar">
-                                        <input type="checkbox" name="feesContent.Items[__IDX__].IsHighlighted" value="true" />
+                                        <input type="checkbox" data-field="IsHighlighted" value="true" />
                                         <span>Öne çıkar</span>
                                     </label>
                                     <button type="button" class="repeater-remove" title="Satırı sil">
@@ -1018,14 +1017,13 @@
                                 </div>
                             </div>
 
-                            <div class="repeater" data-repeater="groups">
-                                @foreach (var (grp, gi) in committeesContent.Groups.Select((x, i) => (x, i)))
+                            <div class="repeater" data-repeater="groups" data-repeater-name="committeesContent.Groups">
+                                @foreach (var grp in committeesContent.Groups)
                                 {
                                     <div class="repeater-row committee-group">
-                                        <input type="hidden" name="committeesContent.Groups.Index" value="@gi" />
 
                                         <div class="committee-group-head">
-                                            <input name="committeesContent.Groups[@gi].Name" value="@grp.Name"
+                                            <input data-field="Name" value="@grp.Name"
                                                    class="form-control edit-form-control fw-bold"
                                                    placeholder="Kurul adı — örn: Bilim Kurulu" />
                                             <button type="button" class="repeater-remove" title="Kurulu sil">
@@ -1033,17 +1031,18 @@
                                             </button>
                                         </div>
 
-                                        <div class="repeater committee-members" data-repeater="members-@gi">
-                                            @foreach (var (mem, mi) in grp.Members.Select((x, i) => (x, i)))
+                                        @* Alt liste: adı üst gruba göreli, numaralandırma gönderimde yapılır. *@
+                                        <div class="repeater committee-members"
+                                             data-repeater="members" data-repeater-name="Members">
+                                            @foreach (var mem in grp.Members)
                                             {
                                                 <div class="repeater-row">
-                                                    <input type="hidden" name="committeesContent.Groups[@gi].Members.Index" value="@mi" />
                                                     <div class="repeater-fields">
-                                                        <input name="committeesContent.Groups[@gi].Members[@mi].Title" value="@mem.Title"
+                                                        <input data-field="Title" value="@mem.Title"
                                                                class="form-control edit-form-control" placeholder="Unvan" />
-                                                        <input name="committeesContent.Groups[@gi].Members[@mi].FullName" value="@mem.FullName"
+                                                        <input data-field="FullName" value="@mem.FullName"
                                                                class="form-control edit-form-control" placeholder="Ad Soyad" />
-                                                        <input name="committeesContent.Groups[@gi].Members[@mi].Institution" value="@mem.Institution"
+                                                        <input data-field="Institution" value="@mem.Institution"
                                                                class="form-control edit-form-control" placeholder="Kurum" />
                                                     </div>
                                                     <button type="button" class="repeater-remove" title="Üyeyi sil">
@@ -1053,15 +1052,14 @@
                                             }
                                         </div>
 
-                                        <template data-repeater-template="members-@gi">
+                                        <template data-repeater-template="members">
                                             <div class="repeater-row">
-                                                <input type="hidden" name="committeesContent.Groups[@gi].Members.Index" value="__IDX__" />
                                                 <div class="repeater-fields">
-                                                    <input name="committeesContent.Groups[@gi].Members[__IDX__].Title"
+                                                    <input data-field="Title"
                                                            class="form-control edit-form-control" placeholder="Unvan" />
-                                                    <input name="committeesContent.Groups[@gi].Members[__IDX__].FullName"
+                                                    <input data-field="FullName"
                                                            class="form-control edit-form-control" placeholder="Ad Soyad" />
-                                                    <input name="committeesContent.Groups[@gi].Members[__IDX__].Institution"
+                                                    <input data-field="Institution"
                                                            class="form-control edit-form-control" placeholder="Kurum" />
                                                 </div>
                                                 <button type="button" class="repeater-remove" title="Üyeyi sil">
@@ -1071,29 +1069,49 @@
                                         </template>
 
                                         <button type="button" class="repeater-add repeater-add-sm"
-                                                data-repeater-add="members-@gi">
+                                                data-repeater-add="members">
                                             <i class="fas fa-plus"></i> Üye Ekle
                                         </button>
                                     </div>
                                 }
                             </div>
 
-                            <p class="text-muted small fw-semibold mt-3 mb-0">
-                                <i class="fas fa-circle-info me-1"></i>
-                                Yeni kurul eklemek için önce kaydedin, ardından sayfayı yenileyip üye ekleyin.
-                            </p>
-
+                            @* Yeni kurul şablonu kendi üye listesini de taşır; böylece kurul ve
+                               üyeleri kaydetmeden tek seferde girilebilir. *@
                             <template data-repeater-template="groups">
                                 <div class="repeater-row committee-group">
-                                    <input type="hidden" name="committeesContent.Groups.Index" value="__IDX__" />
                                     <div class="committee-group-head">
-                                        <input name="committeesContent.Groups[__IDX__].Name"
+                                        <input data-field="Name"
                                                class="form-control edit-form-control fw-bold"
                                                placeholder="Kurul adı — örn: Bilim Kurulu" />
                                         <button type="button" class="repeater-remove" title="Kurulu sil">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
+
+                                    <div class="repeater committee-members"
+                                         data-repeater="members" data-repeater-name="Members"></div>
+
+                                    <template data-repeater-template="members">
+                                        <div class="repeater-row">
+                                            <div class="repeater-fields">
+                                                <input data-field="Title"
+                                                       class="form-control edit-form-control" placeholder="Unvan" />
+                                                <input data-field="FullName"
+                                                       class="form-control edit-form-control" placeholder="Ad Soyad" />
+                                                <input data-field="Institution"
+                                                       class="form-control edit-form-control" placeholder="Kurum" />
+                                            </div>
+                                            <button type="button" class="repeater-remove" title="Üyeyi sil">
+                                                <i class="fas fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <button type="button" class="repeater-add repeater-add-sm"
+                                            data-repeater-add="members">
+                                        <i class="fas fa-plus"></i> Üye Ekle
+                                    </button>
                                 </div>
                             </template>
 
@@ -1162,15 +1180,14 @@
                                 </div>
                             </div>
 
-                            <div class="repeater" data-repeater="faq">
+                            <div class="repeater" data-repeater="faq" data-repeater-name="faqContent.Questions">
                                 @foreach (var (item, i) in faqContent.Questions.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
-                                        <input type="hidden" name="faqContent.Questions.Index" value="@i" />
                                         <div class="repeater-fields repeater-fields-stack">
-                                            <input name="faqContent.Questions[@i].Question" value="@item.Question"
+                                            <input data-field="Question" value="@item.Question"
                                                    class="form-control edit-form-control fw-bold" placeholder="Soru" />
-                                            <textarea name="faqContent.Questions[@i].Answer" rows="2"
+                                            <textarea data-field="Answer" rows="2"
                                                       class="form-control edit-form-control" placeholder="Yanıt">@item.Answer</textarea>
                                         </div>
                                         <button type="button" class="repeater-remove" title="Satırı sil">
@@ -1182,11 +1199,10 @@
 
                             <template data-repeater-template="faq">
                                 <div class="repeater-row">
-                                    <input type="hidden" name="faqContent.Questions.Index" value="__IDX__" />
                                     <div class="repeater-fields repeater-fields-stack">
-                                        <input name="faqContent.Questions[__IDX__].Question"
+                                        <input data-field="Question"
                                                class="form-control edit-form-control fw-bold" placeholder="Soru" />
-                                        <textarea name="faqContent.Questions[__IDX__].Answer" rows="2"
+                                        <textarea data-field="Answer" rows="2"
                                                   class="form-control edit-form-control" placeholder="Yanıt"></textarea>
                                     </div>
                                     <button type="button" class="repeater-remove" title="Satırı sil">
@@ -1211,19 +1227,18 @@
                                 </div>
                             </div>
 
-                            <div class="repeater" data-repeater="sponsors">
+                            <div class="repeater" data-repeater="sponsors" data-repeater-name="sponsorContent.Sponsors">
                                 @foreach (var (item, i) in sponsorContent.Sponsors.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
-                                        <input type="hidden" name="sponsorContent.Sponsors.Index" value="@i" />
                                         <div class="repeater-fields">
-                                            <input name="sponsorContent.Sponsors[@i].Name" value="@item.Name"
+                                            <input data-field="Name" value="@item.Name"
                                                    class="form-control edit-form-control" placeholder="Kurum adı" />
-                                            <input name="sponsorContent.Sponsors[@i].LogoUrl" value="@item.LogoUrl"
+                                            <input data-field="LogoUrl" value="@item.LogoUrl"
                                                    class="form-control edit-form-control" placeholder="Logo bağlantısı" />
-                                            <input name="sponsorContent.Sponsors[@i].WebsiteUrl" value="@item.WebsiteUrl"
+                                            <input data-field="WebsiteUrl" value="@item.WebsiteUrl"
                                                    class="form-control edit-form-control" placeholder="Web sitesi" />
-                                            <select name="sponsorContent.Sponsors[@i].Tier" class="form-control edit-form-control">
+                                            <select data-field="Tier" class="form-control edit-form-control">
                                                 @foreach (var tier in new[] { "Platinum", "Gold", "Silver", "Bronze" })
                                                 {
                                                     <option value="@tier" selected="@(item.Tier == tier)">@tier</option>
@@ -1239,15 +1254,14 @@
 
                             <template data-repeater-template="sponsors">
                                 <div class="repeater-row">
-                                    <input type="hidden" name="sponsorContent.Sponsors.Index" value="__IDX__" />
                                     <div class="repeater-fields">
-                                        <input name="sponsorContent.Sponsors[__IDX__].Name"
+                                        <input data-field="Name"
                                                class="form-control edit-form-control" placeholder="Kurum adı" />
-                                        <input name="sponsorContent.Sponsors[__IDX__].LogoUrl"
+                                        <input data-field="LogoUrl"
                                                class="form-control edit-form-control" placeholder="Logo bağlantısı" />
-                                        <input name="sponsorContent.Sponsors[__IDX__].WebsiteUrl"
+                                        <input data-field="WebsiteUrl"
                                                class="form-control edit-form-control" placeholder="Web sitesi" />
-                                        <select name="sponsorContent.Sponsors[__IDX__].Tier" class="form-control edit-form-control">
+                                        <select data-field="Tier" class="form-control edit-form-control">
                                             <option value="Platinum">Platinum</option>
                                             <option value="Gold" selected>Gold</option>
                                             <option value="Silver">Silver</option>
@@ -1290,13 +1304,12 @@
                             </div>
 
                             <label class="edit-label">Yazım Kuralları</label>
-                            <div class="repeater" data-repeater="guides">
+                            <div class="repeater" data-repeater="guides" data-repeater-name="callContent.Guidelines">
                                 @foreach (var (g, i) in callContent.Guidelines.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
-                                        <input type="hidden" name="callContent.Guidelines.Index" value="@i" />
                                         <div class="repeater-fields">
-                                            <input name="callContent.Guidelines[@i]" value="@g"
+                                            <input data-field="" value="@g"
                                                    class="form-control edit-form-control" placeholder="Kural maddesi" />
                                         </div>
                                         <button type="button" class="repeater-remove" title="Satırı sil">
@@ -1308,9 +1321,8 @@
 
                             <template data-repeater-template="guides">
                                 <div class="repeater-row">
-                                    <input type="hidden" name="callContent.Guidelines.Index" value="__IDX__" />
                                     <div class="repeater-fields">
-                                        <input name="callContent.Guidelines[__IDX__]"
+                                        <input data-field=""
                                                class="form-control edit-form-control" placeholder="Kural maddesi" />
                                     </div>
                                     <button type="button" class="repeater-remove" title="Satırı sil">
@@ -1474,16 +1486,74 @@
 
     <script>
         // Dinamik satır listeleri (konular, tarihler, ücretler, kurul üyeleri...).
-        // Satır adları ASP.NET'in "Index" desenini kullanır; böylece aradan satır
-        // silindiğinde kalan satırların yeniden numaralanmasına gerek kalmaz.
+        //
+        // Alan adları (name) sayfa yüklenirken ve her gönderimde yeniden üretilir.
+        // Böylece aradan satır silindiğinde indisler boşluksuz kalır ve iç içe
+        // listeler (kurul -> üye) üst grubun sırasını doğru şekilde devralır.
         (function () {
-            var counter = Date.now();
+            var FIELD = '[data-field]';
 
-            function nextIndex() {
-                counter += 1;
-                return 'n' + counter;
+            // Bir satırın doğrudan kendi alanları: iç içe bir listeye ait olanlar hariç.
+            function ownFields(row) {
+                return Array.prototype.filter.call(
+                    row.querySelectorAll(FIELD),
+                    function (el) {
+                        var owner = el.closest('[data-repeater]');
+                        return owner === null || !row.contains(owner);
+                    });
             }
 
+            // Bir satırın doğrudan içerdiği alt listeler (daha derindekiler değil).
+            function childLists(row) {
+                return Array.prototype.filter.call(
+                    row.querySelectorAll('[data-repeater]'),
+                    function (list) {
+                        var parentRow = list.parentElement
+                            ? list.parentElement.closest('.repeater-row')
+                            : null;
+                        return parentRow === row;
+                    });
+            }
+
+            function directRows(list) {
+                return Array.prototype.filter.call(
+                    list.children,
+                    function (el) { return el.classList.contains('repeater-row'); });
+            }
+
+            // basePath örn: "committeesContent.Groups" veya "committeesContent.Groups[0].Members"
+            function reindex(list, basePath) {
+                directRows(list).forEach(function (row, i) {
+                    var rowPath = basePath + '[' + i + ']';
+
+                    ownFields(row).forEach(function (el) {
+                        var field = el.getAttribute('data-field');
+                        el.setAttribute('name', field ? rowPath + '.' + field : rowPath);
+                    });
+
+                    childLists(row).forEach(function (sub) {
+                        var subName = sub.getAttribute('data-repeater-name');
+                        if (subName) {
+                            reindex(sub, rowPath + '.' + subName);
+                        }
+                    });
+                });
+            }
+
+            function reindexAll(root) {
+                // Yalnızca en üst seviyedeki listeler; alt listelere recursive iniliyor.
+                Array.prototype.forEach.call(
+                    root.querySelectorAll('[data-repeater][data-repeater-name]'),
+                    function (list) {
+                        if (list.parentElement && list.parentElement.closest('.repeater-row')) {
+                            return; // alt liste, üstten işlenecek
+                        }
+                        reindex(list, list.getAttribute('data-repeater-name'));
+                    });
+            }
+
+            // Şablondan yeni satır üretir. Şablon, satırın bulunduğu kapsamda aranır;
+            // böylece her kurulun kendi "Üye Ekle" şablonu kullanılır.
             document.addEventListener('click', function (e) {
                 var addBtn = e.target.closest('[data-repeater-add]');
 
@@ -1491,24 +1561,30 @@
                     e.preventDefault();
 
                     var key = addBtn.getAttribute('data-repeater-add');
-                    var tpl = document.querySelector('[data-repeater-template="' + key + '"]');
-                    var list = document.querySelector('[data-repeater="' + key + '"]');
+                    var scope = addBtn.closest('.repeater-row') || document;
+
+                    var tpl = scope.querySelector('[data-repeater-template="' + key + '"]')
+                           || document.querySelector('[data-repeater-template="' + key + '"]');
+
+                    var list = scope.querySelector('[data-repeater="' + key + '"]')
+                           || document.querySelector('[data-repeater="' + key + '"]');
 
                     if (!tpl || !list) {
                         return;
                     }
 
-                    var html = tpl.innerHTML.split('__IDX__').join(nextIndex());
                     var wrap = document.createElement('div');
-                    wrap.innerHTML = html.trim();
+                    wrap.innerHTML = tpl.innerHTML.trim();
 
                     var row = wrap.firstElementChild;
 
                     if (row) {
                         list.appendChild(row);
-                        var firstField = row.querySelector('input:not([type=hidden]), textarea');
-                        if (firstField) {
-                            firstField.focus();
+                        reindexAll(document);
+
+                        var first = row.querySelector('input:not([type=hidden]), textarea');
+                        if (first) {
+                            first.focus();
                         }
                     }
 
@@ -1524,9 +1600,36 @@
 
                     if (target) {
                         target.remove();
+                        reindexAll(document);
                     }
                 }
             });
+
+            function init() {
+                reindexAll(document);
+
+                var form = document.querySelector('[data-repeater-form]');
+
+                if (!form) {
+                    return;
+                }
+
+                form.addEventListener('submit', function () {
+                    reindexAll(document);
+
+                    // Sunucuya "adlar üretildi" işareti; bu olmadan içerik korunur.
+                    var flag = form.querySelector('[data-repeater-ready]');
+                    if (flag) {
+                        flag.value = '1';
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
         })();
     </script>
 

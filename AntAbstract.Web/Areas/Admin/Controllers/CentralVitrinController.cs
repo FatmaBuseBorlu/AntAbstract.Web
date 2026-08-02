@@ -382,7 +382,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ContactBlockContent contactContent,
             FaqBlockContent faqContent,
             SponsorBlockContent sponsorContent,
-            CallForPapersBlockContent callContent)
+            CallForPapersBlockContent callContent,
+            string? repeaterReady = null)
         {
             if (id <= 0)
             {
@@ -401,6 +402,31 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             block.Subtitle = model.Subtitle;
             block.IsActive = model.IsActive;
             block.UpdatedAt = DateTime.UtcNow;
+
+            // Satır listelerinin alan adlarını tarayıcıdaki betik üretiyor. Betik
+            // çalışmadıysa liste boş görünür; bunu "hepsini sil" sanıp mevcut
+            // içeriği ezmemek için o tipleri olduğu gibi bırakıyoruz.
+            var listsSubmitted = repeaterReady == "1";
+
+            var usesLists = block.BlockType
+                is ConferencePageBlockType.Topics
+                or ConferencePageBlockType.ImportantDates
+                or ConferencePageBlockType.Fees
+                or ConferencePageBlockType.Committees
+                or ConferencePageBlockType.FAQ
+                or ConferencePageBlockType.Sponsors
+                or ConferencePageBlockType.CallForPapers;
+
+            if (usesLists && !listsSubmitted)
+            {
+                await _context.SaveChangesAsync();
+
+                TempData["ErrorMessage"] = _localizer["BlockContentNotSaved"];
+
+                return RedirectToAction(
+                    nameof(ManageBlocks),
+                    new { conferenceId = block.ConferenceId });
+            }
 
             // Blok tipi sistemce belirlenir; formdan gelen değere güvenilmez.
             block.ContentJson = block.BlockType switch
