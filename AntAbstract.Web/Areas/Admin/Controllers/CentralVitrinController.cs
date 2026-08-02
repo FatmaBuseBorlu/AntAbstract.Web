@@ -222,16 +222,151 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.ConferenceName = block.Conference?.Title ?? "";
             ViewBag.ConferenceSlug = block.Conference?.Tenant?.Slug ?? "";
 
-            if (block.BlockType == ConferencePageBlockType.About)
-            {
-                var content = string.IsNullOrWhiteSpace(block.ContentJson)
-                    ? new AboutBlockContent()
-                    : JsonSerializer.Deserialize<AboutBlockContent>(block.ContentJson);
-
-                ViewBag.AboutContent = content ?? new AboutBlockContent();
-            }
+            FillBlockContentViewBag(block);
 
             return View(block);
+        }
+
+        /// <summary>
+        /// Bloğun ContentJson'ını tipine göre çözerek ilgili ViewBag alanına koyar.
+        /// Bozuk JSON düzenlemeyi engellememeli, o yüzden boş içerikle devam edilir.
+        /// </summary>
+        private void FillBlockContentViewBag(ConferencePageBlock block)
+        {
+            switch (block.BlockType)
+            {
+                case ConferencePageBlockType.About:
+                    ViewBag.AboutContent = Parse<AboutBlockContent>(block.ContentJson);
+                    break;
+
+                // Clean(...) hem boş satırları eler hem de JSON'da "null" gelen
+                // koleksiyonları boş listeye çevirir; editör null listede patlamamalı.
+
+                case ConferencePageBlockType.Topics:
+                    ViewBag.TopicsContent = Clean(Parse<TopicsBlockContent>(block.ContentJson));
+                    break;
+
+                case ConferencePageBlockType.ImportantDates:
+                    ViewBag.DatesContent = Clean(Parse<ImportantDatesBlockContent>(block.ContentJson));
+                    break;
+
+                case ConferencePageBlockType.Fees:
+                    ViewBag.FeesContent = Clean(Parse<FeesBlockContent>(block.ContentJson));
+                    break;
+
+                case ConferencePageBlockType.Committees:
+                    ViewBag.CommitteesContent = Clean(Parse<CommitteesBlockContent>(block.ContentJson));
+                    break;
+
+                case ConferencePageBlockType.Contact:
+                    ViewBag.ContactContent = Parse<ContactBlockContent>(block.ContentJson);
+                    break;
+
+                case ConferencePageBlockType.FAQ:
+                    ViewBag.FaqContent = Clean(Parse<FaqBlockContent>(block.ContentJson));
+                    break;
+
+                case ConferencePageBlockType.Sponsors:
+                    ViewBag.SponsorContent = Clean(Parse<SponsorBlockContent>(block.ContentJson));
+                    break;
+
+                case ConferencePageBlockType.CallForPapers:
+                    ViewBag.CallContent = Clean(Parse<CallForPapersBlockContent>(block.ContentJson));
+                    break;
+            }
+        }
+
+        private static T Parse<T>(string? json) where T : new()
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new T();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<T>(json) ?? new T();
+            }
+            catch (JsonException)
+            {
+                return new T();
+            }
+        }
+
+        // ── Boş satır temizliği ───────────────────────────────────────────────
+        // Formdaki tekrarlayıcı, kullanıcı doldurmadan satır ekleyebiliyor.
+        // Kaydetmeden önce anlamsız satırları atıyoruz ki siteye boş kutu çıkmasın.
+
+        private static TopicsBlockContent Clean(TopicsBlockContent c)
+        {
+            c.Items = (c.Items ?? new())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .ToList();
+
+            return c;
+        }
+
+        private static ImportantDatesBlockContent Clean(ImportantDatesBlockContent c)
+        {
+            c.Items = (c.Items ?? new())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Label) ||
+                            !string.IsNullOrWhiteSpace(x.Date))
+                .ToList();
+
+            return c;
+        }
+
+        private static FeesBlockContent Clean(FeesBlockContent c)
+        {
+            c.Items = (c.Items ?? new())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .ToList();
+
+            return c;
+        }
+
+        private static CommitteesBlockContent Clean(CommitteesBlockContent c)
+        {
+            c.Groups = (c.Groups ?? new())
+                .Select(g =>
+                {
+                    g.Members = (g.Members ?? new())
+                        .Where(m => !string.IsNullOrWhiteSpace(m.FullName))
+                        .ToList();
+
+                    return g;
+                })
+                .Where(g => !string.IsNullOrWhiteSpace(g.Name) || g.Members.Count > 0)
+                .ToList();
+
+            return c;
+        }
+
+        private static FaqBlockContent Clean(FaqBlockContent c)
+        {
+            c.Questions = (c.Questions ?? new())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Question))
+                .ToList();
+
+            return c;
+        }
+
+        private static SponsorBlockContent Clean(SponsorBlockContent c)
+        {
+            c.Sponsors = (c.Sponsors ?? new())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+                .ToList();
+
+            return c;
+        }
+
+        private static CallForPapersBlockContent Clean(CallForPapersBlockContent c)
+        {
+            c.Guidelines = (c.Guidelines ?? new())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
+
+            return c;
         }
 
         [HttpPost]
@@ -239,7 +374,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> EditBlock(
             int id,
             ConferencePageBlock model,
-            AboutBlockContent aboutContent)
+            AboutBlockContent aboutContent,
+            TopicsBlockContent topicsContent,
+            ImportantDatesBlockContent datesContent,
+            FeesBlockContent feesContent,
+            CommitteesBlockContent committeesContent,
+            ContactBlockContent contactContent,
+            FaqBlockContent faqContent,
+            SponsorBlockContent sponsorContent,
+            CallForPapersBlockContent callContent)
         {
             if (id <= 0)
             {
@@ -259,10 +402,38 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             block.IsActive = model.IsActive;
             block.UpdatedAt = DateTime.UtcNow;
 
-            if (block.BlockType == ConferencePageBlockType.About)
+            // Blok tipi sistemce belirlenir; formdan gelen değere güvenilmez.
+            block.ContentJson = block.BlockType switch
             {
-                block.ContentJson = JsonSerializer.Serialize(aboutContent);
-            }
+                ConferencePageBlockType.About =>
+                    JsonSerializer.Serialize(aboutContent),
+
+                ConferencePageBlockType.Topics =>
+                    JsonSerializer.Serialize(Clean(topicsContent)),
+
+                ConferencePageBlockType.ImportantDates =>
+                    JsonSerializer.Serialize(Clean(datesContent)),
+
+                ConferencePageBlockType.Fees =>
+                    JsonSerializer.Serialize(Clean(feesContent)),
+
+                ConferencePageBlockType.Committees =>
+                    JsonSerializer.Serialize(Clean(committeesContent)),
+
+                ConferencePageBlockType.Contact =>
+                    JsonSerializer.Serialize(contactContent),
+
+                ConferencePageBlockType.FAQ =>
+                    JsonSerializer.Serialize(Clean(faqContent)),
+
+                ConferencePageBlockType.Sponsors =>
+                    JsonSerializer.Serialize(Clean(sponsorContent)),
+
+                ConferencePageBlockType.CallForPapers =>
+                    JsonSerializer.Serialize(Clean(callContent)),
+
+                _ => block.ContentJson
+            };
 
             await _context.SaveChangesAsync();
 
