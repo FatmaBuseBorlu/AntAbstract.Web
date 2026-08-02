@@ -464,7 +464,7 @@
                                         {
                                             <form method="post"
                                                   action="@approvePaymentUrl"
-                                                  onsubmit="return confirm('');">
+                                                  onsubmit="return confirm('Bu kaydın ödemesini onaylamak istediğinize emin misiniz?');">
 
                                                 @Html.AntiForgeryToken()
 
@@ -474,7 +474,7 @@
 
                                                 <button type="submit" class="approve-payment-btn">
                                                     <i class="fas fa-circle-check"></i>
-                                                    
+                                                    Ödemeyi Onayla
                                                 </button>
                                             </form>
                                         }
@@ -483,11 +483,11 @@
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="payment-approved-pill">
                                                     <i class="fas fa-check"></i>
-                                                    
+                                                    Ödendi
                                                 </span>
                                                 <form method="post"
                                                       action="@revokePaymentUrl"
-                                                      onsubmit="return confirm('');">
+                                                      onsubmit="return confirm('Bu kaydın ödeme onayını geri almak istediğinize emin misiniz?');">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="registrationId" value="@item.RegistrationId" />
                                                     <input type="hidden" name="conferenceId" value="@conferenceId" />
