@@ -131,14 +131,14 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
             return View(conferences);
         }
 
-        [HttpGet("Create")]
+        [HttpGet]
         public async Task<IActionResult> Create()
         {
             await FillTenantsAsync();
             return View(new Conference { StartDate = DateTime.Today, EndDate = DateTime.Today });
         }
 
-        [HttpPost("Create")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Conference conference)
         {
