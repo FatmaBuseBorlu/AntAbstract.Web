@@ -479,7 +479,7 @@ namespace AntAbstract.Web.Controllers
                 $"<p><strong>{WebUtility.HtmlEncode(fullName)}</strong> " +
                 $"({WebUtility.HtmlEncode(email)}) tarafından gönderildi.</p>" +
                 $"<p><strong>Konu:</strong> {WebUtility.HtmlEncode(safeSubject)}</p>" +
-                $"<hr /><p>{WebUtility.HtmlEncode(message).Replace("\n", "<br />")}</p>";
+                $"<hr /><p>{WebUtility.HtmlEncode(message ?? string.Empty).Replace("\n", "<br />")}</p>";
 
             _emailQueue.Enqueue(new EmailQueueItem(
                 recipient,
