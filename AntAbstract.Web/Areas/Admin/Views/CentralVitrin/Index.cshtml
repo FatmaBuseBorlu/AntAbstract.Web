@@ -942,6 +942,7 @@
                         @foreach (var item in conferences)
                         {
                             var tenantName = item.Tenant?.Name ?? "-";
+                            // Siteye giden bağlantı kongrenin kendi slug'ını kullanır.
                             var confSlug = !string.IsNullOrWhiteSpace(item.Slug) ? item.Slug : item.Tenant?.Slug;
 
                             var statusText = GetStatusText(item);
@@ -949,12 +950,17 @@
 
                             var hasSlug = !string.IsNullOrWhiteSpace(confSlug);
 
+                            // Admin route'ları kurum slug'ına göre çözülüyor; kongre
+                            // slug'ı verilirse hedef kongre bulunamıyor.
+                            var adminSlug = item.Tenant?.Slug;
+                            var hasAdminSlug = !string.IsNullOrWhiteSpace(adminSlug);
+
                             var siteUrl = hasSlug
                                 ? $"/{confSlug}"
                                 : "#";
 
-                            var flowUrl = hasSlug
-                                ? $"/{confSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
+                            var flowUrl = hasAdminSlug
+                                ? $"/{adminSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
                                 : $"/Admin/ConferenceFlow?conferenceId={item.Id}";
 
                             var tenantUrl = item.TenantId != Guid.Empty
