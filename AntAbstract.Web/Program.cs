@@ -477,8 +477,8 @@ if (!app.Environment.IsEnvironment("Testing"))
         }
         catch (Exception ex)
         {
-            startupLogger.LogError(ex, "Başlangıç sırasında hata oluştu.");
-            throw; // Uygulama kötü bir durumda başlamasın
+            startupLogger.LogError(ex, "Başlangıç sırasında hata oluştu. Uygulama yine de başlatılıyor.");
+            // throw kaldırıldı: DB hatası startup'ı engellemez, hata logda görünür
         }
     }
 }
