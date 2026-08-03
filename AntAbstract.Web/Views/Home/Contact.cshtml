@@ -129,7 +129,27 @@
                             </div>
                         </div>
 
-                        <form method="post" action="#">
+                        @if (TempData["ContactSuccess"] != null)
+                        {
+                            <div class="alert alert-success border-0 mb-3">
+                                <i class="fas fa-circle-check me-2"></i>@TempData["ContactSuccess"]
+                            </div>
+                        }
+
+                        @if (TempData["ContactError"] != null)
+                        {
+                            <div class="alert alert-danger border-0 mb-3">
+                                <i class="fas fa-circle-exclamation me-2"></i>@TempData["ContactError"]
+                            </div>
+                        }
+
+                        <form method="post" asp-controller="Home" asp-action="Contact">
+                            @* Yalnızca hata varken göster; koşulsuz bırakılırsa temiz
+                               sayfada boş bir kırmızı kutu çıkıyor. *@
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div asp-validation-summary="All" class="alert alert-danger border-0 mb-3"></div>
+                            }
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="contact-label">
@@ -139,7 +159,7 @@
                                     <div class="contact-input-wrap">
                                         <i class="fas fa-user"></i>
                                         <input type="text"
-                                               name="FullName"
+                                               name="fullName" value="@ViewBag.ContactFullName"
                                                placeholder="@L("NamePlaceholder", "Adınız ve soyadınız")" />
                                     </div>
                                 </div>
@@ -152,7 +172,7 @@
                                     <div class="contact-input-wrap">
                                         <i class="fas fa-envelope"></i>
                                         <input type="email"
-                                               name="Email"
+                                               name="email" value="@ViewBag.ContactEmail"
                                                placeholder="@L("EmailPlaceholder", "ornek@email.com")" />
                                     </div>
                                 </div>
@@ -165,7 +185,7 @@
                                     <div class="contact-input-wrap">
                                         <i class="fas fa-tag"></i>
                                         <input type="text"
-                                               name="Subject"
+                                               name="subject" value="@ViewBag.ContactSubject"
                                                placeholder="@L("SubjectPlaceholder", "Mesaj konusu")" />
                                     </div>
                                 </div>
@@ -177,9 +197,9 @@
 
                                     <div class="contact-textarea-wrap">
                                         <i class="fas fa-comment-dots"></i>
-                                        <textarea name="Message"
+                                        <textarea name="message"
                                                   rows="6"
-                                                  placeholder="@L("MessagePlaceholder", "Mesajınızı buraya yazın...")"></textarea>
+                                                  placeholder="@L("MessagePlaceholder", "Mesajınızı buraya yazın...")">@ViewBag.ContactMessage</textarea>
                                     </div>
                                 </div>
 

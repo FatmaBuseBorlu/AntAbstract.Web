@@ -1,4 +1,5 @@
 using AntAbstract.Application.Interfaces;
+using Microsoft.AspNetCore.RateLimiting;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Models.ViewModels;
@@ -23,6 +24,9 @@ namespace AntAbstract.Web.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IConferencePageBlockService _pageBlockService;
         private readonly IStringLocalizer<HomeController> _localizer;
+        private readonly IEmailQueue _emailQueue;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<HomeController> _logger;
 
         private static readonly string[] SupportedCultures =
         {
@@ -35,13 +39,19 @@ namespace AntAbstract.Web.Controllers
             TenantContext tenantContext,
             UserManager<AppUser> userManager,
             IConferencePageBlockService pageBlockService,
-            IStringLocalizer<HomeController> localizer)
+            IStringLocalizer<HomeController> localizer,
+            IEmailQueue emailQueue,
+            IConfiguration configuration,
+            ILogger<HomeController> logger)
         {
             _context = context;
             _tenantContext = tenantContext;
             _userManager = userManager;
             _pageBlockService = pageBlockService;
             _localizer = localizer;
+            _emailQueue = emailQueue;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         private string T(string key, string fallback)
@@ -383,6 +393,114 @@ namespace AntAbstract.Web.Controllers
         public IActionResult Contact()
         {
             return View();
+        }
+
+        /// <summary>
+        /// İletişim formunu kongre sekretaryasına iletir.
+        /// Form herkese açık olduğu için "auth" hız sınırı uygulanır (10 istek / 5 dk / IP).
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
+        public IActionResult Contact(
+            string? fullName,
+            string? email,
+            string? subject,
+            string? message)
+        {
+            fullName = fullName?.Trim();
+            email = email?.Trim();
+            subject = subject?.Trim();
+            message = message?.Trim();
+
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                ModelState.AddModelError(
+                    nameof(fullName),
+                    T("ContactNameRequired", "Adınızı ve soyadınızı girin."));
+            }
+
+            if (string.IsNullOrWhiteSpace(email) || !IsPlausibleEmail(email))
+            {
+                ModelState.AddModelError(
+                    nameof(email),
+                    T("ContactEmailInvalid", "Geçerli bir e-posta adresi girin."));
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                ModelState.AddModelError(
+                    nameof(message),
+                    T("ContactMessageRequired", "Mesajınızı yazın."));
+            }
+            else if (message.Length > 4000)
+            {
+                ModelState.AddModelError(
+                    nameof(message),
+                    T("ContactMessageTooLong", "Mesaj en fazla 4000 karakter olabilir."));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // Kullanıcı yazdıklarını kaybetmesin.
+                ViewBag.ContactFullName = fullName;
+                ViewBag.ContactEmail = email;
+                ViewBag.ContactSubject = subject;
+                ViewBag.ContactMessage = message;
+
+                return View();
+            }
+
+            var recipient = _configuration["Email:ContactRecipient"];
+
+            if (string.IsNullOrWhiteSpace(recipient) || recipient.Contains('#'))
+            {
+                // Yapılandırma tamamlanmamışsa gönderen adresine düşülür.
+                recipient = _configuration["Email:SenderEmail"];
+            }
+
+            if (string.IsNullOrWhiteSpace(recipient) || recipient.Contains('#'))
+            {
+                _logger.LogError(
+                    "İletişim formu gönderilemedi: Email:ContactRecipient ve Email:SenderEmail tanımsız.");
+
+                TempData["ContactError"] = T(
+                    "ContactNotConfigured",
+                    "Mesaj şu anda iletilemiyor. Lütfen daha sonra tekrar deneyin.");
+
+                return RedirectToAction(nameof(Contact));
+            }
+
+            var safeSubject = string.IsNullOrWhiteSpace(subject)
+                ? T("ContactDefaultSubject", "İletişim formu mesajı")
+                : subject;
+
+            var body =
+                $"<p><strong>{WebUtility.HtmlEncode(fullName)}</strong> " +
+                $"({WebUtility.HtmlEncode(email)}) tarafından gönderildi.</p>" +
+                $"<p><strong>Konu:</strong> {WebUtility.HtmlEncode(safeSubject)}</p>" +
+                $"<hr /><p>{WebUtility.HtmlEncode(message).Replace("\n", "<br />")}</p>";
+
+            _emailQueue.Enqueue(new EmailQueueItem(
+                recipient,
+                $"[İletişim] {safeSubject}",
+                body));
+
+            TempData["ContactSuccess"] = T(
+                "ContactSuccess",
+                "Mesajınız iletildi. En kısa sürede dönüş yapacağız.");
+
+            return RedirectToAction(nameof(Contact));
+        }
+
+        private static bool IsPlausibleEmail(string value)
+        {
+            var at = value.IndexOf('@');
+
+            return at > 0
+                   && at < value.Length - 1
+                   && value.IndexOf('.', at) > at + 1
+                   && !value.Contains(' ');
         }
 
         public IActionResult Privacy()
