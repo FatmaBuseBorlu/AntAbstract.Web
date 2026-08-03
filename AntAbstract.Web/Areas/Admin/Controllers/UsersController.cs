@@ -83,21 +83,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             await EnsureBaseRolesAsync();
 
-            // Tüm kullanıcı-rol ilişkilerini tek sorguda çek (N+1 yok).
-            // Gruplama bilinçli olarak bellekte yapılıyor: EF Core, toplama
-            // içermeyen GroupBy'ı sunucuya çeviremiyor ve sorgu patlıyor.
-            var userRolePairs = await _context.UserRoles
+            // Tüm kullanıcı-rol ilişkilerini tek sorguda çek (N+1 yok)
+            var userRoleMap = await _context.UserRoles
                 .AsNoTracking()
                 .Join(_context.Roles.AsNoTracking(),
                     ur => ur.RoleId,
                     r => r.Id,
                     (ur, r) => new { ur.UserId, RoleName = r.Name })
                 .Where(x => x.RoleName != null)
-                .ToListAsync();
-
-            var userRoleMap = userRolePairs
                 .GroupBy(x => x.UserId)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName!).ToList());
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName!).ToList());
 
             var users = await _userManager.Users
                 .AsNoTracking()
@@ -108,7 +103,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var userIds = users.Select(u => u.Id).ToList();
 
-            // Son giriş zamanı ve sayısı: toplama içerdiği için sunucuda çalışır.
             var loginStats = await _context.AuditLogs
                 .AsNoTracking()
                 .Where(a => a.Category == "Login" && a.Action == "Login" && a.UserId != null && userIds.Contains(a.UserId))
@@ -117,32 +111,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     UserId = g.Key,
                     LastLoginAt = g.Max(a => a.CreatedAt),
-                    LoginCount = g.Count()
+                    LoginCount = g.Count(),
+                    LastLoginIp = g.OrderByDescending(a => a.CreatedAt).Select(a => a.IpAddress).FirstOrDefault()
                 })
                 .ToDictionaryAsync(x => x.UserId);
-
-            // Son girişin IP'si ayrı sorguyla alınıyor; grup içinde sıralama
-            // yapan alt sorgu EF Core tarafından çevrilemiyor.
-            var lastLoginTimes = loginStats.Values
-                .Select(x => x.LastLoginAt)
-                .Distinct()
-                .ToList();
-
-            var lastLoginIps = lastLoginTimes.Count == 0
-                ? new Dictionary<string, string?>()
-                : (await _context.AuditLogs
-                        .AsNoTracking()
-                        .Where(a => a.Category == "Login"
-                                    && a.Action == "Login"
-                                    && a.UserId != null
-                                    && userIds.Contains(a.UserId)
-                                    && lastLoginTimes.Contains(a.CreatedAt))
-                        .Select(a => new { a.UserId, a.CreatedAt, a.IpAddress })
-                        .ToListAsync())
-                    .Where(a => loginStats.TryGetValue(a.UserId!, out var s)
-                                && s.LastLoginAt == a.CreatedAt)
-                    .GroupBy(a => a.UserId!)
-                    .ToDictionary(g => g.Key, g => g.First().IpAddress);
 
             var allUsersModel = users.Select(user =>
             {
@@ -163,7 +135,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                                   user.LockoutEnd.Value > DateTimeOffset.UtcNow,
                     EmailConfirmed = user.EmailConfirmed,
                     LastLoginAt = stats?.LastLoginAt,
-                    LastLoginIp = lastLoginIps.TryGetValue(user.Id, out var ip) ? ip : null,
+                    LastLoginIp = stats?.LastLoginIp,
                     LoginCount = stats?.LoginCount ?? 0
                 };
             }).ToList();

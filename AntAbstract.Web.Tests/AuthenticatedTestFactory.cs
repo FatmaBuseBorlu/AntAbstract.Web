@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -43,11 +44,18 @@ public sealed class TestAuthHandler(
 }
 
 /// <summary>
-/// SmokeTestFactory ile aynı in-memory kurulumu kullanır, ek olarak
-/// isteklere SuperAdmin kimliği takar.
+/// İsteklere SuperAdmin kimliği takar ve veritabanı olarak bellekteki
+/// SQLite'ı kullanır.
+///
+/// SQLite bilinçli bir tercih: InMemory sağlayıcı EF Core'un ilişkisel
+/// sorgu çevirisini kullanmadığı için üretimde (SQL Server) sorunsuz
+/// çalışan sorgularda hata verebiliyor. SQLite ilişkisel boru hattını
+/// kullandığından testler üretim davranışına çok daha yakın olur.
 /// </summary>
 public sealed class AuthenticatedTestFactory : WebApplicationFactory<Program>
 {
+    private SqliteConnection? _connection;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -62,8 +70,12 @@ public sealed class AuthenticatedTestFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
+            // Bağlantı açık kaldığı sürece bellekteki veritabanı yaşar.
+            _connection = new SqliteConnection("DataSource=:memory:");
+            _connection.Open();
+
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase("AuthTest-" + Guid.NewGuid()));
+                options.UseSqlite(_connection));
 
             services.AddAuthentication(options =>
                 {
@@ -86,5 +98,16 @@ public sealed class AuthenticatedTestFactory : WebApplicationFactory<Program>
             logging.AddConsole();
             logging.SetMinimumLevel(LogLevel.Warning);
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            _connection?.Dispose();
+            _connection = null;
+        }
     }
 }
