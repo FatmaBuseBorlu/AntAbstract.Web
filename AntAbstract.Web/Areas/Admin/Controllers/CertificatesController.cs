@@ -252,13 +252,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             int errors = 0;
 
             // 1. Author certificates — all accepted/presented submissions
+            // User/UserId, Author/AuthorId'nin [NotMapped] kısayolları; sorguda
+            // kullanılamaz çünkü veritabanına çevrilemiyor.
             var authorSubmissions = await _context.Submissions
                 .AsNoTracking()
-                .Include(s => s.User)
+                .Include(s => s.Author)
                 .Where(s => s.ConferenceId == conferenceId &&
                     (s.Status == AntAbstract.Domain.Entities.SubmissionStatus.Accepted ||
                      s.Status == AntAbstract.Domain.Entities.SubmissionStatus.Presented) &&
-                    s.UserId != null)
+                    s.AuthorId != "")
                 .ToListAsync();
 
             foreach (var sub in authorSubmissions)

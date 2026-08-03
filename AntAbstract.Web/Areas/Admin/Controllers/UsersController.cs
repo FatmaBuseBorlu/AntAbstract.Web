@@ -425,9 +425,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
 
+            // Submission.UserId, AuthorId'nin [NotMapped] kısayolu; sorguda
+            // kullanılamaz çünkü veritabanına çevrilemiyor.
             var submissionCount = await _context.Submissions
                 .AsNoTracking()
-                .CountAsync(s => s.UserId == userId);
+                .CountAsync(s => s.AuthorId == userId);
 
             var paymentCount = await _context.Payments
                 .AsNoTracking()
