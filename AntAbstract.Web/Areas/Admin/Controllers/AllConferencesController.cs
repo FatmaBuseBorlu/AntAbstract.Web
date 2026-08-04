@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace AntAbstract.WebUI.Areas.Admin.Controllers
@@ -142,8 +143,59 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Conference conference)
         {
+            // Navigasyon alanları formdan gelmez. Nullable açık olduğu için MVC
+            // bunları zorunlu sayıyor ve doğrulama hiç geçmiyordu.
+            ModelState.Remove(nameof(Conference.Tenant));
+            ModelState.Remove(nameof(Conference.Slug));
+            ModelState.Remove(nameof(Conference.Title));
+
+            conference.Title = conference.Title?.Trim() ?? "";
+            conference.Slug = conference.Slug?.Trim().ToLowerInvariant() ?? "";
+
             if (conference.TenantId == Guid.Empty)
-                ModelState.AddModelError("TenantId", "Kurum seçmelisiniz.");
+            {
+                ModelState.AddModelError(
+                    nameof(Conference.TenantId), "Kurum seçmelisiniz.");
+            }
+            else if (!await _context.Tenants.AnyAsync(t => t.Id == conference.TenantId))
+            {
+                ModelState.AddModelError(
+                    nameof(Conference.TenantId), "Seçilen kurum bulunamadı.");
+            }
+
+            if (string.IsNullOrWhiteSpace(conference.Title))
+            {
+                ModelState.AddModelError(
+                    nameof(Conference.Title), "Kongre adı zorunludur.");
+            }
+
+            if (string.IsNullOrWhiteSpace(conference.Slug))
+            {
+                ModelState.AddModelError(
+                    nameof(Conference.Slug), "Slug zorunludur.");
+            }
+            else if (!SlugPattern.IsMatch(conference.Slug))
+            {
+                ModelState.AddModelError(
+                    nameof(Conference.Slug),
+                    "Slug yalnızca küçük harf, rakam ve tire içerebilir.");
+            }
+            else if (await _context.Conferences
+                         .IgnoreQueryFilters()
+                         .AnyAsync(c => c.Slug == conference.Slug))
+            {
+                // Slug benzersiz indeksli; kontrol edilmezse kayıt 500 ile düşer.
+                ModelState.AddModelError(
+                    nameof(Conference.Slug),
+                    "Bu slug başka bir kongrede kullanılıyor.");
+            }
+
+            if (conference.EndDate < conference.StartDate)
+            {
+                ModelState.AddModelError(
+                    nameof(Conference.EndDate),
+                    "Bitiş tarihi başlangıç tarihinden önce olamaz.");
+            }
 
             if (!ModelState.IsValid)
             {
@@ -158,6 +210,9 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
             TempData["SuccessMessage"] = "Kongre başarıyla oluşturuldu.";
             return RedirectToAction("Index");
         }
+
+        private static readonly Regex SlugPattern =
+            new("^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled);
 
         private async Task FillTenantsAsync(Guid? selectedId = null)
         {
