@@ -145,6 +145,50 @@ public sealed class CreateConferenceTests : IClassFixture<AuthenticatedTestFacto
             }));
     }
 
+    /// <summary>
+    /// Asıl soru: form üzerinden eklenen kongre "Tüm Kongreler" listesinde
+    /// görünüyor mu? Liste global tenant filtresine tabi olduğu için kaydın
+    /// veritabanında olması tek başına yeterli değil.
+    /// </summary>
+    [Fact]
+    public async Task CreatedConference_AppearsInAllConferencesList()
+    {
+        var slug = "listede-gorunsun-" + Guid.NewGuid().ToString("N")[..8];
+
+        var create = await PostAsync(slug, title: "Listede Görünen Kongre");
+        Assert.Equal(HttpStatusCode.Found, create.StatusCode);
+
+        var list = await _client.GetAsync("/Admin/AllConferences");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+
+        var html = await list.Content.ReadAsStringAsync();
+
+        _output.WriteLine($"liste uzunluğu: {html.Length}, aranan slug: {slug}");
+
+        Assert.Contains(slug, html);
+    }
+
+    /// <summary>
+    /// Kongre Siteleri (CentralVitrin) ekranında da görünmeli.
+    /// </summary>
+    [Fact]
+    public async Task CreatedConference_AppearsInCentralVitrinList()
+    {
+        var slug = "vitrinde-gorunsun-" + Guid.NewGuid().ToString("N")[..8];
+
+        var create = await PostAsync(slug, title: "Vitrinde Görünen Kongre");
+        Assert.Equal(HttpStatusCode.Found, create.StatusCode);
+
+        var list = await _client.GetAsync("/Admin/CentralVitrin");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+
+        var html = await list.Content.ReadAsStringAsync();
+
+        _output.WriteLine($"vitrin uzunluğu: {html.Length}, aranan slug: {slug}");
+
+        Assert.Contains(slug, html);
+    }
+
     private async Task<bool> ExistsAsync(string slug)
     {
         using var scope = _factory.Services.CreateScope();
