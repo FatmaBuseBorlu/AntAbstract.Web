@@ -1,0 +1,104 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Yeni Kongre Sitesi Oluştur";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+
+    var conferences = ViewBag.ConferenceList as List<SelectListItem>
+                      ?? new List<SelectListItem>();
+}
+
+<div class="container-fluid py-4" style="max-width:680px">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/Admin/CentralVitrin" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h4 class="mb-0 fw-bold">Yeni Kongre Sitesi Oluştur</h4>
+            <small class="text-muted">Seçilen kongre için varsayılan site bölümleri oluşturulur.</small>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-3">
+            <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (conferences.Count == 0)
+    {
+        <div class="alert alert-info border-0 shadow-sm">
+            <i class="fas fa-info-circle me-2"></i>
+            Tüm kongrelerin sitesi zaten oluşturulmuş. Yeni bir kongre ekledikten
+            sonra buradan sitesini oluşturabilirsiniz.
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="/Admin/AllConferences/Create" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Yeni Kongre Ekle
+            </a>
+            <a href="/Admin/CentralVitrin" class="btn btn-outline-secondary">Geri Dön</a>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form method="post" asp-action="InitSite">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            Kongre Seç <span class="text-danger">*</span>
+                        </label>
+
+                        <select name="conferenceId" class="form-select form-select-lg" required>
+                            <option value="">— Kongre seçin —</option>
+                            @foreach (var item in conferences)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+
+                        <div class="form-text">
+                            Listede yalnızca henüz sitesi oluşturulmamış kongreler görünür.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border mb-4">
+                        <p class="fw-semibold mb-2">
+                            <i class="fas fa-layer-group me-2 text-primary"></i>
+                            Oluşturulacak bölümler:
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var name in new[]
+                            {
+                                "Ana Karşılama (Hero)", "Kongreye Çağrı", "Kongre Konuları",
+                                "Bilim Kurulu", "Hakem Değerlendirme Süreci",
+                                "Katılım Ücreti", "Kongre Programı"
+                            })
+                            {
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                                    @name
+                                </span>
+                            }
+                        </div>
+
+                        <p class="text-muted small mt-2 mb-0">
+                            Oluşturduktan sonra her bölümün içeriğini düzenleyebilirsiniz.
+                        </p>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-globe me-2"></i>Siteyi Oluştur
+                        </button>
+                        <a href="/Admin/CentralVitrin" class="btn btn-outline-secondary px-4">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+</div>

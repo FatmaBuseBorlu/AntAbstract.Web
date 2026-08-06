@@ -35,18 +35,24 @@ public sealed class AdminPagesRenderTests(AuthenticatedTestFactory factory, ITes
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
-    /// <summary>Ekleme (Create) sayfaları.</summary>
+    /// <summary>
+    /// Ekleme (Create) sayfaları gerçekten açılmalı. "500 değil" yeterli değil:
+    /// yetki reddi 302 döner ve o kontrolü geçerdi.
+    ///
+    /// Admin/Website/InitSite bilerek listede yok — o controller
+    /// TenantAdminOnly politikasında ve SuperAdmin'i dışlıyor.
+    /// </summary>
     [Theory]
     [InlineData("/Admin/AllConferences/Create")]
     [InlineData("/Admin/Tenants/Create")]
-    [InlineData("/Admin/Website/InitSite")]
-    public async Task CreatePages_DoNotThrow(string url)
+    [InlineData("/Admin/CentralVitrin/InitSite")]
+    public async Task CreatePages_Open(string url)
     {
         var response = await _client.GetAsync(url);
 
         output.WriteLine($"{(int)response.StatusCode} {url}");
 
-        Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     /// <summary>

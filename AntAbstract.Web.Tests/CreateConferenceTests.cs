@@ -189,6 +189,176 @@ public sealed class CreateConferenceTests : IClassFixture<AuthenticatedTestFacto
         Assert.Contains(slug, html);
     }
 
+    /// <summary>
+    /// "Yeni Site Oluştur" akışı: kongre eklendikten sonra site oluşturulunca
+    /// varsayılan bölümler gerçekten yazılmalı.
+    ///
+    /// Buton önce Admin/Website/InitSite adresine gidiyordu; o controller
+    /// TenantAdminOnly politikasında olduğu için SuperAdmin "Erişim Reddedildi"
+    /// alıyordu.
+    /// </summary>
+    [Fact]
+    public async Task InitSite_CreatesDefaultBlocks()
+    {
+        var slug = "site-olustur-" + Guid.NewGuid().ToString("N")[..8];
+
+        var create = await PostAsync(slug, title: "Site Oluşturma Kongresi");
+        Assert.Equal(HttpStatusCode.Found, create.StatusCode);
+
+        Guid conferenceId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var conference = await db.Conferences
+                .IgnoreQueryFilters()
+                .FirstAsync(c => c.Slug == slug);
+
+            conferenceId = conference.Id;
+
+            Assert.False(
+                await db.ConferencePageBlocks.AnyAsync(b => b.ConferenceId == conferenceId),
+                "Yeni kongrenin başlangıçta bloğu olmamalı.");
+        }
+
+        // Site oluşturma formu açılıyor ve yeni kongreyi listeliyor mu?
+        var form = await _client.GetAsync("/Admin/CentralVitrin/InitSite");
+        Assert.Equal(HttpStatusCode.OK, form.StatusCode);
+
+        var formHtml = await form.Content.ReadAsStringAsync();
+
+        // SQLite GUID'leri büyük harfle üretir; karşılaştırma harf duyarsız.
+        Assert.Contains(
+            conferenceId.ToString(),
+            formHtml,
+            StringComparison.OrdinalIgnoreCase);
+
+        var token = Regex.Match(
+            formHtml,
+            "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+        var post = await _client.PostAsync(
+            "/Admin/CentralVitrin/InitSite",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["conferenceId"] = conferenceId.ToString()
+            }));
+
+        _output.WriteLine($"{(int)post.StatusCode} site oluşturma");
+        Assert.Equal(HttpStatusCode.Found, post.StatusCode);
+
+        // Yönlendirilen sayfa blokları oluşturuyor.
+        var target = post.Headers.Location!.ToString();
+        var manage = await _client.GetAsync(target);
+        Assert.Equal(HttpStatusCode.OK, manage.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var blocks = await db.ConferencePageBlocks
+                .IgnoreQueryFilters()
+                .Where(b => b.ConferenceId == conferenceId)
+                .ToListAsync();
+
+            _output.WriteLine($"oluşan bölüm sayısı: {blocks.Count}");
+
+            Assert.NotEmpty(blocks);
+            Assert.All(blocks, b => Assert.NotEqual(Guid.Empty, b.TenantId));
+        }
+    }
+
+    /// <summary>
+    /// Blok düzenleme kaydı: TempData'ya LocalizedString konulduğu için
+    /// kaydetme 500 ile düşüyordu. Ayrıca yapılandırılmış içeriğin gerçekten
+    /// yazıldığını doğrular.
+    /// </summary>
+    [Fact]
+    public async Task EditBlock_SavesStructuredContent()
+    {
+        var slug = "blok-kaydet-" + Guid.NewGuid().ToString("N")[..8];
+
+        Assert.Equal(HttpStatusCode.Found, (await PostAsync(slug, title: "Blok Kongresi")).StatusCode);
+
+        Guid conferenceId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            conferenceId = (await db.Conferences.IgnoreQueryFilters()
+                .FirstAsync(c => c.Slug == slug)).Id;
+        }
+
+        // ManageBlocks açılınca varsayılan bölümler oluşur.
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await _client.GetAsync($"/Admin/CentralVitrin/ManageBlocks?conferenceId={conferenceId}")).StatusCode);
+
+        int topicsBlockId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            topicsBlockId = (await db.ConferencePageBlocks.IgnoreQueryFilters()
+                .FirstAsync(b => b.ConferenceId == conferenceId &&
+                                 b.BlockType == ConferencePageBlockType.Topics)).Id;
+        }
+
+        var editPage = await _client.GetAsync($"/Admin/CentralVitrin/EditBlock/{topicsBlockId}");
+        Assert.Equal(HttpStatusCode.OK, editPage.StatusCode);
+
+        var token = Regex.Match(
+            await editPage.Content.ReadAsStringAsync(),
+            "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+        var save = await _client.PostAsync(
+            $"/Admin/CentralVitrin/EditBlock/{topicsBlockId}",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["Id"] = topicsBlockId.ToString(),
+                ["ConferenceId"] = conferenceId.ToString(),
+                ["Title"] = "Kongre Konuları",
+                ["IsActive"] = "true",
+                ["repeaterReady"] = "1",
+                ["topicsContent.Description"] = "Kabul edilen konular",
+                ["topicsContent.Items[0].Name"] = "Yapay Zekâ",
+                ["topicsContent.Items[0].Description"] = "Makine öğrenmesi",
+                ["topicsContent.Items[1].Name"] = "Biyoteknoloji",
+                ["topicsContent.Items[1].Description"] = ""
+            }));
+
+        _output.WriteLine($"{(int)save.StatusCode} blok kaydetme");
+        Assert.Equal(HttpStatusCode.Found, save.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var json = (await db.ConferencePageBlocks.IgnoreQueryFilters()
+                .FirstAsync(b => b.Id == topicsBlockId)).ContentJson;
+
+            _output.WriteLine("kaydedilen içerik: " + json);
+
+            var content = System.Text.Json.JsonSerializer
+                .Deserialize<AntAbstract.Web.Models.WebsiteBlocks.TopicsBlockContent>(
+                    json!,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+            Assert.NotNull(content);
+            Assert.Equal("Kabul edilen konular", content!.Description);
+            Assert.Equal(2, content.Items.Count);
+            Assert.Equal("Yapay Zekâ", content.Items[0].Name);
+            Assert.Equal("Biyoteknoloji", content.Items[1].Name);
+        }
+    }
+
     private async Task<bool> ExistsAsync(string slug)
     {
         using var scope = _factory.Services.CreateScope();

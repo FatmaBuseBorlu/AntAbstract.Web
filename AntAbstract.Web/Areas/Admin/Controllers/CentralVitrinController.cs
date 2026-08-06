@@ -199,6 +199,63 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View(blocks);
         }
 
+        /// <summary>
+        /// Henüz sitesi olmayan bir kongre seçtirir.
+        ///
+        /// Admin/Website/InitSite bu iş için kullanılamıyor: o controller
+        /// TenantAdminOnly politikasına bağlı ve SuperAdmin'i dışlıyor, ayrıca
+        /// kurum bağlamı (slug) gerektiriyor. Buradaki ekran global çalışır.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> InitSite()
+        {
+            var withBlocks = await _context.ConferencePageBlocks
+                .AsNoTracking()
+                .Select(b => b.ConferenceId)
+                .Distinct()
+                .ToListAsync();
+
+            var available = await _context.Conferences
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .Where(c => !withBlocks.Contains(c.Id))
+                .OrderByDescending(c => c.StartDate)
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Tenant != null
+                        ? c.Title + " — " + c.Tenant.Name
+                        : c.Title
+                })
+                .ToListAsync();
+
+            ViewBag.ConferenceList = available;
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InitSite(Guid conferenceId)
+        {
+            var conference = await _context.Conferences
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
+
+            if (conference == null)
+            {
+                TempData["ErrorMessage"] = _localizer["ConferenceNotFound"].Value;
+                return RedirectToAction(nameof(InitSite));
+            }
+
+            // Bloklar ManageBlocks açılırken oluşturuluyor; şablonun tek yerde
+            // kalması için burada kopyalamak yerine oraya yönlendiriyoruz.
+            TempData["SuccessMessage"] = _localizer["SiteCreated"].Value;
+
+            return RedirectToAction(
+                nameof(ManageBlocks),
+                new { conferenceId });
+        }
+
         [HttpGet]
         public async Task<IActionResult> EditBlock(int id)
         {
@@ -421,7 +478,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 await _context.SaveChangesAsync();
 
-                TempData["ErrorMessage"] = _localizer["BlockContentNotSaved"];
+                TempData["ErrorMessage"] = _localizer["BlockContentNotSaved"].Value;
 
                 return RedirectToAction(
                     nameof(ManageBlocks),
@@ -463,7 +520,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["BlockUpdatedSuccessfully"];
+            TempData["SuccessMessage"] = _localizer["BlockUpdatedSuccessfully"].Value;
 
             return RedirectToAction(
                 nameof(ManageBlocks),
@@ -537,7 +594,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["BlockCreatedSuccessfully"];
+            TempData["SuccessMessage"] = _localizer["BlockCreatedSuccessfully"].Value;
 
             return RedirectToAction(
                 nameof(ManageBlocks),
