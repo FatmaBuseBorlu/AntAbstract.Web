@@ -59,6 +59,17 @@ else
   echo "✅ web.config: hostingModel=InProcess (OK)"
 fi
 
+# ── Sunucuya ait ayar dosyalarını pakete koyma ───────────────────────────────
+# appsettings.Production.json gerçek bağlantı dizesini ve anahtarları tutar ve
+# yalnızca sunucuda yaşar. Pakete girerse "üzerine yaz" ile açıldığında
+# sunucudaki gerçek değerleri #{TOKEN}# placeholder'larıyla ezer ve site 500 verir.
+for f in appsettings.Production.json appsettings.Development.json; do
+  if [ -f "$OUTPUT/$f" ]; then
+    rm -f "$OUTPUT/$f"
+    echo "🔒 $f pakete dahil edilmedi (sunucudaki ayarlar korunsun)."
+  fi
+done
+
 # ── 4. Duplicate dosyaları temizle ───────────────────────────────────────────
 echo "▶ [4/5] Duplicate dosyalar temizleniyor..."
 DUPES=$(find "$OUTPUT" -name "* [0-9]*.*" 2>/dev/null | wc -l | tr -d ' ')
@@ -113,7 +124,8 @@ echo "  3. Eski .exe .dll web.config appsettings.* sil"
 echo "     (logs/ private-uploads/ wwwroot/uploads/ dokunma!)"
 echo "  4. ZIP'i yükle → Sağ tık → Arşivi Aç → üzerine yaz seç"
 echo "  5. ZIP'i sil"
-echo "  6. appsettings.Production.json'u kontrol et (şifre vs.)"
+echo "  6. appsettings.Production.json pakette YOK — sunucudaki dosya korunur."
+echo "     (Bağlantı dizesi ve anahtarlar orada; ezilmemesi için kasıtlı)"
 echo "  7. Plesk → .NET → Restart App"
 echo "  8. migration.sql varsa Plesk MSSQL aracında çalıştır"
 echo "─────────────────────────────────────────────────────────────────────"
