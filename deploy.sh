@@ -70,6 +70,19 @@ for f in appsettings.Production.json appsettings.Development.json; do
   fi
 done
 
+# ── Yüklenen kullanıcı dosyalarını pakete koyma ──────────────────────────────
+# wwwroot/uploads altındaki dosyalar kullanıcı verisi ve sunucuda yaşıyor.
+# Pakete girerse yereldeki geliştirme dosyaları sunucudakilerin üzerine yazar.
+# Klasör yapısı (.gitkeep) korunur ki uygulama yazacak yeri bulsun.
+UPLOAD_DIR="$OUTPUT/wwwroot/uploads"
+if [ -d "$UPLOAD_DIR" ]; then
+  REMOVED=$(find "$UPLOAD_DIR" -type f ! -name ".gitkeep" | wc -l | tr -d ' ')
+  find "$UPLOAD_DIR" -type f ! -name ".gitkeep" -delete
+  if [ "$REMOVED" -gt 0 ]; then
+    echo "🔒 $REMOVED kullanıcı dosyası pakete dahil edilmedi (klasör yapısı korundu)."
+  fi
+fi
+
 # ── 4. Duplicate dosyaları temizle ───────────────────────────────────────────
 echo "▶ [4/5] Duplicate dosyalar temizleniyor..."
 DUPES=$(find "$OUTPUT" -name "* [0-9]*.*" 2>/dev/null | wc -l | tr -d ' ')

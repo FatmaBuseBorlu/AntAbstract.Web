@@ -903,10 +903,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     file.Length
                 );
 
+                // Buraya gelindiyse dosya doğrulamayı geçmiştir; sorun diske
+                // yazmakta (izin, kota, yol). Kullanıcıyı dosyasını değiştirmeye
+                // yönlendirmek yanlış olur.
                 return (
                     false,
                     null,
-                    "Profil resmi yüklenirken bir hata oluştu. Lütfen dosya formatını kontrol ediniz veya daha küçük bir dosya deneyiniz."
+                    "Profil resmi sunucuya kaydedilemedi. Dosyanızda bir sorun yok; " +
+                    "lütfen birazdan tekrar deneyin. Sorun sürerse yöneticiyle iletişime geçin."
                 );
             }
         }
