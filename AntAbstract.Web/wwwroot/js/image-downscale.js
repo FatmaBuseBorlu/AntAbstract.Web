@@ -1,22 +1,23 @@
 // Profil fotoğrafını gönderilmeden önce tarayıcıda küçültür.
 //
-// Telefon kameraları 15-20 MB'lık JPEG üretiyor ve kullanıcılar sunucudaki
-// boyut sınırına takılıp kayıt olamıyordu. Fotoğrafı burada ölçekleyerek
-// hem sınır sorunu ortadan kalkıyor hem de mobil bağlantıda yükleme hızlanıyor.
+// Telefon kameraları 20 MB'ı aşan JPEG üretiyor; küçültme olmadan kullanıcılar
+// sunucudaki boyut sınırına takılıp kayıt olamıyordu. Fotoğrafı burada
+// ölçekleyince sınır pratikte hiç devreye girmiyor, mobil yükleme de hızlanıyor.
 //
-// Sunucudaki doğrulama yerinde duruyor; bu yalnızca kullanıcıyı rahatlatan
-// bir ön adım, güvenlik kontrolü değil.
+// Sunucudaki doğrulama yerinde duruyor; bu yalnızca kullanıcıyı rahatlatan bir
+// ön adım, güvenlik kontrolü değil. Bu yüzden her hata durumunda sessizce
+// orijinal dosyaya dönülür — kullanıcı asla burada takılmamalı.
 (function () {
     "use strict";
 
     var MAX_EDGE = 1024;      // uzun kenar (piksel)
     var QUALITY = 0.85;       // JPEG kalitesi
     var SKIP_BELOW = 1048576; // 1 MB altındakilere dokunma
+    var MIN_PLAUSIBLE = 2048; // bundan küçük çıktı bozuk sayılır (boş tuval)
 
-    function canDownscale() {
+    function supported() {
         return typeof HTMLCanvasElement !== "undefined" &&
-               typeof DataTransfer !== "undefined" &&
-               typeof FileReader !== "undefined";
+               typeof DataTransfer !== "undefined";
     }
 
     function formatSize(bytes) {
@@ -38,20 +39,91 @@
     }
 
     function replaceFile(input, blob, originalName, originalSize) {
-        var name = originalName.replace(/\.[^.]+$/, "") + ".jpg";
-        var file = new File([blob], name, {
-            type: "image/jpeg",
-            lastModified: Date.now()
+        try {
+            var file = new File(
+                [blob],
+                originalName.replace(/\.[^.]+$/, "") + ".jpg",
+                { type: "image/jpeg", lastModified: Date.now() });
+
+            var transfer = new DataTransfer();
+            transfer.items.add(file);
+            input.files = transfer.files;
+
+            showNote(
+                input,
+                "Fotoğraf otomatik küçültüldü: " +
+                formatSize(originalSize) + " → " + formatSize(file.size));
+        } catch (e) {
+            // Dosya değiştirilemedi: orijinal gönderilir, sunucu karar verir.
+        }
+    }
+
+    /// Kaynağı ölçekleyip JPEG blob üretir. Başarısızlıkta null döner.
+    function toScaledBlob(source, width, height, done) {
+        var scale = Math.min(1, MAX_EDGE / Math.max(width, height));
+
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
+
+        var ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+            done(null);
+            return;
+        }
+
+        // Şeffaf PNG'ler JPEG'e siyah dönmesin.
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        try {
+            ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+        } catch (e) {
+            done(null);
+            return;
+        }
+
+        canvas.toBlob(function (blob) { done(blob); }, "image/jpeg", QUALITY);
+    }
+
+    function finish(input, blob, originalName, originalSize) {
+        // Bozuk/boş tuval küçük bir blob üretebilir; bu durumda orijinali koru.
+        if (!blob || blob.size < MIN_PLAUSIBLE || blob.size >= originalSize) {
+            return;
+        }
+
+        replaceFile(input, blob, originalName, originalSize);
+    }
+
+    function viaImageBitmap(file, input) {
+        // createImageBitmap bellek açısından daha verimli ve daha çok format
+        // çözüyor; büyük fotoğraflarda <img> yolundan güvenilir.
+        createImageBitmap(file).then(function (bitmap) {
+            toScaledBlob(bitmap, bitmap.width, bitmap.height, function (blob) {
+                finish(input, blob, file.name, file.size);
+                if (bitmap.close) { bitmap.close(); }
+            });
+        }).catch(function () {
+            viaImageElement(file, input);
         });
+    }
 
-        var transfer = new DataTransfer();
-        transfer.items.add(file);
-        input.files = transfer.files;
+    function viaImageElement(file, input) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
 
-        showNote(
-            input,
-            "Fotoğraf otomatik küçültüldü: " +
-            formatSize(originalSize) + " → " + formatSize(file.size));
+        img.onload = function () {
+            toScaledBlob(img, img.naturalWidth, img.naturalHeight, function (blob) {
+                finish(input, blob, file.name, file.size);
+                URL.revokeObjectURL(url);
+            });
+        };
+
+        // Çözülemeyen format (ör. HEIC): orijinal gönderilir.
+        img.onerror = function () { URL.revokeObjectURL(url); };
+
+        img.src = url;
     }
 
     function handle(input) {
@@ -61,51 +133,23 @@
             return;
         }
 
-        var originalName = file.name;
-        var originalSize = file.size;
-        var reader = new FileReader();
-
-        reader.onload = function (e) {
-            var img = new Image();
-
-            img.onload = function () {
-                var scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
-
-                // Zaten küçükse yeniden kodlamak yine de boyutu düşürür,
-                // bu yüzden ölçek 1 olsa da devam ediyoruz.
-                var canvas = document.createElement("canvas");
-                canvas.width = Math.round(img.width * scale);
-                canvas.height = Math.round(img.height * scale);
-
-                var ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                canvas.toBlob(function (blob) {
-                    // Küçültme işe yaramadıysa orijinali bırak.
-                    if (blob && blob.size < originalSize) {
-                        replaceFile(input, blob, originalName, originalSize);
-                    }
-                }, "image/jpeg", QUALITY);
-            };
-
-            img.onerror = function () { /* bozuk görsel: sunucu yakalar */ };
-            img.src = e.target.result;
-        };
-
-        reader.onerror = function () { /* okunamadı: sunucu yakalar */ };
-        reader.readAsDataURL(file);
+        if (typeof createImageBitmap === "function") {
+            viaImageBitmap(file, input);
+        } else {
+            viaImageElement(file, input);
+        }
     }
 
     function attach() {
-        if (!canDownscale()) {
+        if (!supported()) {
             return;
         }
 
-        var inputs = document.querySelectorAll('input[type="file"][data-downscale]');
-
-        Array.prototype.forEach.call(inputs, function (input) {
-            input.addEventListener("change", function () { handle(input); });
-        });
+        Array.prototype.forEach.call(
+            document.querySelectorAll('input[type="file"][data-downscale]'),
+            function (input) {
+                input.addEventListener("change", function () { handle(input); });
+            });
     }
 
     if (document.readyState === "loading") {

@@ -74,9 +74,9 @@ public sealed class UploadFileValidatorTests
     [Fact]
     public async Task ValidateAsync_RejectsImageAboveProfileLimit()
     {
-        // Sınır 20 MB'a çıkarıldı: telefon fotoğrafları 2 MB'ı aştığı için
-        // kullanıcılar kayıt olamıyordu.
-        var bytes = new byte[(20 * 1024 * 1024) + 1];
+        // Sınır 45 MB: fotoğraf normalde tarayıcıda küçültülüyor, buradaki
+        // değer yalnızca küçültme yapılamadığı durumlar için emniyet ağı.
+        var bytes = new byte[(45 * 1024 * 1024) + 1];
         bytes[0] = 0xFF;
         bytes[1] = 0xD8;
         bytes[2] = 0xFF;

@@ -136,7 +136,7 @@ public sealed class RegistrationFlowTests : IClassFixture<AuthenticatedTestFacto
     {
         var email = $"buyuk-{Guid.NewGuid():N}@test.local";
 
-        var (response, _) = await RegisterAsync(email, 21 * 1024 * 1024);
+        var (response, _) = await RegisterAsync(email, 46 * 1024 * 1024);
 
         _output.WriteLine($"{(int)response.StatusCode} büyük fotoğraf");
 

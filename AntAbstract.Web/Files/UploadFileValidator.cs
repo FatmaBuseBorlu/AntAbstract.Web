@@ -23,13 +23,14 @@ public sealed class UploadFileValidator : IUploadFileValidator
             [UploadFileProfile.ProceedingBookPdf] = new(
                 50 * 1024 * 1024,
                 new[] { ".pdf" }),
-            // Telefon kameraları 15-20 MB'lık JPEG üretebiliyor; düşük sınır
-            // kullanıcıyı kayıt olamaz hale getiriyordu.
+            // Fotoğraf normalde tarayıcıda küçültülüyor; buradaki sınır yalnızca
+            // küçültme yapılamadığı durumlar için emniyet ağı. Kayıt olmayı bir
+            // fotoğraf yüzünden engellememek için tavana (52 MB) yakın tutuldu.
             [UploadFileProfile.RegistrationProfileImage] = new(
-                20 * 1024 * 1024,
+                45 * 1024 * 1024,
                 new[] { ".jpg", ".jpeg", ".png", ".webp" }),
             [UploadFileProfile.ProfileImage] = new(
-                20 * 1024 * 1024,
+                45 * 1024 * 1024,
                 new[] { ".jpg", ".jpeg", ".png", ".webp" }),
             [UploadFileProfile.ConferenceImage] = new(
                 5 * 1024 * 1024,

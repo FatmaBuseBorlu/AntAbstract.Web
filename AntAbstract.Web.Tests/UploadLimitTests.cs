@@ -51,12 +51,27 @@ public sealed class UploadLimitTests(ITestOutputHelper output)
     [InlineData(UploadFileProfile.ProfileImage)]
     public async Task OversizedPhoto_IsStillRejected(UploadFileProfile profile)
     {
-        var result = await Validator.ValidateAsync(MakeJpeg(21 * 1024 * 1024), profile);
+        var result = await Validator.ValidateAsync(MakeJpeg(46 * 1024 * 1024), profile);
 
-        output.WriteLine($"{profile}: 21 MB -> {(result.IsValid ? "kabul" : result.Error.ToString())}");
+        output.WriteLine($"{profile}: 46 MB -> {(result.IsValid ? "kabul" : result.Error.ToString())}");
 
         Assert.False(result.IsValid);
         Assert.Equal(UploadValidationError.TooLarge, result.Error);
+    }
+
+    /// <summary>
+    /// Tarayıcıda küçültme yapılamazsa fotoğraf olduğu gibi gelir; bu durumda
+    /// bile kayıt engellenmemeli.
+    /// </summary>
+    [Fact]
+    public async Task UnscaledLargePhoto_IsStillAccepted()
+    {
+        var result = await Validator.ValidateAsync(
+            MakeJpeg(30 * 1024 * 1024), UploadFileProfile.RegistrationProfileImage);
+
+        output.WriteLine($"küçültülmemiş 30 MB -> {(result.IsValid ? "kabul" : result.Error.ToString())}");
+
+        Assert.True(result.IsValid, "Küçültülemeyen 30 MB'lık fotoğraf kaydı engelliyor.");
     }
 
     /// <summary>

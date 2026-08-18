@@ -850,7 +850,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 var errorMessage = validation.Error switch
                 {
                     UploadValidationError.TooLarge =>
-                        "Profil resmi en fazla 20 MB olabilir.",
+                        "Profil resmi en fazla 45 MB olabilir.",
                     UploadValidationError.InvalidExtension =>
                         "Profil resmi yalnızca JPG, JPEG, PNG veya WEBP formatında olabilir.",
                     _ =>
