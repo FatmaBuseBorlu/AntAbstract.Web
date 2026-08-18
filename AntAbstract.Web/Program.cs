@@ -50,8 +50,25 @@ builder.Services.AddSingleton<Ganss.Xss.HtmlSanitizer>(sp =>
 
 #region 1. Veritaban� ve Temel Servisler
 
+var connectionString = builder.Configuration.GetConnectionString("Default");
+
+// Deploy sırasında appsettings.Production.json'daki #{TOKEN}# yer tutucuları
+// doldurulmazsa (ya da dosya paket tarafından ezilirse) uygulama açılıyor ama
+// her istek boş bir 500 ile düşüyor ve nedeni hiçbir yerde görünmüyor.
+// Bu kontrol nedeni loga net yazar.
+if (string.IsNullOrWhiteSpace(connectionString) || connectionString.Contains("#{"))
+{
+    LoggerFactory.Create(b => b.AddConsole())
+        .CreateLogger("Startup")
+        .LogCritical(
+            "ConnectionStrings:Default ayarlanmamış (değer: '{Value}'). " +
+            "Sunucudaki appsettings.Production.json içindeki #{{...}}# yer tutucularını " +
+            "gerçek değerlerle doldurun; aksi halde tüm sayfalar 500 döner.",
+            connectionString ?? "(boş)");
+}
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    opt.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<IApplicationDbContext>(sp =>
     sp.GetRequiredService<AppDbContext>());
