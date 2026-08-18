@@ -70,8 +70,8 @@
         : "ORCID ile devam ediyorsunuz. Ayrıca sistem hesabınız için bir şifre belirleyiniz.";
 
     var profileImageHintText = isEnglish
-        ? "Please upload a profile photo in JPG, JPEG, PNG or WEBP format. Maximum file size is 10 MB."
-        : "JPG, JPEG, PNG veya WEBP formatında profil resmi yükleyiniz. Maksimum dosya boyutu 10 MB olmalıdır.";
+        ? "Upload a profile photo in JPG, JPEG, PNG or WEBP format. Large photos are resized automatically."
+        : "JPG, JPEG, PNG veya WEBP formatında profil resmi yükleyiniz. Büyük fotoğraflar otomatik küçültülür.";
 }
 
 <!DOCTYPE html>
@@ -1026,7 +1026,8 @@
                             <input asp-for="Input.ProfileImage"
                                    type="file"
                                    class="form-control form-control-sm"
-                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                   data-downscale />
 
                             <small class="text-muted" style="font-size: 0.7rem;">
                                 @profileImageHintText
@@ -1245,5 +1246,6 @@
     </script>
 
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/image-downscale.js" asp-append-version="true"></script>
 </body>
 </html>

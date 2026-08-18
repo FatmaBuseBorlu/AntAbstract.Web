@@ -98,6 +98,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var conference = await GetConferenceAsync(slug, model.ConferenceId != Guid.Empty ? model.ConferenceId : null);
             if (conference == null) return NotFound();
 
+            // Navigasyon alanı formdan gelmez; nullable açık olduğu için MVC
+            // bunu zorunlu sayıyor ve doğrulama hiçbir zaman geçmiyordu.
+            ModelState.Remove(nameof(InvitedSpeaker.Conference));
+
             if (!ModelState.IsValid)
             {
                 SetViewBag(conference, slug);
@@ -141,6 +145,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (existing == null) return NotFound();
+
+            // Navigasyon alanı formdan gelmez; nullable açık olduğu için MVC
+            // bunu zorunlu sayıyor ve doğrulama hiçbir zaman geçmiyordu.
+            ModelState.Remove(nameof(InvitedSpeaker.Conference));
 
             if (!ModelState.IsValid)
             {
