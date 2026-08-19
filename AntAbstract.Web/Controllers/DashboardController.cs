@@ -274,12 +274,18 @@ namespace AntAbstract.Web.Controllers
 
         private IQueryable<Guid> GetUserConferenceIds(string userId)
         {
+            // Bu ekranların adresinde kurum slug'ı yok; global kurum bağlamı
+            // yalnızca SuperAdmin için açıldığından normal kullanıcıda kurum
+            // filtresi tüm satırları eliyor ve kullanıcı kendi kongrelerini
+            // göremiyordu. Kapsam zaten kullanıcı kimliğiyle sağlanıyor.
             var registrationIds = _context.Registrations
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(r => r.AppUserId == userId)
                 .Select(r => r.ConferenceId);
 
             var submissionIds = _context.Submissions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(s => s.AuthorId == userId)
                 .Select(s => s.ConferenceId);
@@ -448,7 +454,9 @@ namespace AntAbstract.Web.Controllers
         {
             var today = DateTime.UtcNow.Date;
 
+            // Kayıt açık kongreler global ekranlarda da listelenmeli.
             return await _context.RegistrationTypes
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(rt =>
                     rt.IsActive &&
@@ -1182,6 +1190,7 @@ namespace AntAbstract.Web.Controllers
                     .ToListAsync();
 
                 var registeredConferenceIds = await _context.Registrations
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Where(r => r.AppUserId == user.Id)
                     .Select(r => r.ConferenceId)
@@ -1189,6 +1198,7 @@ namespace AntAbstract.Web.Controllers
                     .ToListAsync();
 
                 var submittedConferenceIds = await _context.Submissions
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Where(s => s.AuthorId == user.Id)
                     .Select(s => s.ConferenceId)
@@ -1196,6 +1206,7 @@ namespace AntAbstract.Web.Controllers
                     .ToListAsync();
 
                 registeredConferences = await _context.Conferences
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Where(c => myConferenceIds.Contains(c.Id))
@@ -1205,6 +1216,7 @@ namespace AntAbstract.Web.Controllers
                 var registrationOpenConferenceIds = await GetRegistrationOpenConferenceIdsAsync();
 
                 registrationAvailableConferences = await _context.Conferences
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Where(c =>
@@ -1215,6 +1227,7 @@ namespace AntAbstract.Web.Controllers
                     .ToListAsync();
 
                 submissionAvailableConferences = await _context.Conferences
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Where(c =>
