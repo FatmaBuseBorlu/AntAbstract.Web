@@ -29,7 +29,9 @@ public class AdminTenantAuthorizationTests
     [InlineData("AuditLogsController", AdminPolicies.TenantAdmin)]
     [InlineData("CertificatesController", AdminPolicies.TenantAdminOnly)]
     [InlineData("ConferenceContextController", AdminPolicies.TenantAdminOnly)]
-    [InlineData("ConferenceTopicsController", AdminPolicies.TenantAdminOnly)]
+    // Özet gönderiminde konu seçimi zorunlu; konu tanımlanamazsa bildiri
+    // hiç gönderilemiyor. Bu ekran SuperAdmin'e de açık olmalı.
+    [InlineData("ConferenceTopicsController", AdminPolicies.TenantAdmin)]
     // Kayıt türü tanımlı olmayan kongreye kimse kaydolamıyor; bu ekran
     // TenantAdminOnly olduğu için SuperAdmin kayıt türü ekleyemiyordu.
     [InlineData("RegistrationTypesController", AdminPolicies.TenantAdmin)]
