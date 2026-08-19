@@ -128,6 +128,21 @@ public sealed class AuthorMenuTests : IClassFixture<AuthenticatedTestFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>
+    /// Konaklama sayfası kongre adresinden doğrudan açılmalı. Adresteki slug
+    /// kongreye ait; kontrol yalnızca kurum slug'ıyla karşılaştırdığı için
+    /// eşleşmiyor ve kullanıcı Kongrelerim'e atılıyordu.
+    /// </summary>
+    [Fact]
+    public async Task Accommodation_OpensDirectly_FromConferenceUrl()
+    {
+        var response = await _client.GetAsync($"/{ConfSlug}/Accommodation/Index");
+
+        _output.WriteLine($"{(int)response.StatusCode} konaklama");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Theory]
     [MemberData(nameof(AuthorMenuLinks))]
     public async Task AuthorMenuLink_IsReachable(string label, string url)

@@ -66,8 +66,20 @@ namespace AntAbstract.Web.Controllers
 
             if (!string.IsNullOrWhiteSpace(slug))
             {
-                if (_tenantContext.Current == null ||
-                    !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
+                // Menüdeki bağlantı kongre slug'ı taşıyor; burada yalnızca kurum
+                // slug'ı ile karşılaştırıldığı için eşleşmiyor ve kullanıcı
+                // "Geçerli bir kongre seçiniz" ile Kongrelerim'e atılıyordu.
+                var matchesTenant =
+                    _tenantContext.Current != null &&
+                    string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase);
+
+                var urlConference = _tenantContext.CurrentConference;
+
+                var matchesConference =
+                    urlConference != null &&
+                    string.Equals(urlConference.Slug, slug, StringComparison.OrdinalIgnoreCase);
+
+                if (!matchesTenant && !matchesConference)
                 {
                     TempData["ErrorMessage"] = T(
                         "Error_InvalidConference",
@@ -76,8 +88,17 @@ namespace AntAbstract.Web.Controllers
                     return Redirect("/Dashboard/MyConferences");
                 }
 
-                conferenceQuery = conferenceQuery
-                    .Where(c => c.TenantId == _tenantContext.Current.Id);
+                // Adres doğrudan bir kongreye işaret ediyorsa onu kullan.
+                if (matchesConference)
+                {
+                    selectedConferenceId = urlConference!.Id;
+                }
+
+                if (_tenantContext.Current != null)
+                {
+                    conferenceQuery = conferenceQuery
+                        .Where(c => c.TenantId == _tenantContext.Current.Id);
+                }
             }
 
             Conference? conference = null;
