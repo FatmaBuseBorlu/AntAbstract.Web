@@ -30,7 +30,9 @@ public class AdminTenantAuthorizationTests
     [InlineData("CertificatesController", AdminPolicies.TenantAdminOnly)]
     [InlineData("ConferenceContextController", AdminPolicies.TenantAdminOnly)]
     [InlineData("ConferenceTopicsController", AdminPolicies.TenantAdminOnly)]
-    [InlineData("RegistrationTypesController", AdminPolicies.TenantAdminOnly)]
+    // Kayıt türü tanımlı olmayan kongreye kimse kaydolamıyor; bu ekran
+    // TenantAdminOnly olduğu için SuperAdmin kayıt türü ekleyemiyordu.
+    [InlineData("RegistrationTypesController", AdminPolicies.TenantAdmin)]
     [InlineData("RegistrationsController", AdminPolicies.TenantAdminOnly)]
     [InlineData("ReportsController", AdminPolicies.TenantAdminOnly)]
     [InlineData("WebsiteController", AdminPolicies.TenantAdminOnly)]
