@@ -605,12 +605,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            // Kanonik slug kurum slug'ı olduğu için yönlendirmeden sonra hangi
+            // kongre olduğu bilgisi kayboluyordu; kurumda birden fazla kongre
+            // varsa en yeni tarihli seçiliyor ve kullanıcı kaydolmadığı kongreye
+            // düşüp "önce kayıt olun" ile geri atılıyordu. Bu yüzden kongreyi
+            // yönlendirmeden ÖNCE hatırlıyoruz.
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
             if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
-
-            SetSelectedConferenceSession(conference, canonicalSlug);
 
             var redirectResult = await EnsureUserCanCreateSubmissionAsync(user, conference, canonicalSlug);
 
@@ -668,12 +673,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            // Kanonik slug kurum slug'ı olduğu için yönlendirmeden sonra hangi
+            // kongre olduğu bilgisi kayboluyordu; kurumda birden fazla kongre
+            // varsa en yeni tarihli seçiliyor ve kullanıcı kaydolmadığı kongreye
+            // düşüp "önce kayıt olun" ile geri atılıyordu. Bu yüzden kongreyi
+            // yönlendirmeden ÖNCE hatırlıyoruz.
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
             if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
-
-            SetSelectedConferenceSession(conference, canonicalSlug);
 
             var redirectResult = await EnsureUserCanCreateSubmissionAsync(user, conference, canonicalSlug);
 
