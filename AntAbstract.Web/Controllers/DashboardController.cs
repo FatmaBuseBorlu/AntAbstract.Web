@@ -965,7 +965,12 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
-            var selectedConferenceId = GetSelectedConferenceId();
+            // Adres bir kongreye işaret ediyorsa onu kullan; yalnızca oturuma
+            // bakmak, kullanıcı kongre sayfasından gelse bile "önce kongre seçin"
+            // deyip Kongrelerim'e atıyordu. Erişim yetkisi aşağıda ayrıca kontrol
+            // edildiği için adresten gelmesi bir gevşetme değil.
+            var selectedConferenceId =
+                _tenantContext.CurrentConference?.Id ?? GetSelectedConferenceId();
 
             if (!selectedConferenceId.HasValue || selectedConferenceId.Value == Guid.Empty)
             {

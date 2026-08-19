@@ -25,14 +25,30 @@ public sealed class TestAuthHandler(
 {
     public const string SchemeName = "TestScheme";
 
+    /// <summary>
+    /// Rolü ve kullanıcı kimliğini istek başlıklarıyla değiştirebilmek, yazar
+    /// veya hakem gözünden gezinen testler yazmayı mümkün kılıyor.
+    /// Başlık yoksa varsayılan SuperAdmin kimliği kullanılır.
+    /// </summary>
+    public const string RoleHeader = "X-Test-Role";
+    public const string UserIdHeader = "X-Test-UserId";
+
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        var role = Request.Headers.TryGetValue(RoleHeader, out var r) && !string.IsNullOrWhiteSpace(r)
+            ? r.ToString()
+            : "SuperAdmin";
+
+        var userId = Request.Headers.TryGetValue(UserIdHeader, out var u) && !string.IsNullOrWhiteSpace(u)
+            ? u.ToString()
+            : "test-superadmin";
+
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, "test-superadmin"),
-            new Claim(ClaimTypes.Name, "test@antabstract.local"),
-            new Claim(ClaimTypes.Email, "test@antabstract.local"),
-            new Claim(ClaimTypes.Role, "SuperAdmin")
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Name, userId + "@antabstract.local"),
+            new Claim(ClaimTypes.Email, userId + "@antabstract.local"),
+            new Claim(ClaimTypes.Role, role)
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);
