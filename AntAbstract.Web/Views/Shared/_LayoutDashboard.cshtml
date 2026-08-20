@@ -1756,7 +1756,10 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 }
             }
 
-            @if (!isSuperAdmin && isManagementTeam)
+            @* Kayıt Türleri ve Bildiri Konuları Sistem Yöneticisine de gerekli;
+   blok eskiden SuperAdmin'i tümüyle dışlıyordu. Hâlâ erişemediği
+   ekranlar aşağıda tek tek gizleniyor ki ölü bağlantı olmasın. *@
+@if (isManagementTeam)
             {
                 @if (hasSelectedConference)
                 {
@@ -1800,21 +1803,29 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         @L("Management_Referees", "Hakemler")
                     </a>
 
-                    <a href="@certificatesIndexUrl"
-                       class="nav-link @(currentController == "Certificates" ? "active" : "")">
-                        <i class="fas fa-certificate text-success"></i>
-                        @L("Management_Certificates", "Sertifikalar")
-                    </a>
+                    @* Bu ekran hâlâ TenantAdminOnly; SuperAdmin açamıyor. *@
+                    @if (!isSuperAdmin)
+                    {
+                        <a href="@certificatesIndexUrl"
+                           class="nav-link @(currentController == "Certificates" ? "active" : "")">
+                            <i class="fas fa-certificate text-success"></i>
+                            @L("Management_Certificates", "Sertifikalar")
+                        </a>
+                    }
 
                     <div class="menu-label text-danger">
                         @L("Section_RegistrationProgram", "Kayıt ve Program")
                     </div>
 
-                    <a href="@registrationsUrl"
-                       class="nav-link @(currentController == "Registrations" ? "active" : "")">
-                        <i class="fas fa-credit-card text-info"></i>
-                        @L("System_RegistrationsPayments", "Kayıtlar ve Ödemeler")
-                    </a>
+                    @* Bu ekran hâlâ TenantAdminOnly; SuperAdmin açamıyor. *@
+                    @if (!isSuperAdmin)
+                    {
+                        <a href="@registrationsUrl"
+                           class="nav-link @(currentController == "Registrations" ? "active" : "")">
+                            <i class="fas fa-credit-card text-info"></i>
+                            @L("System_RegistrationsPayments", "Kayıtlar ve Ödemeler")
+                        </a>
+                    }
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Payments/FinanceSummary?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Payments/FinanceSummary?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Payments" && currentAction == "FinanceSummary" ? "active" : "")">
@@ -1870,11 +1881,15 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         Değerlendirme Kriterleri
                     </a>
 
-                    <a href="@reportsUrl"
-                       class="nav-link @(currentController == "Reports" ? "active" : "")">
-                        <i class="fas fa-chart-pie text-warning"></i>
-                        @L("Management_Reports", "Raporlar")
-                    </a>
+                    @* Bu ekran hâlâ TenantAdminOnly; SuperAdmin açamıyor. *@
+                    @if (!isSuperAdmin)
+                    {
+                        <a href="@reportsUrl"
+                           class="nav-link @(currentController == "Reports" ? "active" : "")">
+                            <i class="fas fa-chart-pie text-warning"></i>
+                            @L("Management_Reports", "Raporlar")
+                        </a>
+                    }
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Admin/Broadcast" : $"/{slug}/Admin/Broadcast")"
                        class="nav-link @(currentController == "Broadcast" ? "active" : "")">
@@ -1888,11 +1903,15 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         @L("Tools_PermissionMatrix", "Yetki Matrisi")
                     </a>
 
-                    <a href="@websiteAdminUrl"
-                       class="nav-link @(currentController == "Website" ? "active" : "")">
-                        <i class="fas fa-pen-to-square text-success"></i>
-                        @L("System_WebsiteManagement", "Website Yönetimi")
-                    </a>
+                    @* Bu ekran hâlâ TenantAdminOnly; SuperAdmin açamıyor. *@
+                    @if (!isSuperAdmin)
+                    {
+                        <a href="@websiteAdminUrl"
+                           class="nav-link @(currentController == "Website" ? "active" : "")">
+                            <i class="fas fa-pen-to-square text-success"></i>
+                            @L("System_WebsiteManagement", "Website Yönetimi")
+                        </a>
+                    }
                 }
                 else
                 {

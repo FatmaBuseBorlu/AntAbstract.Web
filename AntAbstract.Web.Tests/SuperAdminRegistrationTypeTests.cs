@@ -76,6 +76,43 @@ public sealed class SuperAdminRegistrationTypeTests : IClassFixture<Authenticate
         Assert.Contains(ConferenceId.ToString(), html, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Kongre seçildikten sonra sol menüde Kayıt Türleri ve Bildiri Konuları
+    /// görünmeli. Menü bloğu eskiden !isSuperAdmin koşulundaydı, yani bu
+    /// bağlantılar Sistem Yöneticisine hiç gösterilmiyordu.
+    /// </summary>
+    [Fact]
+    public async Task AfterSelectingConference_MenuShowsConfigLinks()
+    {
+        var page = await _client.GetAsync("/Admin/RegistrationTypes");
+        var token = Regex.Match(
+            await page.Content.ReadAsStringAsync(),
+            "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+        var selected = await _client.PostAsync(
+            "/Admin/RegistrationTypes/Select",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["conferenceId"] = ConferenceId.ToString()
+            }));
+
+        Assert.Equal(HttpStatusCode.Redirect, selected.StatusCode);
+
+        var listing = await _client.GetAsync($"/{Slug}/Admin/RegistrationTypes");
+        Assert.Equal(HttpStatusCode.OK, listing.StatusCode);
+
+        var html = await listing.Content.ReadAsStringAsync();
+
+        var hasTypes = html.Contains("/Admin/RegistrationTypes");
+        var hasTopics = html.Contains("/Admin/ConferenceTopics");
+
+        _output.WriteLine($"menüde Kayıt Türleri: {hasTypes}, Bildiri Konuları: {hasTopics}");
+
+        Assert.True(hasTypes, "Kayıt Türleri menüde görünmüyor.");
+        Assert.True(hasTopics, "Bildiri Konuları menüde görünmüyor.");
+    }
+
     /// <summary>Asıl akış: kayıt türü gerçekten oluşturulabilmeli.</summary>
     [Fact]
     public async Task RegistrationType_CanBeCreated()
