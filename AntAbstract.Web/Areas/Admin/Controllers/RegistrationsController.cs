@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class RegistrationsController : Controller
     {
         private readonly AppDbContext _context;
@@ -42,12 +42,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
+        private bool IsSuperAdmin()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<bool> CanAccessCurrentTenantAsync(string slug)
         {
             return await _tenantAccess.CanAccessCurrentTenantAsync(
                 User,
                 slug,
-                allowSuperAdmin: false);
+                allowSuperAdmin: true);
         }
 
         private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
@@ -160,27 +165,34 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            return await _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current!.Id);
+            // Erişim kısıtı burada değil, erişilebilir kongre sorgusunda:
+            // kurum admini yalnızca kendi kongrelerini, SuperAdmin hepsini görür.
+            var accessible = await GetAccessibleConferenceQueryAsync();
+
+            return await accessible
+                .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
         }
 
         [HttpGet("/Admin/Registrations")]
         public async Task<IActionResult> SelectConference(string? returnUrl = null)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
+            // SuperAdmin bir kuruma bağlı değildir; erişilebilir kongre sorgusu
+            // onun için zaten tüm kongreleri döndürüyor.
+            Guid? tenantId = null;
 
-            if (!tenantId.HasValue)
+            if (!IsSuperAdmin())
             {
-                TempData["ErrorMessage"] = "Admin hesabınıza bağlı kurum bulunamadı.";
+                tenantId = await GetCurrentAdminTenantIdAsync();
 
-                return Redirect("/Dashboard/MyConferences");
+                if (!tenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = "Admin hesabınıza bağlı kurum bulunamadı.";
+
+                    return Redirect("/Dashboard/MyConferences");
+                }
             }
 
-            var selectedId = GetSelectedConferenceId(tenantId.Value);
+            var selectedId = GetSelectedConferenceId(tenantId);
 
             if (selectedId.HasValue && selectedId.Value != Guid.Empty)
             {

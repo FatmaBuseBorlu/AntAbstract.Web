@@ -27,7 +27,10 @@ public class AdminTenantAuthorizationTests
     [InlineData("SessionController", AdminPolicies.TenantAdmin)]
     [InlineData("SubmissionsController", AdminPolicies.TenantAdmin)]
     [InlineData("AuditLogsController", AdminPolicies.TenantAdmin)]
-    [InlineData("CertificatesController", AdminPolicies.TenantAdminOnly)]
+    // Sertifika, kayıt, rapor ve website ekranları kongre yönetiminin ayrılmaz
+    // parçası; TenantAdminOnly oldukları sürece SuperAdmin menüde bile
+    // göremiyordu. Kapsam kurum kimliği yerine erişilebilir kongre sorgusunda.
+    [InlineData("CertificatesController", AdminPolicies.TenantAdmin)]
     [InlineData("ConferenceContextController", AdminPolicies.TenantAdminOnly)]
     // Özet gönderiminde konu seçimi zorunlu; konu tanımlanamazsa bildiri
     // hiç gönderilemiyor. Bu ekran SuperAdmin'e de açık olmalı.
@@ -35,9 +38,9 @@ public class AdminTenantAuthorizationTests
     // Kayıt türü tanımlı olmayan kongreye kimse kaydolamıyor; bu ekran
     // TenantAdminOnly olduğu için SuperAdmin kayıt türü ekleyemiyordu.
     [InlineData("RegistrationTypesController", AdminPolicies.TenantAdmin)]
-    [InlineData("RegistrationsController", AdminPolicies.TenantAdminOnly)]
-    [InlineData("ReportsController", AdminPolicies.TenantAdminOnly)]
-    [InlineData("WebsiteController", AdminPolicies.TenantAdminOnly)]
+    [InlineData("RegistrationsController", AdminPolicies.TenantAdmin)]
+    [InlineData("ReportsController", AdminPolicies.TenantAdmin)]
+    [InlineData("WebsiteController", AdminPolicies.TenantAdmin)]
     public void TenantAdminControllers_UseCentralPolicy(
         string controllerName,
         string expectedPolicy)

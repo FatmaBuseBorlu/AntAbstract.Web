@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class WebsiteController : Controller
     {
         private const int MaxContentJsonLength = 10000;
@@ -89,12 +89,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
+        private bool IsSuperAdmin()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<bool> CanAccessCurrentTenantAsync(string? slug = null)
         {
             return await _tenantAccess.CanAccessCurrentTenantAsync(
                 User,
                 slug,
-                allowSuperAdmin: false);
+                allowSuperAdmin: true);
+        }
+
+        /// <summary>
+        /// Kurum eşleşmesi yalnızca kurum adminleri için aranır; SuperAdmin
+        /// hiçbir kuruma bağlı değil (TenantId = null) ve bu kontrol onu her
+        /// kongrede dışarıda bırakıyordu. Kongrenin adresteki kuruma ait olma
+        /// şartı iki rol için de geçerli kalıyor.
+        /// </summary>
+        private async Task<bool> IsAdminOfCurrentTenantAsync(Tenant tenant)
+        {
+            if (IsSuperAdmin())
+            {
+                return true;
+            }
+
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+            return adminTenantId.HasValue && adminTenantId.Value == tenant.Id;
         }
 
         private async Task<bool> ConferenceBelongsToCurrentTenantAsync(Guid conferenceId)
@@ -106,9 +129,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var adminTenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!adminTenantId.HasValue || adminTenantId.Value != tenant.Id)
+            if (!await IsAdminOfCurrentTenantAsync(tenant))
             {
                 return false;
             }
@@ -129,9 +150,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return new List<Conference>();
             }
 
-            var adminTenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!adminTenantId.HasValue || adminTenantId.Value != tenant.Id)
+            if (!await IsAdminOfCurrentTenantAsync(tenant))
             {
                 return new List<Conference>();
             }

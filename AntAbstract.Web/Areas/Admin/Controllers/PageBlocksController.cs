@@ -59,7 +59,17 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await _tenantAccess.CanAccessCurrentTenantAsync(
                 User,
                 slug,
-                allowSuperAdmin: false);
+                allowSuperAdmin: true);
+        }
+
+        private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
+        {
+            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+
+            return query
+                .AsNoTracking()
+                .Include(c => c.Tenant)
+                .AsQueryable();
         }
 
         private async Task<Conference?> GetSelectedAccessibleConferenceAsync(string slug)
@@ -76,12 +86,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return null;
             }
 
-            return await _context.Conferences
-                .AsNoTracking()
-                .Include(c => c.Tenant)
-                .FirstOrDefaultAsync(c =>
-                    c.Id == selectedConferenceId.Value &&
-                    c.TenantId == _tenantContext.Current!.Id);
+            // Erişim kısıtı burada değil, erişilebilir kongre sorgusunda:
+            // kurum admini yalnızca kendi kongrelerini, SuperAdmin hepsini görür.
+            var accessible = await GetAccessibleConferenceQueryAsync();
+
+            return await accessible
+                .FirstOrDefaultAsync(c => c.Id == selectedConferenceId.Value);
         }
 
         private void SetSelectedConferenceSession(Conference conference)
@@ -457,7 +467,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         // =========================================================
 
         [HttpGet("/{slug}/Admin/PageBlocks")]
-        [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+        [Authorize(Policy = AdminPolicies.TenantAdmin)]
         public async Task<IActionResult> Index(string slug)
         {
             var conference = await GetSelectedAccessibleConferenceAsync(slug);
@@ -532,7 +542,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/{slug}/Admin/PageBlocks/Edit/{id:int}")]
-        [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+        [Authorize(Policy = AdminPolicies.TenantAdmin)]
         public async Task<IActionResult> Edit(string slug, int id)
         {
             if (!await CanAccessCurrentTenantAsync(slug))
@@ -589,7 +599,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpPost("/{slug}/Admin/PageBlocks/Edit/{id:int}")]
         [ValidateAntiForgeryToken]
-        [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+        [Authorize(Policy = AdminPolicies.TenantAdmin)]
         public async Task<IActionResult> Edit(
             string slug,
             int id,
