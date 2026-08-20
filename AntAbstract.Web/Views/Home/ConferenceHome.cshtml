@@ -97,7 +97,27 @@
     var isRegisteredToThisConference = Model.Conference != null
         && registeredIds.Contains(Model.Conference.Id);
 
-    var mainActionUrl = isRegisteredToThisConference
+    // Sunucu bildiri gönderimini yalnızca "açık mı" ayarına göre değil son
+    // tarihlere göre de kapatıyor. Rozet yalnızca ayara baktığı için süre
+    // dolduğunda "Aktif" yazıyor, kullanıcı butona basınca kongre anasayfasına
+    // geri atılıyordu. Bu hesap SubmissionController'daki kontrolle aynı.
+    var submissionNow = DateTime.UtcNow;
+
+    var submissionDeadlinePassed = Model.Conference != null &&
+        ((Model.Conference.FullTextSubmissionDeadline.HasValue &&
+          submissionNow > Model.Conference.FullTextSubmissionDeadline.Value) ||
+         (Model.Conference.AbstractSubmissionDeadline.HasValue &&
+          !Model.Conference.FullTextSubmissionDeadline.HasValue &&
+          submissionNow > Model.Conference.AbstractSubmissionDeadline.Value));
+
+    var canSubmitAbstract = Model.Conference != null
+        && Model.Conference.IsSubmissionOpen
+        && !submissionDeadlinePassed;
+
+    // Kayıtlı kullanıcıyı bildiri gönderime yönlendiriyoruz; ancak süre
+    // dolmuşsa sunucu onu buraya geri atıyor. Bu durumda kayıt sayfasına
+    // yönlendirmek daha doğru.
+    var mainActionUrl = isRegisteredToThisConference && canSubmitAbstract
         ? submitAbstractUrl
         : registrationUrl;
 
@@ -1340,6 +1360,32 @@
 
 </style>
 
+@* Bildiri gönderimi süresi dolduğunda kullanıcı buraya yönlendiriliyor ama
+   sebep hiçbir yerde gösterilmiyordu; sessizce atılmış gibi görünüyordu. *@
+@if (TempData["ErrorMessage"] != null || TempData["InfoMessage"] != null || TempData["SuccessMessage"] != null)
+{
+    <div class="container mt-3">
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger border-0 shadow-sm">
+                <i class="fas fa-circle-exclamation me-2"></i>@TempData["ErrorMessage"]
+            </div>
+        }
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info border-0 shadow-sm">
+                <i class="fas fa-circle-info me-2"></i>@TempData["InfoMessage"]
+            </div>
+        }
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success border-0 shadow-sm">
+                <i class="fas fa-circle-check me-2"></i>@TempData["SuccessMessage"]
+            </div>
+        }
+    </div>
+}
+
 <div class="conference-top-strip py-2 d-none d-md-block">
     <div class="container d-flex justify-content-between align-items-center">
         <div class="conference-top-title">
@@ -1508,7 +1554,7 @@
 
                         <div>
                             <small>@Localizer["AbstractSubmissionLabel"]</small>
-                            @if (Model.Conference.IsSubmissionOpen)
+                            @if (canSubmitAbstract)
                             {
                                 <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusActive"]</strong>
                             }
@@ -1529,7 +1575,7 @@
                         </div>
                     </div>
 
-                    @if (Model.Conference.IsRegistrationOpen || Model.Conference.IsSubmissionOpen)
+                    @if (Model.Conference.IsRegistrationOpen || canSubmitAbstract)
                     {
                         <a href="@mainActionUrl" class="hero-card-cta">
                             <span>
@@ -1975,7 +2021,7 @@
                 <div class="sticky-sidebar">
 
                     <div class="action-card">
-                        @if (Model.Conference.IsRegistrationOpen || Model.Conference.IsSubmissionOpen)
+                        @if (Model.Conference.IsRegistrationOpen || canSubmitAbstract)
                         {
                             <div class="action-card-badge">
                                 <i class="fas fa-circle"></i>
@@ -2014,7 +2060,7 @@
                             </div>
                             <div class="action-info-item">
                                 <span>@Localizer["AbstractLabel"]</span>
-                                @if (Model.Conference.IsSubmissionOpen)
+                                @if (canSubmitAbstract)
                                 {
                                     <strong class="text-success">@Localizer["StatusActive"]</strong>
                                 }
@@ -2042,13 +2088,13 @@
                             </a>
                         }
 
-                        @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
+                        @if (canSubmitAbstract && isRegisteredToThisConference)
                         {
                             <a href="@submitAbstractUrl" class="action-secondary-btn">
                                 <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                             </a>
                         }
-                        else if (!isRegisteredToThisConference && Model.Conference.IsSubmissionOpen)
+                        else if (!isRegisteredToThisConference && canSubmitAbstract)
                         {
                             <div class="action-secondary-btn" style="cursor:default;opacity:.65;">
                                 <i class="fas fa-info-circle me-1"></i> @Localizer["RegisterFirstForAbstract"]
@@ -2145,7 +2191,7 @@
                     @(isRegisteredToThisConference ? Localizer["ViewYourRegistration"].Value : Localizer["RegisterNowButton"].Value)
                 </a>
             }
-            @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
+            @if (canSubmitAbstract && isRegisteredToThisConference)
             {
                 <a href="@submitAbstractUrl" class="hero-secondary-btn">
                     <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
