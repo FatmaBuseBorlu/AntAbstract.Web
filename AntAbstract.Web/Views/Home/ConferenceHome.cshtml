@@ -103,12 +103,13 @@
     // geri atılıyordu. Bu hesap SubmissionController'daki kontrolle aynı.
     var submissionNow = DateTime.UtcNow;
 
-    var submissionDeadlinePassed = Model.Conference != null &&
-        ((Model.Conference.FullTextSubmissionDeadline.HasValue &&
-          submissionNow > Model.Conference.FullTextSubmissionDeadline.Value) ||
-         (Model.Conference.AbstractSubmissionDeadline.HasValue &&
-          !Model.Conference.FullTextSubmissionDeadline.HasValue &&
-          submissionNow > Model.Conference.AbstractSubmissionDeadline.Value));
+    // Yeni bildiri gönderimini özet son tarihi kapatır; özet tarihi
+    // girilmemişse tek sınır tam metin tarihi kalır.
+    var submissionDeadline = Model.Conference?.AbstractSubmissionDeadline
+                             ?? Model.Conference?.FullTextSubmissionDeadline;
+
+    var submissionDeadlinePassed = submissionDeadline.HasValue &&
+        submissionNow > submissionDeadline.Value;
 
     var canSubmitAbstract = Model.Conference != null
         && Model.Conference.IsSubmissionOpen

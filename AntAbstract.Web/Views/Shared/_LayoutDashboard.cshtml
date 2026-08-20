@@ -1694,10 +1694,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     </a>
                 }
 
-                if (isListener)
+                @* "Başvurular" başlığı yalnızca dinleyiciye basılıyordu; yazarın
+                   bildiri bağlantıları başlıksız kalıp "Genel" bölümüne yapışık
+                   görünüyordu. Başlık artık bölüm doluysa çıkıyor. *@
+                var hasSubmissionSection = isListener || (isAuthor && hasSelectedConference);
+
+                if (hasSubmissionSection)
                 {
                     <div class="menu-label">@L("Section_Submissions", "Başvurular")</div>
+                }
 
+                if (isListener)
+                {
                     <a href="@dashboardMyConferencesUrl"
                        class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
                         <i class="fas fa-calendar-check text-primary"></i>

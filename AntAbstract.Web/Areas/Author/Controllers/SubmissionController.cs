@@ -314,25 +314,36 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 return Redirect(BuildUrl(canonicalSlug, ""));
             }
 
-            // Son başvuru tarihi geçmiş mi?
+            // Bu form bir ÖZET başvurusu (başlık, özet metni, anahtar kelime),
+            // dolayısıyla sınırı özet son tarihi koyar. Tam metin son tarihi
+            // kabul edilmiş bildiriye tam metin yüklemeyi kapatıyor ve
+            // UploadFullText içinde ayrıca kontrol ediliyor.
+            //
+            // Eski koşul özet tarihini yalnızca "tam metin tarihi yoksa"
+            // uyguluyordu; iki tarih birlikte tanımlıyken —kongrelerin normal
+            // kurulumu— özet süresi hiç işlemiyor, yazar özet süresi bittikten
+            // sonra da yeni bildiri gönderebiliyordu.
             var now = DateTime.UtcNow;
-            if (conference.FullTextSubmissionDeadline.HasValue &&
-                now > conference.FullTextSubmissionDeadline.Value)
-            {
-                TempData["ErrorMessage"] = T(
-                    "SubmissionDeadlinePassed",
-                    $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
-
-                return Redirect(BuildUrl(canonicalSlug, ""));
-            }
 
             if (conference.AbstractSubmissionDeadline.HasValue &&
-                !conference.FullTextSubmissionDeadline.HasValue &&
                 now > conference.AbstractSubmissionDeadline.Value)
             {
                 TempData["ErrorMessage"] = T(
                     "AbstractDeadlinePassed",
                     $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+
+                return Redirect(BuildUrl(canonicalSlug, ""));
+            }
+
+            // Özet tarihi girilmemişse tek sınır tam metin tarihi kalıyor;
+            // yoksa gönderim hiç kapanmazdı.
+            if (!conference.AbstractSubmissionDeadline.HasValue &&
+                conference.FullTextSubmissionDeadline.HasValue &&
+                now > conference.FullTextSubmissionDeadline.Value)
+            {
+                TempData["ErrorMessage"] = T(
+                    "SubmissionDeadlinePassed",
+                    $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
 
                 return Redirect(BuildUrl(canonicalSlug, ""));
             }
