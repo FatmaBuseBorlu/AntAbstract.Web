@@ -157,6 +157,8 @@ public sealed class AuthorSubmissionMenuTests : IClassFixture<AuthenticatedTestF
     /// Bildiri gönderme adresi önce kurum slug'ına yönleniyor; asıl sonucu
     /// görmek için zinciri takip ediyoruz.
     /// </summary>
+    private string _finalUrl = string.Empty;
+
     private async Task<HttpResponseMessage> FollowAsync(string url)
     {
         var response = await _client.GetAsync(url);
@@ -169,6 +171,8 @@ public sealed class AuthorSubmissionMenuTests : IClassFixture<AuthenticatedTestF
             url = response.Headers.Location.ToString();
             response = await _client.GetAsync(url);
         }
+
+        _finalUrl = url;
 
         _output.WriteLine($"{(int)response.StatusCode} {url}");
 
@@ -194,6 +198,37 @@ public sealed class AuthorSubmissionMenuTests : IClassFixture<AuthenticatedTestF
         Assert.False(
             HasSubmissionForm(html),
             "Özet gönderim süresi dolmuşken bildiri formu hâlâ açılıyor.");
+    }
+
+    /// <summary>
+    /// Süre dolmuşken kullanıcı kongre anasayfasına geri atılıyor ve sebebi
+    /// orada bir uyarı şeridinde buluyordu; nerede olduğunu kaybediyordu.
+    /// Artık bildiri gönderme adresinde kalıp sebebi orada görüyor.
+    /// </summary>
+    [Fact]
+    public async Task ClosedSubmission_StaysOnPage_AndShowsReason()
+    {
+        var response = await FollowAsync($"/{ExpiredAbstractSlug}/submit-abstract");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        Assert.EndsWith(
+            "/submit-abstract",
+            _finalUrl,
+            StringComparison.OrdinalIgnoreCase);
+
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("submission-closed-card", html, StringComparison.Ordinal);
+
+        // Sebep ekranda yazmalı: geçmiş son tarih gösteriliyor.
+        Assert.Contains(
+            DateTime.UtcNow.AddDays(-2).ToString("dd.MM.yyyy"),
+            html,
+            StringComparison.Ordinal);
+
+        // Devam edebileceği yerler de aynı ekranda.
+        Assert.Contains("/my-submissions", html, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Özet tarihi girilmemişse tam metin tarihi tek sınır kalmalı.</summary>

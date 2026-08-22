@@ -292,6 +292,34 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     r.ConferenceId == conferenceId);
         }
 
+        /// <summary>
+        /// Gönderim kapalıyken kullanıcı kongre anasayfasına geri atılıyor ve
+        /// sebebi orada bir uyarı şeridinde buluyordu; nerede olduğunu
+        /// kaybediyordu. Artık bildiri gönderme adresinde kalıyor, sebebi ve
+        /// devam edebileceği yerleri aynı ekranda görüyor.
+        /// </summary>
+        private IActionResult SubmissionClosedView(
+            Conference conference,
+            string canonicalSlug,
+            string message,
+            DateTime? deadline,
+            bool closedBySetting)
+        {
+            var model = new SubmissionClosedViewModel
+            {
+                ConferenceTitle = conference.Title ?? string.Empty,
+                Message = message,
+                Deadline = deadline,
+                ClosedBySetting = closedBySetting,
+                MySubmissionsUrl = string.IsNullOrWhiteSpace(canonicalSlug)
+                    ? "/Dashboard/MyConferences"
+                    : BuildUrl(canonicalSlug, "/my-submissions"),
+                ConferenceUrl = BuildUrl(canonicalSlug, "")
+            };
+
+            return View("SubmissionClosed", model);
+        }
+
         private async Task<IActionResult?> EnsureUserCanCreateSubmissionAsync(
             AppUser user,
             Conference conference,
@@ -307,11 +335,14 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             // Bildiri başvuruları kapalı mı?
             if (!conference.IsSubmissionOpen)
             {
-                TempData["ErrorMessage"] = T(
-                    "SubmissionsClosed",
-                    "Bu kongre için bildiri başvuruları kapatılmıştır.");
-
-                return Redirect(BuildUrl(canonicalSlug, ""));
+                return SubmissionClosedView(
+                    conference,
+                    canonicalSlug,
+                    T(
+                        "SubmissionsClosed",
+                        "Bu kongre için bildiri başvuruları kapatılmıştır."),
+                    deadline: null,
+                    closedBySetting: true);
             }
 
             // Bu form bir ÖZET başvurusu (başlık, özet metni, anahtar kelime),
@@ -328,11 +359,14 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             if (conference.AbstractSubmissionDeadline.HasValue &&
                 now > conference.AbstractSubmissionDeadline.Value)
             {
-                TempData["ErrorMessage"] = T(
-                    "AbstractDeadlinePassed",
-                    $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
-
-                return Redirect(BuildUrl(canonicalSlug, ""));
+                return SubmissionClosedView(
+                    conference,
+                    canonicalSlug,
+                    T(
+                        "AbstractDeadlinePassed",
+                        $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir."),
+                    conference.AbstractSubmissionDeadline.Value,
+                    closedBySetting: false);
             }
 
             // Özet tarihi girilmemişse tek sınır tam metin tarihi kalıyor;
@@ -341,11 +375,14 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 conference.FullTextSubmissionDeadline.HasValue &&
                 now > conference.FullTextSubmissionDeadline.Value)
             {
-                TempData["ErrorMessage"] = T(
-                    "SubmissionDeadlinePassed",
-                    $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
-
-                return Redirect(BuildUrl(canonicalSlug, ""));
+                return SubmissionClosedView(
+                    conference,
+                    canonicalSlug,
+                    T(
+                        "SubmissionDeadlinePassed",
+                        $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir."),
+                    conference.FullTextSubmissionDeadline.Value,
+                    closedBySetting: false);
             }
 
             var registration = await GetUserRegistrationAsync(user.Id, conference.Id);

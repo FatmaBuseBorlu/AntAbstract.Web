@@ -1,0 +1,200 @@
+@using AntAbstract.Web.Models.ViewModels.Admin.Submissions
+@using System
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@model SubmissionClosedViewModel
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+    Layout = "_LayoutDashboard";
+
+    var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+
+    string L(string key, string tr, string en)
+    {
+        var value = Localizer[key].Value;
+
+        if (string.Equals(value, key, StringComparison.OrdinalIgnoreCase))
+        {
+            return isEnglish ? en : tr;
+        }
+
+        return value;
+    }
+}
+
+<style>
+    .submission-closed-page {
+        padding: 2.5rem 1.5rem 4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .submission-closed-card {
+        max-width: 640px;
+        margin: 0 auto;
+        background: var(--card-bg, #ffffff);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 20px;
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
+        padding: 2.6rem 2.2rem;
+        text-align: center;
+    }
+
+    .submission-closed-icon {
+        width: 96px;
+        height: 96px;
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.3rem;
+    }
+
+    .submission-closed-icon i {
+        color: #ef4444;
+        font-size: 2.9rem;
+    }
+
+    .submission-closed-conference {
+        color: var(--text-muted, #64748b);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    .submission-closed-title {
+        color: var(--text-color, #0f172a);
+        font-size: 1.4rem;
+        font-weight: 900;
+        margin-bottom: 0.7rem;
+    }
+
+    .submission-closed-message {
+        color: var(--text-muted, #64748b);
+        font-size: 1rem;
+        line-height: 1.65;
+        max-width: 480px;
+        margin: 0 auto 1.4rem;
+    }
+
+    .submission-closed-deadline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        background: rgba(239, 68, 68, 0.09);
+        color: #b91c1c;
+        border-radius: 999px;
+        padding: 0.55rem 1.15rem;
+        font-weight: 800;
+        font-size: 0.95rem;
+        margin-bottom: 1.6rem;
+    }
+
+    .submission-closed-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+
+    .submission-closed-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 800;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .submission-closed-btn:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .submission-closed-btn-primary {
+        background: var(--primary-color, #00aeef);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(0, 174, 239, 0.28);
+    }
+
+    .submission-closed-btn-primary:hover {
+        color: #ffffff;
+    }
+
+    .submission-closed-btn-ghost {
+        background: transparent;
+        color: var(--text-color, #0f172a);
+        border: 1px solid var(--border-color, #cbd5e1);
+    }
+
+    .submission-closed-btn-ghost:hover {
+        color: var(--text-color, #0f172a);
+    }
+
+    [data-theme="dark"] .submission-closed-icon {
+        background: rgba(239, 68, 68, 0.18);
+    }
+
+    [data-theme="dark"] .submission-closed-deadline {
+        background: rgba(239, 68, 68, 0.18);
+        color: #fca5a5;
+    }
+</style>
+
+<div class="submission-closed-page">
+    <div class="submission-closed-card">
+        <div class="submission-closed-icon">
+            <i class="fas fa-hourglass-end"></i>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ConferenceTitle))
+        {
+            <div class="submission-closed-conference">
+                @Model.ConferenceTitle
+            </div>
+        }
+
+        <h1 class="submission-closed-title">
+            @(Model.ClosedBySetting
+                ? L("ClosedBySettingTitle", "Bildiri gönderimi kapalı", "Submissions are closed")
+                : L("DeadlinePassedTitle", "Bildiri gönderim süresi doldu", "The submission deadline has passed"))
+        </h1>
+
+        @* Son tarih varken Model.Message zaten tarihi söylüyor; rozetle
+           tekrar etmesin diye burada ne yapabileceğini anlatıyoruz. *@
+        <p class="submission-closed-message">
+            @(Model.Deadline.HasValue
+                ? L("DeadlineExplanation",
+                    "Bu kongre için yeni bildiri gönderimi kapandı. Daha önce gönderdiğiniz bildirileri görüntülemeye devam edebilirsiniz.",
+                    "New submissions are closed for this conference. You can still view the submissions you sent earlier.")
+                : Model.Message)
+        </p>
+
+        @if (Model.Deadline.HasValue)
+        {
+            <div class="submission-closed-deadline">
+                <i class="fas fa-calendar-xmark"></i>
+                @L("DeadlineLabel", "Son gönderim", "Deadline"):
+                @Model.Deadline.Value.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        }
+
+        <div class="submission-closed-actions">
+            <a href="@Model.MySubmissionsUrl" class="submission-closed-btn submission-closed-btn-primary">
+                <i class="fas fa-file-contract"></i>
+                @L("MySubmissionsButton", "Bildirilerim", "My Submissions")
+            </a>
+
+            <a href="@Model.ConferenceUrl" class="submission-closed-btn submission-closed-btn-ghost">
+                <i class="fas fa-arrow-left"></i>
+                @L("ConferenceButton", "Kongre Sayfası", "Conference Page")
+            </a>
+        </div>
+    </div>
+</div>
