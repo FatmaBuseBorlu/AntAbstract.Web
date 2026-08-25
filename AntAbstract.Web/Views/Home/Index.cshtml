@@ -2113,11 +2113,19 @@
                                                 @L("AlreadyRegisteredButton", "Kayıtlısınız")
                                             </a>
                                         }
-                                        else
+                                        else if (item.IsRegistrationOpen)
                                         {
                                             <a href="@vitrinUrl" class="modern-detail-btn">
                                                 @L("RegisterButton", "Kayıt Ol")
                                                 <i class="fas fa-paper-plane"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            @* Kayıt kapalıyken "Kayıt Ol" yazmak yanıltıcı olur *@
+                                            <a href="@vitrinUrl" class="modern-detail-btn">
+                                                @L("ViewDetailsButton", "Detayları Gör")
+                                                <i class="fas fa-arrow-right"></i>
                                             </a>
                                         }
                                     </div>

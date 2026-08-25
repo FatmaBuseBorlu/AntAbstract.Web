@@ -17,6 +17,9 @@
     var registrationsByConference = ViewBag.RegistrationsByConference as Dictionary<Guid, Registration>
         ?? new Dictionary<Guid, Registration>();
 
+    // Controller'da hesaplanan, gerçekten kayıt alınabilen kongrelerin listesi
+    var registrationAvailableConferenceIds = ViewBag.RegistrationAvailableConferenceIds as HashSet<Guid>;
+
     var isSuperAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("SuperAdmin");
     var isAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
     var isAuthor = User.Identity?.IsAuthenticated == true && User.IsInRole("Author");
@@ -431,9 +434,14 @@
                         ? $"/{slug}/registration"
                         : "#";
 
-                        // Kayıt kapalıysa veya kongre tarihi geçtiyse kayıt butonu gösterilmez
+                        // Kayıt kapalıysa, kongre tarihi geçtiyse, açık kayıt türü kalmadıysa
+                        // veya kontenjan dolduysa kayıt butonu gösterilmez
                         var isRegistrationAvailable = !string.IsNullOrWhiteSpace(slug) &&
-                        GetBool(item, true, "IsRegistrationAvailable");
+                        GetBool(item, true, "IsRegistrationAvailable") &&
+                        (
+                            registrationAvailableConferenceIds == null ||
+                            (conferenceId.HasValue && registrationAvailableConferenceIds.Contains(conferenceId.Value))
+                        );
 
                         var panelUrl = !string.IsNullOrWhiteSpace(slug)
                         ? $"/{slug}/Dashboard"

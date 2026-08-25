@@ -368,9 +368,45 @@ namespace AntAbstract.Web.Controllers
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
+            // Gerçekten kayıt alınabilen kongreler: kayıt açık, tarihi geçmemiş,
+            // süresi dolmamış aktif bir kayıt türü var ve kontenjanı dolmamış.
+            var today = DateTime.UtcNow.Date;
+
+            var conferenceIdsWithOpenTypes = await _context.RegistrationTypes
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(rt =>
+                    rt.IsActive &&
+                    (
+                        !rt.Deadline.HasValue ||
+                        rt.Deadline.Value.Date >= today
+                    ))
+                .Select(rt => rt.ConferenceId)
+                .Distinct()
+                .ToListAsync();
+
+            var fullConferenceIds = await _context.Conferences
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(c =>
+                    c.MaxRegistrations.HasValue &&
+                    c.Registrations.Count() >= c.MaxRegistrations.Value)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            var registrationAvailableConferenceIds = allCongresses
+                .Where(c =>
+                    c.IsRegistrationOpen &&
+                    c.EndDate.Date >= today &&
+                    conferenceIdsWithOpenTypes.Contains(c.Id) &&
+                    !fullConferenceIds.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToHashSet();
+
             ViewBag.IsSignedIn = user != null;
             ViewBag.RegistrationsByConference = registrationsByConference;
             ViewBag.SubmissionsByConference = submissionsByConference;
+            ViewBag.RegistrationAvailableConferenceIds = registrationAvailableConferenceIds;
 
             return View(allCongresses);
         }
