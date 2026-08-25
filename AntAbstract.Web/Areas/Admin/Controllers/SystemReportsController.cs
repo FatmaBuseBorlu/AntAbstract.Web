@@ -52,13 +52,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var totalRegistrations = await _context.Registrations.CountAsync();
             var paidRegistrations = await _context.Registrations.CountAsync(r => r.IsPaid);
 
-            var completedRevenue = await _context.Payments
+            // SQLite decimal uzerinde SUM yapamiyor; tutarlar cekilip bellekte toplaniyor.
+            var completedRevenue = (await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Completed)
-                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+                .Select(p => p.Amount)
+                .ToListAsync())
+                .Sum();
+
             var paidRegRevenue = completedRevenue > 0 ? completedRevenue
-                : await _context.Registrations
+                : (await _context.Registrations
                     .Where(r => r.IsPaid)
-                    .SumAsync(r => (decimal?)r.Amount) ?? 0m;
+                    .Select(r => r.Amount)
+                    .ToListAsync())
+                    .Sum();
 
             // ── Rol sayıları (UserRoles × Roles join — N+1 yok) ──────────────
             var roleCounts = await _context.UserRoles

@@ -366,9 +366,14 @@ namespace AntAbstract.Web.Controllers
                         !rt.Deadline.HasValue ||
                         rt.Deadline.Value.Date >= today
                     ))
+                .ToListAsync();
+
+            // SQLite ORDER BY icinde decimal cevirmiyor (SQL Server cevirebiliyor).
+            // Kayit turu sayisi az oldugu icin siralama bellekte yapiliyor.
+            registrationTypes = registrationTypes
                 .OrderBy(rt => rt.Price)
                 .ThenBy(rt => rt.Name)
-                .ToListAsync();
+                .ToList();
 
             ViewBag.ConferenceTitle = conference.Title;
             ViewBag.ConferenceStartDate = conference.StartDate;

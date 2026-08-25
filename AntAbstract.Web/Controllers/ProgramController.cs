@@ -273,9 +273,14 @@ namespace AntAbstract.Web.Controllers
                 .Include(s => s.Submissions)
                     .ThenInclude(sub => sub.Author)
                 .OrderBy(s => s.SessionDate)
+                .ToListAsync();
+
+            // SQLite ORDER BY icinde TimeSpan cevirmiyor; gun ici sira bellekte.
+            sessions = sessions
+                .OrderBy(s => s.SessionDate)
                 .ThenBy(s => s.StartTime)
                 .ThenBy(s => s.SortOrder)
-                .ToListAsync();
+                .ToList();
 
             await FillProgramViewBagAsync(conference, canonicalSlug);
 

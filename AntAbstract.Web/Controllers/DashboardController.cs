@@ -817,7 +817,11 @@ namespace AntAbstract.Web.Controllers
                 viewModel.TotalRegistrations = await regQuery.CountAsync();
                 viewModel.PendingPayments = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath == null);
                 viewModel.ReceiptWaiting = await regQuery.CountAsync(r => !r.IsPaid && r.ReceiptFilePath != null);
-                viewModel.TotalRevenue = await regQuery.Where(r => r.IsPaid).SumAsync(r => r.Amount);
+                // SQLite decimal uzerinde SUM yapamiyor; bellekte toplaniyor.
+                viewModel.TotalRevenue = (await regQuery.Where(r => r.IsPaid)
+                    .Select(r => r.Amount)
+                    .ToListAsync())
+                    .Sum();
                 viewModel.RevenueCurrency = await _context.RegistrationTypes.AsNoTracking()
                     .Where(rt => rt.ConferenceId == confId)
                     .Select(rt => rt.Currency)
