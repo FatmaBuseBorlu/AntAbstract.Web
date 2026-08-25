@@ -1,4 +1,4 @@
-using AntAbstract.Domain.Entities;
+﻿using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -159,20 +159,21 @@ namespace AntAbstract.Infrastructure.Data
             // ──────────────────────────────────────────────────────────────
             // 4. RegistrationType'lar (her kongre için)
             // ──────────────────────────────────────────────────────────────
-            var regTypeA = await EnsureRegType(db, confA.Id, "Akademisyen", 750m);
-            var regTypeB = await EnsureRegType(db, confB.Id, "Akademisyen", 850m);
-            var regTypeC = await EnsureRegType(db, confC.Id, "Akademisyen", 950m);
-            var regTypeD = await EnsureRegType(db, confD.Id, "Akademisyen", 1000m);
-            var regTypeDListener = await EnsureRegType(db, confD.Id, "Dinleyici", 400m, "Listener");
+            var regTypeA = await EnsureRegType(db, confA.Id, "Bildirili Katılım", 750m);
+            var regTypeB = await EnsureRegType(db, confB.Id, "Bildirili Katılım", 850m);
+            var regTypeC = await EnsureRegType(db, confC.Id, "Bildirili Katılım", 950m);
+            var regTypeD = await EnsureRegType(db, confD.Id, "Bildirili Katılım", 1000m);
+            var regTypeDListener = await EnsureRegType(db, confD.Id, "Dinleyici Katılımı", 400m, "Listener");
 
             // Kongre E: erken kayıt türünün son tarihi var, normal tür süresizdir
             var regTypeEEarly = await EnsureRegType(db, confE.Id, "Erken Kayıt", 700m,
-                deadline: now.AddDays(21));
-            var regTypeE = await EnsureRegType(db, confE.Id, "Akademisyen", 1100m);
-            var regTypeEListener = await EnsureRegType(db, confE.Id, "Dinleyici", 450m, "Listener");
+                deadline: now.AddDays(21),
+                description: "İndirimli erken kayıt ücreti; son tarihe kadar geçerlidir.");
+            var regTypeE = await EnsureRegType(db, confE.Id, "Bildirili Katılım", 1100m);
+            var regTypeEListener = await EnsureRegType(db, confE.Id, "Dinleyici Katılımı", 450m, "Listener");
 
-            var regTypeF = await EnsureRegType(db, confF.Id, "Akademisyen", 1250m);
-            var regTypeFListener = await EnsureRegType(db, confF.Id, "Dinleyici", 500m, "Listener");
+            var regTypeF = await EnsureRegType(db, confF.Id, "Bildirili Katılım", 1250m);
+            var regTypeFListener = await EnsureRegType(db, confF.Id, "Dinleyici Katılımı", 500m, "Listener");
 
             // ──────────────────────────────────────────────────────────────
             // 5. ConferenceTopic'ler
@@ -389,7 +390,8 @@ namespace AntAbstract.Infrastructure.Data
         // ── Yardımcı: RegistrationType ────────────────────────────────────
         private static async Task<RegistrationType> EnsureRegType(
             AppDbContext db, Guid confId, string name, decimal price,
-            string roleName = "Author", DateTime? deadline = null)
+            string roleName = "Author", DateTime? deadline = null,
+            string? description = null)
         {
             var rt = await db.RegistrationTypes.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r => r.ConferenceId == confId && r.Name == name);
@@ -400,7 +402,12 @@ namespace AntAbstract.Infrastructure.Data
             {
                 ConferenceId = confId,
                 Name = name,
-                Description = $"{name} kayıt türü",
+                // Eskiden "{ad} kayıt türü" yazılıyordu; "Erken Kayıt kayıt türü"
+                // gibi tuhaf cümleler çıkıyordu. Açıklama artık türün ne işe
+                // yaradığını anlatıyor.
+                Description = description ?? (roleName == "Listener"
+                    ? "Bildiri göndermeden katılmak isteyenler içindir."
+                    : "Kongreye bildiri göndermek isteyenler içindir."),
                 Price = price,
                 Currency = "TRY",
                 RoleName = roleName,
