@@ -1,0 +1,153 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"].Value;
+
+    var slug = ViewBag.Slug as string ?? "";
+
+    var message = ViewBag.NotFoundMessage as string
+        ?? Localizer.GetString("DefaultMessage").Value;
+}
+
+<style>
+    .notfound-page {
+        background: #f8fafc;
+        min-height: calc(100vh - 90px);
+        display: flex;
+        align-items: center;
+        padding: 60px 0;
+    }
+
+    .notfound-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 52px 40px;
+        text-align: center;
+        max-width: 720px;
+        margin: 0 auto;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+    }
+
+    .notfound-code {
+        font-size: 3.4rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
+        color: #cbd5e1;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .notfound-title {
+        font-size: 1.6rem;
+        font-weight: 950;
+        color: #0f172a;
+        letter-spacing: -0.03em;
+        margin-bottom: 14px;
+    }
+
+    .notfound-slug {
+        display: inline-block;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 6px 16px;
+        font-weight: 850;
+        color: #475569;
+        margin-bottom: 18px;
+        word-break: break-all;
+    }
+
+    .notfound-message {
+        color: #64748b;
+        font-weight: 600;
+        line-height: 1.75;
+        max-width: 540px;
+        margin: 0 auto 28px;
+    }
+
+    .notfound-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .notfound-btn {
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 0 22px;
+        font-weight: 900;
+        text-decoration: none;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #334155;
+        transition: all 0.2s ease;
+    }
+
+    .notfound-btn:hover {
+        color: #0d6efd;
+        border-color: rgba(13, 110, 253, 0.32);
+        background: #f8fbff;
+        transform: translateY(-1px);
+    }
+
+    .notfound-btn-primary {
+        background: #00aeef;
+        border-color: transparent;
+        color: #ffffff;
+    }
+
+    .notfound-btn-primary:hover {
+        background: #0095cd;
+        color: #ffffff;
+        border-color: transparent;
+    }
+
+    @@media (max-width: 575px) {
+        .notfound-card { padding: 34px 20px; border-radius: 22px; }
+        .notfound-title { font-size: 1.3rem; }
+        .notfound-btn { width: 100%; }
+    }
+</style>
+
+<section class="notfound-page">
+    <div class="container">
+        <div class="notfound-card">
+            <div class="notfound-code">404</div>
+
+            <h1 class="notfound-title">
+                @Localizer["Title"]
+            </h1>
+
+            @if (!string.IsNullOrWhiteSpace(slug))
+            {
+                <div class="notfound-slug">
+                    <i class="fas fa-link me-1"></i>/@slug
+                </div>
+            }
+
+            <p class="notfound-message">
+                @message
+                <br />
+                @Localizer["Hint"]
+            </p>
+
+            <div class="notfound-actions">
+                <a href="/congresses" class="notfound-btn notfound-btn-primary">
+                    <i class="fas fa-list"></i>
+                    @Localizer["BrowseCongressesButton"]
+                </a>
+
+                <a href="/" class="notfound-btn">
+                    <i class="fas fa-home"></i>
+                    @Localizer["HomeButton"]
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

@@ -140,9 +140,80 @@ public sealed class RegistrationAvailabilityTests
         var client = factory.CreateClient();
 
         // Yönlendirme takip edilir: kullanıcı bir açıklama görmelidir.
-        var html = await client.GetStringAsync("/olmayan-slug/registration");
+        var response = await client.GetAsync("/olmayan-slug/registration");
+        var html = await response.Content.ReadAsStringAsync();
 
-        Assert.Contains("alert-danger", html);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Contains("notfound-card", html);
+    }
+
+    [Fact]
+    public async Task UnknownSlug_Returns404NotLandingPage()
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference("gercek-kongre");
+
+        var response = await CreateClient(factory).GetAsync("/sacma-bir-slug");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Contains("notfound-card", html);
+        Assert.DoesNotContain("hero-modern", html);
+    }
+
+    [Fact]
+    public async Task ExistingSlug_StillRendersConferenceSite()
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference("gercek-kongre");
+
+        var response = await CreateClient(factory).GetAsync("/gercek-kongre");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("conference-hero", html);
+    }
+
+    [Fact]
+    public async Task HomePage_IsNotAffectedBy404Rule()
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference("gercek-kongre");
+
+        var response = await CreateClient(factory).GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("hero-modern", html);
+    }
+
+    [Theory]
+    [InlineData("/login")]
+    [InlineData("/register")]
+    [InlineData("/forgot-password")]
+    [InlineData("/access-denied")]
+    public async Task SingleSegmentRazorPages_StillReachable(string url)
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference("gercek-kongre");
+
+        var response = await CreateClient(factory).GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/Payment")]
+    [InlineData("/Home/Congresses")]
+    [InlineData("/congresses")]
+    public async Task KnownControllerSegments_AreNotTreatedAsMissingCongress(string url)
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference("gercek-kongre");
+
+        var response = await CreateClient(factory).GetAsync(url);
+
+        Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
