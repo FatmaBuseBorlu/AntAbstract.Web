@@ -126,6 +126,36 @@ namespace AntAbstract.Infrastructure.Data
                 conf.CertificateFirstSignerTitle = "Kongre Başkanı";
             });
 
+            // --- Kongre E: Yaklaşan, erken kayıt indirimi olan ---
+            var confE = await EnsureConference(db, tenant.Id, "cevre-iklim-2026", conf =>
+            {
+                conf.Title = "Çevre ve İklim Değişikliği Kongresi 2026";
+                conf.Description = "İklim krizi, sürdürülebilirlik ve yenilenebilir enerji politikalarının ele alındığı disiplinlerarası kongre.";
+                conf.StartDate = now.AddMonths(2);
+                conf.EndDate = now.AddMonths(2).AddDays(2);
+                conf.City = "Antalya"; conf.Country = "Türkiye"; conf.Venue = "Akdeniz Üniversitesi Kongre Merkezi";
+                conf.IsSubmissionOpen = true; conf.IsRegistrationOpen = true;
+                conf.AbstractSubmissionDeadline = now.AddMonths(1);
+                conf.CertificateFirstSignerName = "Prof. Dr. Ahmet Yıldız";
+                conf.CertificateFirstSignerTitle = "Kongre Başkanı";
+            });
+
+            // --- Kongre F: Yaklaşan, kontenjanlı ---
+            var confF = await EnsureConference(db, tenant.Id, "veteriner-hekimlik-2026", conf =>
+            {
+                conf.Title = "Veteriner Hekimlik ve Hayvan Sağlığı Sempozyumu 2026";
+                conf.Description = "Klinik veteriner hekimlik, hayvan refahı ve zoonotik hastalıklar üzerine ulusal sempozyum.";
+                conf.StartDate = now.AddMonths(5);
+                conf.EndDate = now.AddMonths(5).AddDays(3);
+                conf.City = "Konya"; conf.Country = "Türkiye"; conf.Venue = "Selçuk Üniversitesi Veteriner Fakültesi";
+                conf.IsSubmissionOpen = true; conf.IsRegistrationOpen = true;
+                conf.AbstractSubmissionDeadline = now.AddMonths(3);
+                conf.FullTextSubmissionDeadline = now.AddMonths(4);
+                conf.MaxRegistrations = 150;
+                conf.CertificateFirstSignerName = "Prof. Dr. Ahmet Yıldız";
+                conf.CertificateFirstSignerTitle = "Kongre Başkanı";
+            });
+
             // ──────────────────────────────────────────────────────────────
             // 4. RegistrationType'lar (her kongre için)
             // ──────────────────────────────────────────────────────────────
@@ -134,6 +164,15 @@ namespace AntAbstract.Infrastructure.Data
             var regTypeC = await EnsureRegType(db, confC.Id, "Akademisyen", 950m);
             var regTypeD = await EnsureRegType(db, confD.Id, "Akademisyen", 1000m);
             var regTypeDListener = await EnsureRegType(db, confD.Id, "Dinleyici", 400m, "Listener");
+
+            // Kongre E: erken kayıt türünün son tarihi var, normal tür süresizdir
+            var regTypeEEarly = await EnsureRegType(db, confE.Id, "Erken Kayıt", 700m,
+                deadline: now.AddDays(21));
+            var regTypeE = await EnsureRegType(db, confE.Id, "Akademisyen", 1100m);
+            var regTypeEListener = await EnsureRegType(db, confE.Id, "Dinleyici", 450m, "Listener");
+
+            var regTypeF = await EnsureRegType(db, confF.Id, "Akademisyen", 1250m);
+            var regTypeFListener = await EnsureRegType(db, confF.Id, "Dinleyici", 500m, "Listener");
 
             // ──────────────────────────────────────────────────────────────
             // 5. ConferenceTopic'ler
@@ -152,6 +191,14 @@ namespace AntAbstract.Infrastructure.Data
 
             var topicD1 = await EnsureTopic(db, confD.Id, "Dijital Sağlık");
             var topicD2 = await EnsureTopic(db, confD.Id, "Tıbbi Görüntüleme");
+
+            var topicE1 = await EnsureTopic(db, confE.Id, "İklim Modellemesi");
+            var topicE2 = await EnsureTopic(db, confE.Id, "Yenilenebilir Enerji");
+            var topicE3 = await EnsureTopic(db, confE.Id, "Sürdürülebilir Kentleşme");
+
+            var topicF1 = await EnsureTopic(db, confF.Id, "Klinik Veteriner Hekimlik");
+            var topicF2 = await EnsureTopic(db, confF.Id, "Zoonotik Hastalıklar");
+            var topicF3 = await EnsureTopic(db, confF.Id, "Hayvan Refahı");
 
             // ──────────────────────────────────────────────────────────────
             // 6. Bildirileri Oluştur
@@ -342,7 +389,7 @@ namespace AntAbstract.Infrastructure.Data
         // ── Yardımcı: RegistrationType ────────────────────────────────────
         private static async Task<RegistrationType> EnsureRegType(
             AppDbContext db, Guid confId, string name, decimal price,
-            string roleName = "Author")
+            string roleName = "Author", DateTime? deadline = null)
         {
             var rt = await db.RegistrationTypes.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r => r.ConferenceId == confId && r.Name == name);
@@ -357,7 +404,8 @@ namespace AntAbstract.Infrastructure.Data
                 Price = price,
                 Currency = "TRY",
                 RoleName = roleName,
-                IsActive = true
+                IsActive = true,
+                Deadline = deadline
             };
             db.RegistrationTypes.Add(rt);
             await db.SaveChangesAsync();
