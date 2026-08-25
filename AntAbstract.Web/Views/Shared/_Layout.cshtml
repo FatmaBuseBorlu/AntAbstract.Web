@@ -1077,6 +1077,43 @@
     }
 
     <main role="main" class="flex-grow-1">
+        @* Controller'lardan gelen TempData mesajları burada gösterilir.
+           Aksi hâlde kullanıcı, örneğin "bildiri başvuruları kapalı" gibi bir
+           nedenle yönlendirildiğinde hiçbir açıklama görmeden sayfaya düşüyor.
+           Mesajları kendi içinde gösteren sayfalar
+           ViewData["HandlesTempDataAlerts"] = true; diyerek bu bloğu kapatır. *@
+        @if (ViewData["HandlesTempDataAlerts"] as bool? != true &&
+             (TempData["SuccessMessage"] != null ||
+              TempData["InfoMessage"] != null ||
+              TempData["ErrorMessage"] != null))
+        {
+            <div class="container mt-4">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success d-flex align-items-center gap-2 rounded-4 fw-bold">
+                        <i class="fas fa-check-circle"></i>
+                        <span>@TempData["SuccessMessage"]</span>
+                    </div>
+                }
+
+                @if (TempData["InfoMessage"] != null)
+                {
+                    <div class="alert alert-info d-flex align-items-center gap-2 rounded-4 fw-bold">
+                        <i class="fas fa-info-circle"></i>
+                        <span>@TempData["InfoMessage"]</span>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger d-flex align-items-center gap-2 rounded-4 fw-bold">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>@TempData["ErrorMessage"]</span>
+                    </div>
+                }
+            </div>
+        }
+
         @RenderBody()
     </main>
 

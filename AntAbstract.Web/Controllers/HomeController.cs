@@ -7,6 +7,8 @@ using AntAbstract.Web.Models.ViewModels.Website;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System.Diagnostics;
@@ -23,6 +25,7 @@ namespace AntAbstract.Web.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly IConferencePageBlockService _pageBlockService;
         private readonly IStringLocalizer<HomeController> _localizer;
+        private readonly IActionDescriptorCollectionProvider _actionDescriptorProvider;
 
         private static readonly string[] SupportedCultures =
         {
@@ -35,13 +38,61 @@ namespace AntAbstract.Web.Controllers
             TenantContext tenantContext,
             UserManager<AppUser> userManager,
             IConferencePageBlockService pageBlockService,
-            IStringLocalizer<HomeController> localizer)
+            IStringLocalizer<HomeController> localizer,
+            IActionDescriptorCollectionProvider actionDescriptorProvider)
         {
             _context = context;
             _tenantContext = tenantContext;
             _userManager = userManager;
             _pageBlockService = pageBlockService;
             _localizer = localizer;
+            _actionDescriptorProvider = actionDescriptorProvider;
+        }
+
+        /// <summary>
+        /// URL'deki ilk segment gerçek bir controller veya area adına karşılık geliyor mu?
+        /// "/Payment" gibi adresler de {slug}/... route'una takıldığı için, bunları
+        /// "olmayan kongre" sayıp 404 döndürmemek gerekir.
+        /// </summary>
+        private bool IsReservedRouteSegment(string segment)
+        {
+            foreach (var descriptor in _actionDescriptorProvider.ActionDescriptors.Items)
+            {
+                if (descriptor is not ControllerActionDescriptor controllerDescriptor)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        controllerDescriptor.ControllerName,
+                        segment,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (controllerDescriptor.RouteValues.TryGetValue("area", out var area) &&
+                    !string.IsNullOrEmpty(area) &&
+                    string.Equals(area, segment, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// "Böyle bir kongre yok" sayfasını 404 durum koduyla döndürür.
+        /// </summary>
+        private IActionResult ConferenceNotFound(string? slug, string message)
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+
+            ViewBag.Slug = slug;
+            ViewBag.NotFoundMessage = message;
+
+            return View("ConferenceNotFound");
         }
 
         private string T(string key, string fallback)
@@ -110,9 +161,9 @@ namespace AntAbstract.Web.Controllers
 
                 if (currentConference == null)
                 {
-                    return NotFound(T(
-                        "ConferenceNotActive",
-                        "Aktif kongre bulunamadı."));
+                    return ConferenceNotFound(
+                        _tenantContext.Current.Slug,
+                        T("ConferenceNotActive", "Aktif kongre bulunamadı."));
                 }
 
                 var currentUser = await _userManager.GetUserAsync(User);
@@ -169,6 +220,20 @@ namespace AntAbstract.Web.Controllers
                 };
 
                 return View("ConferenceHome", vm);
+            }
+
+            // URL'de bir slug segmenti var ama hiçbir kongreye/kuruma karşılık gelmiyor.
+            // Bu durumda ana sayfayı 200 ile göstermek yerine 404 dönülür; aksi hâlde
+            // yazım hatası yapan kullanıcı doğru sayfada olduğunu sanır ve kırık
+            // bağlantılar sunucu loglarında hiç görünmez.
+            var requestedSlug = RouteData.Values["slug"]?.ToString();
+
+            if (!string.IsNullOrWhiteSpace(requestedSlug) &&
+                !IsReservedRouteSegment(requestedSlug))
+            {
+                return ConferenceNotFound(
+                    requestedSlug,
+                    T("ConferenceSlugNotFound", "Böyle bir kongre bulunamadı."));
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -289,9 +354,9 @@ namespace AntAbstract.Web.Controllers
 
                     IsRegistered = registeredIds.Contains(c.Id),
 
-                    IsSubmissionOpen = c.IsSubmissionOpen,
+                    IsSubmissionOpen = c.IsSubmissionAvailable,
 
-                    IsRegistrationOpen = c.IsRegistrationOpen,
+                    IsRegistrationOpen = c.IsRegistrationAvailable,
 
                     AbstractSubmissionDeadline = c.AbstractSubmissionDeadline
                 }).ToList(),
@@ -368,9 +433,45 @@ namespace AntAbstract.Web.Controllers
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
+            // Gerçekten kayıt alınabilen kongreler: kayıt açık, tarihi geçmemiş,
+            // süresi dolmamış aktif bir kayıt türü var ve kontenjanı dolmamış.
+            var today = DateTime.UtcNow.Date;
+
+            var conferenceIdsWithOpenTypes = await _context.RegistrationTypes
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(rt =>
+                    rt.IsActive &&
+                    (
+                        !rt.Deadline.HasValue ||
+                        rt.Deadline.Value.Date >= today
+                    ))
+                .Select(rt => rt.ConferenceId)
+                .Distinct()
+                .ToListAsync();
+
+            var fullConferenceIds = await _context.Conferences
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(c =>
+                    c.MaxRegistrations.HasValue &&
+                    c.Registrations.Count() >= c.MaxRegistrations.Value)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            var registrationAvailableConferenceIds = allCongresses
+                .Where(c =>
+                    c.IsRegistrationOpen &&
+                    c.EndDate.Date >= today &&
+                    conferenceIdsWithOpenTypes.Contains(c.Id) &&
+                    !fullConferenceIds.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToHashSet();
+
             ViewBag.IsSignedIn = user != null;
             ViewBag.RegistrationsByConference = registrationsByConference;
             ViewBag.SubmissionsByConference = submissionsByConference;
+            ViewBag.RegistrationAvailableConferenceIds = registrationAvailableConferenceIds;
 
             return View(allCongresses);
         }

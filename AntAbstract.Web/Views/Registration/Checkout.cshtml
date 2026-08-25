@@ -8,6 +8,9 @@
 @{
     ViewData["Title"] = Localizer["PreRegistrationPageTitle"].Value;
 
+    // Bu sayfa TempData mesajlarını kendisi gösteriyor; layout tekrar basmasın.
+    ViewData["HandlesTempDataAlerts"] = true;
+
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     var ticket = ViewBag.Ticket as RegistrationType;

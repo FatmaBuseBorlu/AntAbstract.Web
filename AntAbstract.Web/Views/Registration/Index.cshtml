@@ -7,6 +7,9 @@
 @{
     ViewData["Title"] = Localizer["IndexPageTitle"].Value;
 
+    // Bu sayfa TempData mesajlarını kendisi gösteriyor; layout tekrar basmasın.
+    ViewData["HandlesTempDataAlerts"] = true;
+
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     var slug = ViewBag.Slug as string ?? "";
@@ -24,6 +27,13 @@
         : $"/{slug}";
 
     var hasSlug = !string.IsNullOrWhiteSpace(slug);
+
+    // Kayıt kapalı / tarihi geçmiş / kontenjan dolmuş kongrelerde
+    // ön kayıt ekranı gösterilmez, yerine bilgilendirme kartı çıkar.
+    var registrationClosed = ViewBag.RegistrationClosed is bool closedFlag && closedFlag;
+
+    var registrationClosedMessage = ViewBag.RegistrationClosedMessage as string
+        ?? Localizer.GetString("RegistrationClosedTitle").Value;
 }
 
 <style>
@@ -355,11 +365,66 @@
         margin-bottom: 18px;
     }
 
+    .closed-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        padding: 48px 36px;
+        text-align: center;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+    }
+
+    .closed-icon {
+        width: 78px;
+        height: 78px;
+        border-radius: 26px;
+        background: rgba(239, 68, 68, 0.10);
+        color: #dc2626;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 22px;
+    }
+
+    .closed-conference-name {
+        font-weight: 950;
+        color: #0f172a;
+        font-size: 1.45rem;
+        letter-spacing: -0.03em;
+        margin-bottom: 10px;
+    }
+
+    .closed-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: #64748b;
+        font-weight: 800;
+        margin-bottom: 18px;
+    }
+
+    .closed-message {
+        color: #b91c1c;
+        font-weight: 850;
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+    }
+
+    .closed-note {
+        color: #64748b;
+        font-weight: 600;
+        line-height: 1.7;
+        max-width: 640px;
+        margin: 0 auto 26px;
+    }
+
     @@media (max-width: 768px) {
         .registration-page { padding: 36px 0; }
         .registration-hero { padding: 30px 22px; border-radius: 22px; }
         .registration-title { font-size: 1.8rem; }
         .process-card, .ticket-card, .empty-card { border-radius: 20px; }
+        .closed-card { padding: 32px 20px; border-radius: 22px; }
     }
 
     @@media (max-width: 575px) {
@@ -402,6 +467,41 @@
             </div>
         }
 
+        @if (registrationClosed)
+        {
+            <div class="closed-card">
+                <div class="closed-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+
+                <div class="closed-conference-name">
+                    @conferenceTitle
+                </div>
+
+                @if (conferenceStartDate.HasValue)
+                {
+                    <div class="closed-date">
+                        <i class="far fa-calendar-alt"></i>
+                        @conferenceStartDate.Value.ToLocalTime().ToString("dd MMMM yyyy", CultureInfo.CurrentUICulture)
+                    </div>
+                }
+
+                <div class="closed-message">
+                    @registrationClosedMessage
+                </div>
+
+                <p class="closed-note">
+                    @Localizer["RegistrationClosedDescription"]
+                </p>
+
+                <a href="@congressHomeUrl" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    @Localizer["BackButton"]
+                </a>
+            </div>
+        }
+        else
+        {
         <div class="registration-hero">
             <div class="registration-badge">
                 <i class="fas fa-clipboard-check"></i>
@@ -733,6 +833,7 @@
                     </div>
                 }
             </div>
+        }
         }
     </div>
 </section>

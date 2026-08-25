@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AntAbstract.Domain.Entities
 {
@@ -66,6 +67,37 @@ namespace AntAbstract.Domain.Entities
         /// <summary>Bildiri başvuruları açık mı? (Admin elle kapatabilir)</summary>
         public bool IsSubmissionOpen { get; set; } = true;
 
+        /// <summary>
+        /// Katılımcı şu anda bildiri gönderebilir mi?
+        /// Kurallar SubmissionController.EnsureUserCanCreateSubmissionAsync ile aynıdır:
+        /// başvurular açık, kongre tarihi geçmemiş ve geçerli son tarih dolmamış olmalı.
+        /// </summary>
+        [NotMapped]
+        public bool IsSubmissionAvailable
+        {
+            get
+            {
+                if (!IsSubmissionOpen || EndDate.Date < DateTime.UtcNow.Date)
+                {
+                    return false;
+                }
+
+                var now = DateTime.UtcNow;
+
+                if (FullTextSubmissionDeadline.HasValue)
+                {
+                    return now <= FullTextSubmissionDeadline.Value;
+                }
+
+                if (AbstractSubmissionDeadline.HasValue)
+                {
+                    return now <= AbstractSubmissionDeadline.Value;
+                }
+
+                return true;
+            }
+        }
+
         // Bildiri kitabı yayında mı?
         public bool IsProceedingBookPublished { get; set; } = false;
 
@@ -80,6 +112,15 @@ namespace AntAbstract.Domain.Entities
 
         /// <summary>Kayıt açık mı? (Admin elle kapatabilir)</summary>
         public bool IsRegistrationOpen { get; set; } = true;
+
+        /// <summary>
+        /// Katılımcıya kayıt ekranı gösterilmeli mi?
+        /// Admin kaydı kapattıysa veya kongrenin tarihi geçtiyse kayıt alınmaz.
+        /// Kontenjan kontrolü ayrıca yapılır (veritabanı sayımı gerektirir).
+        /// </summary>
+        [NotMapped]
+        public bool IsRegistrationAvailable =>
+            IsRegistrationOpen && EndDate.Date >= DateTime.UtcNow.Date;
 
         // Sertifika birinci imza bilgileri
         public string? CertificateFirstSignerName { get; set; }

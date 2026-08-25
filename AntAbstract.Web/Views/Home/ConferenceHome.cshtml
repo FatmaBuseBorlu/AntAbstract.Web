@@ -81,6 +81,14 @@
         ? submitAbstractUrl
         : registrationUrl;
 
+    // Kayıt kapalıysa veya kongre tarihi geçtiyse kayıt ekranına yönlendiren
+    // butonlar gösterilmez.
+    var canRegisterNow = Model.Conference?.IsRegistrationAvailable == true;
+
+    var showMainAction = isRegisteredToThisConference
+        ? Model.Conference?.IsSubmissionAvailable == true
+        : canRegisterNow;
+
     var heroCardActionText = L("HeroCardContinueButton", "Başvuruya Devam Et");
 
     var heroCardActionIcon = "fa-arrow-right";
@@ -1077,7 +1085,7 @@
                     <div class="hero-info-grid">
                         <div>
                             <small>@Localizer["RegistrationStatusLabel"]</small>
-                            @if (Model.Conference.IsRegistrationOpen)
+                            @if (canRegisterNow)
                             {
                                 <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusOpen"]</strong>
                             }
@@ -1089,7 +1097,7 @@
 
                         <div>
                             <small>@Localizer["AbstractSubmissionLabel"]</small>
-                            @if (Model.Conference.IsSubmissionOpen)
+                            @if (Model.Conference.IsSubmissionAvailable)
                             {
                                 <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusActive"]</strong>
                             }
@@ -1110,7 +1118,7 @@
                         </div>
                     </div>
 
-                    @if (Model.Conference.IsRegistrationOpen || Model.Conference.IsSubmissionOpen)
+                    @if (showMainAction)
                     {
                         <a href="@mainActionUrl" class="hero-card-cta">
                             <span>
@@ -1244,7 +1252,7 @@
                 <div class="sticky-sidebar">
 
                     <div class="action-card">
-                        @if (Model.Conference.IsRegistrationOpen || Model.Conference.IsSubmissionOpen)
+                        @if (canRegisterNow || Model.Conference.IsSubmissionAvailable)
                         {
                             <div class="action-card-badge">
                                 <i class="fas fa-circle"></i>
@@ -1272,7 +1280,7 @@
                         <div class="action-info-grid">
                             <div class="action-info-item">
                                 <span>@Localizer["RegistrationLabel"]</span>
-                                @if (Model.Conference.IsRegistrationOpen)
+                                @if (canRegisterNow)
                                 {
                                     <strong class="text-success">@Localizer["StatusOpen"]</strong>
                                 }
@@ -1283,7 +1291,7 @@
                             </div>
                             <div class="action-info-item">
                                 <span>@Localizer["AbstractLabel"]</span>
-                                @if (Model.Conference.IsSubmissionOpen)
+                                @if (Model.Conference.IsSubmissionAvailable)
                                 {
                                     <strong class="text-success">@Localizer["StatusActive"]</strong>
                                 }
@@ -1303,7 +1311,7 @@
                             </div>
                         }
 
-                        @if (Model.Conference.IsRegistrationOpen)
+                        @if (canRegisterNow)
                         {
                             <a href="@registrationUrl" class="action-primary-btn">
                                 <i class="fas fa-user-plus"></i>
@@ -1311,13 +1319,13 @@
                             </a>
                         }
 
-                        @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
+                        @if (Model.Conference.IsSubmissionAvailable && isRegisteredToThisConference)
                         {
                             <a href="@submitAbstractUrl" class="action-secondary-btn">
                                 <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                             </a>
                         }
-                        else if (!isRegisteredToThisConference && Model.Conference.IsSubmissionOpen)
+                        else if (!isRegisteredToThisConference && Model.Conference.IsSubmissionAvailable)
                         {
                             <div class="action-secondary-btn" style="cursor:default;opacity:.65;">
                                 <i class="fas fa-info-circle me-1"></i> @Localizer["RegisterFirstForAbstract"]
@@ -1407,14 +1415,14 @@
         </p>
 
         <div class="d-flex flex-wrap justify-content-center gap-3">
-            @if (Model.Conference.IsRegistrationOpen)
+            @if (canRegisterNow)
             {
                 <a href="@registrationUrl" class="hero-primary-btn">
                     <i class="fas fa-user-plus"></i>
                     @(isRegisteredToThisConference ? Localizer["ViewYourRegistration"].Value : Localizer["RegisterNowButton"].Value)
                 </a>
             }
-            @if (Model.Conference.IsSubmissionOpen && isRegisteredToThisConference)
+            @if (Model.Conference.IsSubmissionAvailable && isRegisteredToThisConference)
             {
                 <a href="@submitAbstractUrl" class="hero-secondary-btn">
                     <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
