@@ -289,9 +289,9 @@ namespace AntAbstract.Web.Controllers
 
                     IsRegistered = registeredIds.Contains(c.Id),
 
-                    IsSubmissionOpen = c.IsSubmissionOpen,
+                    IsSubmissionOpen = c.IsSubmissionAvailable,
 
-                    IsRegistrationOpen = c.IsRegistrationOpen,
+                    IsRegistrationOpen = c.IsRegistrationAvailable,
 
                     AbstractSubmissionDeadline = c.AbstractSubmissionDeadline
                 }).ToList(),

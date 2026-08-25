@@ -13,6 +13,9 @@
     ViewData["MetaDescription"] = L("HomeSeoDescription", "AntAbstract ile kongre kayıt, bildiri gönderimi, hakem değerlendirme, program, ödeme ve sertifika süreçlerini tek panelden yönetin.");
     Layout = "_Layout";
 
+    // Bu sayfa TempData mesajlarını kendisi gösteriyor; layout tekrar basmasın.
+    ViewData["HandlesTempDataAlerts"] = true;
+
     string L(string key, string fallback)
     {
         var loc = Localizer.GetString(key);
@@ -1691,13 +1694,35 @@
 
 <div class="home-page">
 
-    @if (TempData["SuccessMessage"] != null)
+    @if (TempData["SuccessMessage"] != null ||
+         TempData["InfoMessage"] != null ||
+         TempData["ErrorMessage"] != null)
     {
         <div class="container" style="padding-top: 120px;">
-            <div class="alert alert-success border-0 shadow-sm rounded-4">
-                <i class="fas fa-check-circle me-2"></i>
-                @TempData["SuccessMessage"]
-            </div>
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success border-0 shadow-sm rounded-4">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-info border-0 shadow-sm rounded-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    @TempData["InfoMessage"]
+                </div>
+            }
+
+            @* Kullanıcı bir yerden yönlendirildiyse nedenini burada görür *@
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger border-0 shadow-sm rounded-4">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    @TempData["ErrorMessage"]
+                </div>
+            }
         </div>
     }
 

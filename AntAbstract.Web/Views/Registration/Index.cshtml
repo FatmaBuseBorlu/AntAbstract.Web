@@ -7,6 +7,9 @@
 @{
     ViewData["Title"] = Localizer["IndexPageTitle"].Value;
 
+    // Bu sayfa TempData mesajlarını kendisi gösteriyor; layout tekrar basmasın.
+    ViewData["HandlesTempDataAlerts"] = true;
+
     var isEnglish = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
     var slug = ViewBag.Slug as string ?? "";

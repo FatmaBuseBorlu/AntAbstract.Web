@@ -128,30 +128,6 @@
             : $"/{tenantSlug}/submit-abstract";
     }
 
-    // Bildiri gönderimi gerçekten açık mı?
-    // Kurallar SubmissionController.EnsureUserCanCreateSubmissionAsync ile aynıdır.
-    bool CanSubmitAbstract(Conference conference)
-    {
-        if (!conference.IsSubmissionOpen || conference.EndDate.Date < today)
-        {
-            return false;
-        }
-
-        var now = DateTime.UtcNow;
-
-        if (conference.FullTextSubmissionDeadline.HasValue)
-        {
-            return now <= conference.FullTextSubmissionDeadline.Value;
-        }
-
-        if (conference.AbstractSubmissionDeadline.HasValue)
-        {
-            return now <= conference.AbstractSubmissionDeadline.Value;
-        }
-
-        return true;
-    }
-
     string GetRegistrationUrl(string tenantSlug)
     {
         return string.IsNullOrWhiteSpace(tenantSlug)
@@ -1023,7 +999,7 @@
                         var paymentsUrl = GetPaymentsUrl(tenantSlug);
                         var statusText = GetConferenceStatusText(kongre);
                         var statusClass = GetConferenceStatusClass(kongre);
-                        var canSubmitAbstract = CanSubmitAbstract(kongre);
+                        var canSubmitAbstract = kongre.IsSubmissionAvailable;
 
                         var effectiveReturnUrl = isAdmin
                             ? conferenceFlowUrl
