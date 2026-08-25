@@ -1,4 +1,4 @@
-@model IEnumerable<AntAbstract.Domain.Entities.ReviewCriterion>
+﻿@model IEnumerable<AntAbstract.Domain.Entities.ReviewCriterion>
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
@@ -27,14 +27,6 @@
         </a>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible">@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    }
 
     @if (!Model.Any())
     {

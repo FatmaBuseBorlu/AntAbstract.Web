@@ -1,4 +1,4 @@
-@using Microsoft.AspNetCore.Mvc.Rendering
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "Yeni Kongre Sitesi Oluştur";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -19,12 +19,6 @@
         </div>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger border-0 shadow-sm mb-3">
-            <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
-        </div>
-    }
 
     @if (conferences.Count == 0)
     {

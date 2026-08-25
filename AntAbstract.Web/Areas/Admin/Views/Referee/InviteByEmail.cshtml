@@ -1,4 +1,4 @@
-@{
+﻿@{
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     ViewData["Title"] = Localizer["PageTitle"].Value;
     var conference = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;
@@ -23,13 +23,6 @@
         </a>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
 
     <div class="row justify-content-center">
         <div class="col-lg-6">

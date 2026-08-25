@@ -1,4 +1,4 @@
-@model AntAbstract.Domain.Entities.Conference
+﻿@model AntAbstract.Domain.Entities.Conference
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -14,10 +14,6 @@
         @await Html.PartialAsync("_WizardProgress", 2)
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger mb-3">@TempData["ErrorMessage"]</div>
-    }
 
     <div class="card border-0 shadow-sm" style="border-radius:20px;">
         <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">

@@ -1,4 +1,4 @@
-@model List<AntAbstract.Domain.Entities.RegistrationType>
+﻿@model List<AntAbstract.Domain.Entities.RegistrationType>
 
 @using System
 @using System.Globalization
@@ -443,29 +443,8 @@
 <section class="registration-page">
     <div class="container">
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert registration-alert registration-alert-success mb-4">
-                <i class="fas fa-check-circle"></i>
-                <span>@TempData["SuccessMessage"]</span>
-            </div>
-        }
 
-        @if (TempData["InfoMessage"] != null)
-        {
-            <div class="alert registration-alert registration-alert-info mb-4">
-                <i class="fas fa-info-circle"></i>
-                <span>@TempData["InfoMessage"]</span>
-            </div>
-        }
 
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert registration-alert registration-alert-error mb-4">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>@TempData["ErrorMessage"]</span>
-            </div>
-        }
 
         @if (registrationClosed)
         {

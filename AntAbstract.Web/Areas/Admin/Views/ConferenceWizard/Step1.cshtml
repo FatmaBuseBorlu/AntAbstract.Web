@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = ViewBag.Slug as string ?? "";
@@ -12,10 +12,6 @@
         @await Html.PartialAsync("_WizardProgress", 1)
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger mb-3">@TempData["ErrorMessage"]</div>
-    }
 
     <div class="card border-0 shadow-sm" style="border-radius:20px;">
         <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
