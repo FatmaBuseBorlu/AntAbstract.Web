@@ -217,6 +217,34 @@ public sealed class RegistrationAvailabilityTests
     }
 
     [Fact]
+    public async Task PastConference_CongressListHidesRegisterButton()
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference(
+            "liste-gecmis",
+            endDate: DateTime.UtcNow.Date.AddDays(-1));
+
+        var html = await CreateClient(factory).GetStringAsync("/congresses");
+
+        Assert.Contains("congress-action-button btn-closed-congress", html);
+        Assert.DoesNotContain("congress-action-button btn-register-congress", html);
+    }
+
+    [Fact]
+    public async Task ExpiredRegistrationType_CongressListHidesRegisterButton()
+    {
+        using var factory = new RegistrationAvailabilityFactory();
+        factory.SeedConference(
+            "liste-suresi-dolmus",
+            registrationTypeDeadline: DateTime.UtcNow.Date.AddDays(-1));
+
+        var html = await CreateClient(factory).GetStringAsync("/congresses");
+
+        Assert.Contains("congress-action-button btn-closed-congress", html);
+        Assert.DoesNotContain("congress-action-button btn-register-congress", html);
+    }
+
+    [Fact]
     public async Task OpenConference_CongressListShowsRegisterButton()
     {
         using var factory = new RegistrationAvailabilityFactory();
