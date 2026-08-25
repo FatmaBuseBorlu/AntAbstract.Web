@@ -724,6 +724,15 @@
             transform: translateY(-1px);
         }
 
+        .secondary-action-btn.disabled-action,
+        .secondary-action-btn.disabled-action:hover {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .action-row {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1061,6 +1070,7 @@
                         var paymentsUrl = GetPaymentsUrl(tenantSlug);
                         var statusText = GetConferenceStatusText(kongre);
                         var statusClass = GetConferenceStatusClass(kongre);
+                        var canSubmitAbstract = kongre.IsSubmissionAvailable;
 
                         var effectiveReturnUrl = isAdmin
                             ? conferenceFlowUrl
@@ -1209,11 +1219,21 @@
                                                     @Localizer["MySubmissions"]
                                                 </a>
 
-                                                <a href="@submissionCreateUrl"
-                                                   class="secondary-action-btn">
-                                                    <i class="fas fa-paper-plane"></i>
-                                                    @Localizer["SubmitPaper"]
-                                                </a>
+                                                @if (canSubmitAbstract)
+                                                {
+                                                    <a href="@submissionCreateUrl"
+                                                       class="secondary-action-btn">
+                                                        <i class="fas fa-paper-plane"></i>
+                                                        @Localizer["SubmitPaper"]
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="secondary-action-btn disabled-action">
+                                                        <i class="fas fa-lock"></i>
+                                                        @L("SubmissionClosed", "Başvuru Kapalı")
+                                                    </span>
+                                                }
 
                                                 <a href="@paymentsUrl"
                                                    class="secondary-action-btn">

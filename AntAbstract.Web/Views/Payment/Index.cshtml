@@ -7,6 +7,9 @@
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
+
+    // Bu sayfa TempData mesajlarını kendisi gösteriyor; layout tekrar basmasın.
+    ViewData["HandlesTempDataAlerts"] = true;
     Layout = "_Layout";
 
     var culture = CultureInfo.CurrentUICulture;

@@ -1219,23 +1219,44 @@ namespace AntAbstract.Web.Controllers
 
                 var registrationOpenConferenceIds = await GetRegistrationOpenConferenceIdsAsync();
 
+                var now = DateTime.UtcNow;
+
+                // Yalnızca gerçekten kayıt alınabilen kongreler listelenir:
+                // kayıt açık, tarihi geçmemiş ve kontenjanı dolmamış olmalı.
                 registrationAvailableConferences = await _context.Conferences
                     .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Where(c =>
                         c.EndDate.Date >= DateTime.Today &&
+                        c.IsRegistrationOpen &&
+                        (
+                            !c.MaxRegistrations.HasValue ||
+                            c.Registrations.Count() < c.MaxRegistrations.Value
+                        ) &&
                         registrationOpenConferenceIds.Contains(c.Id) &&
                         !myConferenceIds.Contains(c.Id))
                     .OrderBy(c => c.StartDate)
                     .ToListAsync();
 
+                // Yalnızca bildiri gönderimi gerçekten açık olan kongreler listelenir.
+                // Kurallar SubmissionController.EnsureUserCanCreateSubmissionAsync ile aynıdır.
                 submissionAvailableConferences = await _context.Conferences
                     .IgnoreQueryFilters()
                     .AsNoTracking()
                     .Include(c => c.Tenant)
                     .Where(c =>
                         c.EndDate.Date >= DateTime.Today &&
+                        c.IsSubmissionOpen &&
+                        (
+                            !c.FullTextSubmissionDeadline.HasValue ||
+                            c.FullTextSubmissionDeadline.Value >= now
+                        ) &&
+                        (
+                            !c.AbstractSubmissionDeadline.HasValue ||
+                            c.FullTextSubmissionDeadline.HasValue ||
+                            c.AbstractSubmissionDeadline.Value >= now
+                        ) &&
                         registeredConferenceIds.Contains(c.Id) &&
                         !submittedConferenceIds.Contains(c.Id))
                     .OrderBy(c => c.StartDate)

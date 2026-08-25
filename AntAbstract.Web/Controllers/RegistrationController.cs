@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
@@ -125,6 +126,43 @@ namespace AntAbstract.Web.Controllers
             }
 
             return deadline.Value.Date >= DateTime.UtcNow.Date;
+        }
+
+        /// <summary>
+        /// Kongreye yeni kayıt alınamıyorsa nedenini açıklayan mesajı döner.
+        /// Kayıt alınabiliyorsa null döner.
+        /// </summary>
+        private async Task<string?> GetRegistrationClosedMessageAsync(Conference conference)
+        {
+            if (!conference.IsRegistrationOpen)
+            {
+                return T(
+                    "RegistrationClosed",
+                    "Bu kongreye kayıt şu anda kapalıdır.");
+            }
+
+            if (conference.EndDate.Date < DateTime.UtcNow.Date)
+            {
+                return T(
+                    "RegistrationConferenceEnded",
+                    "Bu kongrenin tarihi geçtiği için yeni kayıt alınmamaktadır.");
+            }
+
+            if (conference.MaxRegistrations.HasValue)
+            {
+                var currentCount = await _context.Registrations
+                    .AsNoTracking()
+                    .CountAsync(r => r.ConferenceId == conference.Id);
+
+                if (currentCount >= conference.MaxRegistrations.Value)
+                {
+                    return T(
+                        "RegistrationQuotaFull",
+                        "Bu kongre için kayıt kontenjanı dolmuştur.");
+                }
+            }
+
+            return null;
         }
 
         private Guid? GetSelectedConferenceIdFromSession(Guid? tenantId = null)
@@ -355,6 +393,22 @@ namespace AntAbstract.Web.Controllers
                 }
             }
 
+            ViewBag.ConferenceTitle = conference.Title;
+            ViewBag.ConferenceStartDate = conference.StartDate;
+            ViewBag.Slug = canonicalSlug;
+
+            // Kayıt kapalıysa, kongre tarihi geçtiyse veya kontenjan dolduysa
+            // başvuru türü seçim ekranı hiç gösterilmez.
+            var closedMessage = await GetRegistrationClosedMessageAsync(conference);
+
+            if (closedMessage != null)
+            {
+                ViewBag.RegistrationClosed = true;
+                ViewBag.RegistrationClosedMessage = closedMessage;
+
+                return View(new List<RegistrationType>());
+            }
+
             var today = DateTime.UtcNow.Date;
 
             var registrationTypes = await _context.RegistrationTypes
@@ -374,10 +428,6 @@ namespace AntAbstract.Web.Controllers
                 .OrderBy(rt => rt.Price)
                 .ThenBy(rt => rt.Name)
                 .ToList();
-
-            ViewBag.ConferenceTitle = conference.Title;
-            ViewBag.ConferenceStartDate = conference.StartDate;
-            ViewBag.Slug = canonicalSlug;
 
             return View(registrationTypes);
         }
@@ -451,6 +501,15 @@ namespace AntAbstract.Web.Controllers
                     "Bu kongreye kaydınız zaten var. Şimdi bildirinizin özetini gönderebilirsiniz.");
 
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
+            }
+
+            var closedMessage = await GetRegistrationClosedMessageAsync(conference);
+
+            if (closedMessage != null)
+            {
+                TempData["ErrorMessage"] = closedMessage;
+
+                return Redirect(BuildUrl(canonicalSlug, "/registration"));
             }
 
             ViewBag.Ticket = ticketType;
@@ -540,28 +599,14 @@ namespace AntAbstract.Web.Controllers
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
 
-            // Kota kontrolü
-            if (!conference.IsRegistrationOpen)
+            // Kayıt durumu / tarih / kontenjan kontrolü
+            var closedMessage = await GetRegistrationClosedMessageAsync(conference);
+
+            if (closedMessage != null)
             {
-                TempData["ErrorMessage"] = T(
-                    "RegistrationClosed",
-                    "Bu kongreye kayıt şu anda kapalıdır.");
+                TempData["ErrorMessage"] = closedMessage;
+
                 return Redirect(BuildUrl(canonicalSlug, "/registration"));
-            }
-
-            if (conference.MaxRegistrations.HasValue)
-            {
-                var currentCount = await _context.Registrations
-                    .AsNoTracking()
-                    .CountAsync(r => r.ConferenceId == conference.Id);
-
-                if (currentCount >= conference.MaxRegistrations.Value)
-                {
-                    TempData["ErrorMessage"] = T(
-                        "RegistrationQuotaFull",
-                        "Bu kongre için kayıt kontenjanı dolmuştur.");
-                    return Redirect(BuildUrl(canonicalSlug, "/registration"));
-                }
             }
 
             var newRegistration = new Registration

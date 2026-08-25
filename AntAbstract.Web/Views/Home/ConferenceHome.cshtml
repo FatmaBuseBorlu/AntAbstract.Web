@@ -100,20 +100,10 @@
     // Sunucu bildiri gönderimini yalnızca "açık mı" ayarına göre değil son
     // tarihlere göre de kapatıyor. Rozet yalnızca ayara baktığı için süre
     // dolduğunda "Aktif" yazıyor, kullanıcı butona basınca kongre anasayfasına
-    // geri atılıyordu. Bu hesap SubmissionController'daki kontrolle aynı.
-    var submissionNow = DateTime.UtcNow;
-
-    // Yeni bildiri gönderimini özet son tarihi kapatır; özet tarihi
-    // girilmemişse tek sınır tam metin tarihi kalır.
-    var submissionDeadline = Model.Conference?.AbstractSubmissionDeadline
-                             ?? Model.Conference?.FullTextSubmissionDeadline;
-
-    var submissionDeadlinePassed = submissionDeadline.HasValue &&
-        submissionNow > submissionDeadline.Value;
-
-    var canSubmitAbstract = Model.Conference != null
-        && Model.Conference.IsSubmissionOpen
-        && !submissionDeadlinePassed;
+    // geri atılıyordu. Kural Conference.IsSubmissionAvailable içinde tek yerde
+    // duruyor ve SubmissionController'daki sunucu tarafı kontrolle birebir aynı:
+    // tam metin son tarihi girilmişse onu, girilmemişse özet son tarihini uygular.
+    var canSubmitAbstract = Model.Conference?.IsSubmissionAvailable == true;
 
     // Kayıtlı kullanıcıyı bildiri gönderime yönlendiriyoruz; ancak süre
     // dolmuşsa sunucu onu buraya geri atıyor. Bu durumda kayıt sayfasına
@@ -121,6 +111,14 @@
     var mainActionUrl = isRegisteredToThisConference && canSubmitAbstract
         ? submitAbstractUrl
         : registrationUrl;
+
+    // Kayıt kapalıysa veya kongre tarihi geçtiyse kayıt ekranına yönlendiren
+    // butonlar gösterilmez.
+    var canRegisterNow = Model.Conference?.IsRegistrationAvailable == true;
+
+    var showMainAction = isRegisteredToThisConference
+        ? canSubmitAbstract
+        : canRegisterNow;
 
     var heroCardActionText = L("HeroCardContinueButton", "Başvuruya Devam Et");
 
@@ -1543,7 +1541,7 @@
                     <div class="hero-info-grid">
                         <div>
                             <small>@Localizer["RegistrationStatusLabel"]</small>
-                            @if (Model.Conference.IsRegistrationOpen)
+                            @if (canRegisterNow)
                             {
                                 <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusOpen"]</strong>
                             }
@@ -1576,7 +1574,7 @@
                         </div>
                     </div>
 
-                    @if (Model.Conference.IsRegistrationOpen || canSubmitAbstract)
+                    @if (showMainAction)
                     {
                         <a href="@mainActionUrl" class="hero-card-cta">
                             <span>
@@ -2022,7 +2020,7 @@
                 <div class="sticky-sidebar">
 
                     <div class="action-card">
-                        @if (Model.Conference.IsRegistrationOpen || canSubmitAbstract)
+                        @if (canRegisterNow || canSubmitAbstract)
                         {
                             <div class="action-card-badge">
                                 <i class="fas fa-circle"></i>
@@ -2050,7 +2048,7 @@
                         <div class="action-info-grid">
                             <div class="action-info-item">
                                 <span>@Localizer["RegistrationLabel"]</span>
-                                @if (Model.Conference.IsRegistrationOpen)
+                                @if (canRegisterNow)
                                 {
                                     <strong class="text-success">@Localizer["StatusOpen"]</strong>
                                 }
@@ -2081,7 +2079,7 @@
                             </div>
                         }
 
-                        @if (Model.Conference.IsRegistrationOpen)
+                        @if (canRegisterNow)
                         {
                             <a href="@registrationUrl" class="action-primary-btn">
                                 <i class="fas fa-user-plus"></i>
@@ -2185,7 +2183,7 @@
         </p>
 
         <div class="d-flex flex-wrap justify-content-center gap-3">
-            @if (Model.Conference.IsRegistrationOpen)
+            @if (canRegisterNow)
             {
                 <a href="@registrationUrl" class="hero-primary-btn">
                     <i class="fas fa-user-plus"></i>
