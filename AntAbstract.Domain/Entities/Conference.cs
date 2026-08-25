@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AntAbstract.Domain.Entities
 {
@@ -80,6 +81,15 @@ namespace AntAbstract.Domain.Entities
 
         /// <summary>Kayıt açık mı? (Admin elle kapatabilir)</summary>
         public bool IsRegistrationOpen { get; set; } = true;
+
+        /// <summary>
+        /// Katılımcıya kayıt ekranı gösterilmeli mi?
+        /// Admin kaydı kapattıysa veya kongrenin tarihi geçtiyse kayıt alınmaz.
+        /// Kontenjan kontrolü ayrıca yapılır (veritabanı sayımı gerektirir).
+        /// </summary>
+        [NotMapped]
+        public bool IsRegistrationAvailable =>
+            IsRegistrationOpen && EndDate.Date >= DateTime.UtcNow.Date;
 
         // Sertifika birinci imza bilgileri
         public string? CertificateFirstSignerName { get; set; }

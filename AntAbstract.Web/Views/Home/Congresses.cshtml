@@ -84,6 +84,13 @@
             : text;
     }
 
+    bool GetBool(object? item, bool fallback, params string[] propertyNames)
+    {
+        var value = GetPropertyValue(item, propertyNames);
+
+        return value is bool boolValue ? boolValue : fallback;
+    }
+
     Guid? GetGuid(object? item, params string[] propertyNames)
     {
         var value = GetPropertyValue(item, propertyNames);
@@ -424,6 +431,10 @@
                         ? $"/{slug}/registration"
                         : "#";
 
+                        // Kayıt kapalıysa veya kongre tarihi geçtiyse kayıt butonu gösterilmez
+                        var isRegistrationAvailable = !string.IsNullOrWhiteSpace(slug) &&
+                        GetBool(item, true, "IsRegistrationAvailable");
+
                         var panelUrl = !string.IsNullOrWhiteSpace(slug)
                         ? $"/{slug}/Dashboard"
                         : "/Dashboard/MyConferences";
@@ -517,19 +528,26 @@
                                 </p>
 
                                 <div class="congress-action-buttons">
-                                    @if (!isSystemUser && !isReferee && !isRegistered)
+                                    @if (isRegistered)
+                                    {
+                                        <a href="@panelUrl" class="congress-action-button btn-registered-congress">
+                                            <span>@Localizer["GoToPanel"]</span>
+                                            <i class="fas fa-check-circle"></i>
+                                        </a>
+                                    }
+                                    else if (!isSystemUser && !isReferee && isRegistrationAvailable)
                                     {
                                         <a href="@registrationUrl" class="congress-action-button btn-register-congress">
                                             <span>@Localizer["Register"]</span>
                                             <i class="fas fa-paper-plane"></i>
                                         </a>
                                     }
-                                    else if (isRegistered)
+                                    else if (!isSystemUser && !isReferee)
                                     {
-                                        <a href="@panelUrl" class="congress-action-button btn-registered-congress">
-                                            <span>@Localizer["GoToPanel"]</span>
-                                            <i class="fas fa-check-circle"></i>
-                                        </a>
+                                        <span class="congress-action-button btn-closed-congress">
+                                            <span>@Localizer["RegistrationClosedShort"]</span>
+                                            <i class="fas fa-lock"></i>
+                                        </span>
                                     }
                                     <a href="@siteUrl" target="_blank" class="congress-action-button btn-site-view">
                                         <span>@Localizer["ViewSite"]</span>
@@ -1082,6 +1100,13 @@
             box-shadow: 0 14px 28px rgba(13, 110, 253, 0.22);
             transform: translateY(-1px);
         }
+
+    .btn-closed-congress {
+        color: #94a3b8;
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        cursor: not-allowed;
+    }
 
     .empty-congress-box {
         padding: 4rem 1.5rem;

@@ -81,6 +81,14 @@
         ? submitAbstractUrl
         : registrationUrl;
 
+    // Kayıt kapalıysa veya kongre tarihi geçtiyse kayıt ekranına yönlendiren
+    // butonlar gösterilmez.
+    var canRegisterNow = Model.Conference?.IsRegistrationAvailable == true;
+
+    var showMainAction = isRegisteredToThisConference
+        ? Model.Conference?.IsSubmissionOpen == true
+        : canRegisterNow;
+
     var heroCardActionText = L("HeroCardContinueButton", "Başvuruya Devam Et");
 
     var heroCardActionIcon = "fa-arrow-right";
@@ -1110,7 +1118,7 @@
                         </div>
                     </div>
 
-                    @if (Model.Conference.IsRegistrationOpen || Model.Conference.IsSubmissionOpen)
+                    @if (showMainAction)
                     {
                         <a href="@mainActionUrl" class="hero-card-cta">
                             <span>
@@ -1272,7 +1280,7 @@
                         <div class="action-info-grid">
                             <div class="action-info-item">
                                 <span>@Localizer["RegistrationLabel"]</span>
-                                @if (Model.Conference.IsRegistrationOpen)
+                                @if (canRegisterNow)
                                 {
                                     <strong class="text-success">@Localizer["StatusOpen"]</strong>
                                 }
@@ -1303,7 +1311,7 @@
                             </div>
                         }
 
-                        @if (Model.Conference.IsRegistrationOpen)
+                        @if (canRegisterNow)
                         {
                             <a href="@registrationUrl" class="action-primary-btn">
                                 <i class="fas fa-user-plus"></i>
@@ -1407,7 +1415,7 @@
         </p>
 
         <div class="d-flex flex-wrap justify-content-center gap-3">
-            @if (Model.Conference.IsRegistrationOpen)
+            @if (canRegisterNow)
             {
                 <a href="@registrationUrl" class="hero-primary-btn">
                     <i class="fas fa-user-plus"></i>
