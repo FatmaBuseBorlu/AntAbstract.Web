@@ -1918,6 +1918,23 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         <i class="fas fa-calendar-plus text-primary"></i>
                         @L("Management_Conferences", "Kongrelerim / Kongre Oluştur")
                     </a>
+
+                    @* Bu iki ekran yalnızca kongre seçiliyken menüde yer
+                       alıyordu; panele yeni girildiğinde seçim henüz yapılmamış
+                       olduğu için hiç görünmüyor, kullanıcı ekranların varlığını
+                       fark edemiyordu. Adresler kongre seçme adımıyla başlıyor —
+                       Kongre Akışı'nın forceSelect ile yaptığının aynısı. *@
+                    <a href="/Admin/RegistrationTypes"
+                       class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")">
+                        <i class="fas fa-tags text-primary"></i>
+                        @L("System_RegistrationTypes", "Kayıt Türleri")
+                    </a>
+
+                    <a href="/Admin/ConferenceTopics"
+                       class="nav-link @(currentController == "ConferenceTopics" ? "active" : "")">
+                        <i class="fas fa-layer-group text-success"></i>
+                        @L("System_ConferenceTopics", "Bildiri Konuları")
+                    </a>
                 }
             }
 
