@@ -12,37 +12,39 @@
 @if (Model.CurrentLogins?.Count > 0)
 {
     <h3>@Localizer["RegisteredLoginsTitle"]</h3>
-    <table class="table">
-        <tbody>
-            @foreach (var login in Model.CurrentLogins)
-            {
-                <tr>
-                    <td id="@($"login-provider-{login.LoginProvider}")">@login.ProviderDisplayName</td>
-                    <td>
-                        @if (Model.ShowRemoveButton)
-                        {
-                            <form id="@($"remove-login-{login.LoginProvider}")" asp-page-handler="RemoveLogin" method="post">
-                                @Html.AntiForgeryToken()
-                                <div>
-                                    <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
-                                    <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
-                                    <button type="submit"
-                                            class="btn btn-primary"
-                                            title="@Localizer["RemoveLoginTitle", login.ProviderDisplayName ?? login.LoginProvider]">
-                                        @Localizer["RemoveButton"]
-                                    </button>
-                                </div>
-                            </form>
-                        }
-                        else
-                        {
-                            @: &nbsp;
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table">
+            <tbody>
+                @foreach (var login in Model.CurrentLogins)
+                {
+                    <tr>
+                        <td id="@($"login-provider-{login.LoginProvider}")">@login.ProviderDisplayName</td>
+                        <td>
+                            @if (Model.ShowRemoveButton)
+                            {
+                                <form id="@($"remove-login-{login.LoginProvider}")" asp-page-handler="RemoveLogin" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div>
+                                        <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
+                                        <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
+                                        <button type="submit"
+                                                class="btn btn-primary"
+                                                title="@Localizer["RemoveLoginTitle", login.ProviderDisplayName ?? login.LoginProvider]">
+                                            @Localizer["RemoveButton"]
+                                        </button>
+                                    </div>
+                                </form>
+                            }
+                            else
+                            {
+                                @: &nbsp;
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @if (Model.OtherLogins?.Count > 0)
