@@ -751,11 +751,23 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             ConferenceTopic? selectedTopic = null;
 
+            // Kongreye hic konu tanimlanmadiysa yazarin secebilecegi bir sey
+            // yok; konuyu yine de sart kosmak formu tamamen kilitliyor ve
+            // yazar bildiriyi hicbir sekilde gonderemiyordu. Boyle bir kongrede
+            // konu istege bagli oluyor, yonetici konulari ekleyince tekrar
+            // zorunlu hale geliyor.
+            var conferenceHasTopics = await _context.ConferenceTopics
+                .AsNoTracking()
+                .AnyAsync(t => t.ConferenceId == conference.Id && t.IsActive);
+
             if (!model.ConferenceTopicId.HasValue)
             {
-                ModelState.AddModelError(
-                    nameof(model.ConferenceTopicId),
-                    T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                if (conferenceHasTopics)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ConferenceTopicId),
+                        T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                }
             }
             else
             {
@@ -837,13 +849,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 var createDto = new CreateSubmissionDto
                 {
                     ConferenceId = conference.Id,
-                    ConferenceTopicId = selectedTopic!.Id,
+                    ConferenceTopicId = selectedTopic?.Id,
 
                     Title = model.Title,
                     Abstract = model.AbstractText,
                     Keywords = model.Keywords,
 
-                    Topic = selectedTopic.Name,
+                    Topic = selectedTopic?.Name ?? string.Empty,
                     PresentationType = model.PresentationType,
 
                     FilePath = fileInfo.FilePathDb,
@@ -1093,11 +1105,23 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             ConferenceTopic? selectedTopic = null;
 
+            // Kongreye hic konu tanimlanmadiysa yazarin secebilecegi bir sey
+            // yok; konuyu yine de sart kosmak formu tamamen kilitliyor ve
+            // yazar bildiriyi hicbir sekilde gonderemiyordu. Boyle bir kongrede
+            // konu istege bagli oluyor, yonetici konulari ekleyince tekrar
+            // zorunlu hale geliyor.
+            var conferenceHasTopics = await _context.ConferenceTopics
+                .AsNoTracking()
+                .AnyAsync(t => t.ConferenceId == conference.Id && t.IsActive);
+
             if (!model.ConferenceTopicId.HasValue)
             {
-                ModelState.AddModelError(
-                    nameof(model.ConferenceTopicId),
-                    T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                if (conferenceHasTopics)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ConferenceTopicId),
+                        T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                }
             }
             else
             {
@@ -1149,13 +1173,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 var updateDto = new CreateSubmissionDto
                 {
                     ConferenceId = conference.Id,
-                    ConferenceTopicId = selectedTopic!.Id,
+                    ConferenceTopicId = selectedTopic?.Id,
 
                     Title = model.Title,
                     Abstract = model.AbstractText,
                     Keywords = model.Keywords,
 
-                    Topic = selectedTopic.Name,
+                    Topic = selectedTopic?.Name ?? string.Empty,
                     PresentationType = model.PresentationType,
 
                     FilePath = filePath,

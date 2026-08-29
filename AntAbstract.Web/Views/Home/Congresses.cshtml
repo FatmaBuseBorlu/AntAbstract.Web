@@ -552,9 +552,15 @@
                                     }
                                     else if (!isSystemUser && !isReferee)
                                     {
+                                        @* Tarihi gecmis kongre ile kaydi kapanmis kongre ayni degil:
+                                           ilkinde yapilacak bir sey yok, ikincisinde kayit sonradan
+                                           acilabilir. Ayni yaziyi gostermek kullaniciyi bosuna
+                                           bekletiyordu. *@
+                                        var hasEnded = endDate.HasValue && endDate.Value.Date < DateTime.Today;
+
                                         <span class="congress-action-button btn-closed-congress">
-                                            <span>@Localizer["RegistrationClosedShort"]</span>
-                                            <i class="fas fa-lock"></i>
+                                            <span>@(hasEnded ? Localizer["ConferenceEndedShort"] : Localizer["RegistrationClosedShort"])</span>
+                                            <i class="@(hasEnded ? "fas fa-flag-checkered" : "fas fa-lock")"></i>
                                         </span>
                                     }
                                     <a href="@siteUrl" target="_blank" class="congress-action-button btn-site-view">
@@ -1110,10 +1116,12 @@
             transform: translateY(-1px);
         }
 
+    /* Gri hali soluk kaldigi icin fark edilmiyordu; amber hem goze carpiyor
+       hem de kirmizi gibi "bir sey bozuldu" izlenimi vermiyor. */
     .btn-closed-congress {
-        color: #94a3b8;
-        border-color: #e2e8f0;
-        background: #f8fafc;
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.30);
+        background: rgba(245, 158, 11, 0.10);
         cursor: not-allowed;
     }
 

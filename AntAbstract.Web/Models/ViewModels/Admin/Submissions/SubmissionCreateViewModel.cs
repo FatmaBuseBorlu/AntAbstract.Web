@@ -22,7 +22,10 @@ namespace AntAbstract.Web.Models.ViewModels.Admin.Submissions
         [Display(Name = "Anahtar Kelimeler")]
         public string Keywords { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Lütfen bildiri konusunu/temasını seçiniz.")]
+        // [Required] kaldirildi: kongreye hic konu tanimlanmadiysa secilecek
+        // bir sey olmadigi halde form kilitleniyor, yazar bildirisini
+        // gonderemiyordu. Zorunluluk artik denetleyicide, "bu kongrede aktif
+        // konu var mi" sorusuna gore uygulaniyor.
         [Display(Name = "Bildiri Konusu / Tema")]
         public Guid? ConferenceTopicId { get; set; }
 
