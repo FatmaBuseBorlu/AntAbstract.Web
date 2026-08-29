@@ -1533,6 +1533,12 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             h4.fw-bold { font-size: 1.1rem; }
         }
     </style>
+
+    @* Diger iki duzen bu bolumu basiyordu, bu duzen basmiyordu. Bolumu
+       tanimlayan bir gorunum (Yaka Karti) bu yuzden her acilisinda
+       "sections have been defined but have not been rendered" hatasiyla
+       500 veriyordu. *@
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body>
