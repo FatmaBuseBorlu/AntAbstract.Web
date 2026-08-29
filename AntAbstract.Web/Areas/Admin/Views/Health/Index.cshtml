@@ -6,6 +6,9 @@
     var dbOk          = (bool)ViewBag.DbOk;
     var dbError       = ViewBag.DbError as string;
     var stripeOk      = (bool)ViewBag.StripeOk;
+    var payTrOk       = (bool)ViewBag.PayTrOk;
+    var payTrTestMode = (bool)ViewBag.PayTrTestMode;
+    var smtpOk        = (bool)ViewBag.SmtpOk;
     var auditPending  = (int)ViewBag.AuditQueuePending;
     var generatedAt   = (DateTime)ViewBag.GeneratedAt;
 
@@ -178,9 +181,45 @@
             <div>
                 <div class="health-stat-value">
                     @if (stripeOk) { <span style="color:#16a34a">✓ OK</span> }
-                    else { <span style="color:#b45309">Yapılandırılmamış</span> }
+                    else { <span style="color:#b45309">@Localizer["NotConfigured"]</span> }
                 </div>
                 <div class="health-stat-label">Stripe</div>
+            </div>
+        </div>
+
+        @* Kart ödemesi PayTR ve SMTP anahtarlarına da bağlı; bunlar yalnızca
+           sunucudaki appsettings.Production.json'da bulunuyor, depodaki şablon
+           yer tutucu tuttuğu için canlıda buradan bakılması gerekiyor. *@
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(!payTrOk ? "si-yellow" : payTrTestMode ? "si-yellow" : "si-green")">
+                <i class="fas fa-credit-card"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">
+                    @if (!payTrOk) { <span style="color:#b45309">@Localizer["NotConfigured"]</span> }
+                    else if (payTrTestMode) { <span style="color:#b45309">@Localizer["TestMode"]</span> }
+                    else { <span style="color:#16a34a">✓ OK</span> }
+                </div>
+                <div class="health-stat-label">PayTR</div>
+                @if (payTrOk && payTrTestMode)
+                {
+                    <div class="text-warning" style="font-size:0.7rem;margin-top:4px">
+                        @Localizer["TestModeWarning"]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(smtpOk ? "si-green" : "si-yellow")">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">
+                    @if (smtpOk) { <span style="color:#16a34a">✓ OK</span> }
+                    else { <span style="color:#b45309">@Localizer["NotConfigured"]</span> }
+                </div>
+                <div class="health-stat-label">@Localizer["SmtpLabel"]</div>
             </div>
         </div>
 

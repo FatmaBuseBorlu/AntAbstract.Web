@@ -51,6 +51,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var stripeKey = _configuration["Stripe:SecretKey"];
             var stripeOk = HasConfiguredValue(stripeKey);
 
+            // ── PayTR yapılandırması ─────────────────────────────────────────
+            // Üçü birden dolu olmalı; biri eksikse imza üretilemez ve ödeme
+            // sayfası açılmaz. Depodaki şablon dosyası yer tutucu tuttuğu için
+            // bu kontrol yalnızca sunucudaki gerçek dosyayı yansıtır.
+            var payTrOk =
+                HasConfiguredValue(_configuration["PayTR:MerchantId"]) &&
+                HasConfiguredValue(_configuration["PayTR:MerchantKey"]) &&
+                HasConfiguredValue(_configuration["PayTR:MerchantSalt"]);
+
+            // Canlıda test modu açık kalırsa kart provası yapılır ama para
+            // tahsil edilmez — sessizce yanlış çalışan bir durum, uyaralım.
+            var payTrTestMode = string.Equals(
+                _configuration["PayTR:TestMode"]?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+
+            // ── SMTP yapılandırması ──────────────────────────────────────────
+            var smtpOk =
+                HasConfiguredValue(_configuration["Email:SmtpServer"]) &&
+                HasConfiguredValue(_configuration["Email:Username"]) &&
+                HasConfiguredValue(_configuration["Email:Password"]);
+
             // ── Audit queue ──────────────────────────────────────────────────
             var auditQueuePending = _auditQueue.PendingCount;
 
@@ -118,6 +138,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.DbOk = dbOk;
             ViewBag.DbError = dbError;
             ViewBag.StripeOk = stripeOk;
+            ViewBag.PayTrOk = payTrOk;
+            ViewBag.PayTrTestMode = payTrTestMode;
+            ViewBag.SmtpOk = smtpOk;
             ViewBag.AuditQueuePending = auditQueuePending;
             ViewBag.RecentWebhookErrors = recentWebhookErrors;
             ViewBag.RecentMailErrors = recentMailErrors;
@@ -147,8 +170,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var dbOk = false;
             try { dbOk = await _context.Database.CanConnectAsync(); } catch { }
 
-            var stripeKey = _configuration["Stripe:SecretKey"];
-            var stripeOk = HasConfiguredValue(stripeKey);
+            var stripeOk = HasConfiguredValue(_configuration["Stripe:SecretKey"]);
+
+            var payTrOk =
+                HasConfiguredValue(_configuration["PayTR:MerchantId"]) &&
+                HasConfiguredValue(_configuration["PayTR:MerchantKey"]) &&
+                HasConfiguredValue(_configuration["PayTR:MerchantSalt"]);
+
+            var payTrTestMode = string.Equals(
+                _configuration["PayTR:TestMode"]?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+
+            var smtpOk =
+                HasConfiguredValue(_configuration["Email:SmtpServer"]) &&
+                HasConfiguredValue(_configuration["Email:Username"]) &&
+                HasConfiguredValue(_configuration["Email:Password"]);
 
             return Ok(new
             {
@@ -158,6 +193,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 {
                     database = dbOk ? "ok" : "error",
                     stripe = stripeOk ? "ok" : "not_configured",
+                    payTr = payTrOk ? (payTrTestMode ? "test_mode" : "ok") : "not_configured",
+                    smtp = smtpOk ? "ok" : "not_configured",
                     auditQueuePending = _auditQueue.PendingCount
                 }
             });
