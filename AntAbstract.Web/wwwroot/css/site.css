@@ -6,6 +6,30 @@ html, body {
     margin: 0;
 }
 
+/* ── Global tipografi ölçeği ──────────────────────────────────────────
+   Başlık boyutları eskiden her sayfanın kendi <style> bloğunda ayrı ayrı
+   yazılıydı; aynı rolü gören iki başlık farklı ekranlarda farklı büyüyordu
+   ve düzeltmek için her sayfaya tek tek dokunmak gerekiyordu. Artık ölçek
+   tek yerde; sayfalar yalnızca değişkeni kullanıyor.
+
+   Hedeflenen aralıklar (ölçülerek doğrulandı):
+     Hero      telefon ~30px · laptop 41-46px · masaüstü 56-58px
+     Bölüm     telefon ~24px · laptop 28-31px · masaüstü 39-40px
+     Kart adı  telefon ~17px · laptop 15-17px · masaüstü 20px
+
+   vw terimi ekran genişliğiyle, rem terimi kök boyutuyla ölçekleniyor;
+   ikisi birlikte laptopta ayrı bir ara kademe oluşturuyor — sorun en çok
+   orada hissediliyordu.
+
+   Not: form alanları bu ölçeğin dışında. Dar ekranda 16px'in altına inen
+   bir input'a basınca iOS Safari sayfayı otomatik yakınlaştırıyor; o yüzden
+   mobile.css onları 16px'te tutuyor ve burası ona karışmıyor.            */
+:root {
+    --fs-hero: clamp(1.875rem, 3.2vw, 3.625rem);
+    --fs-section: clamp(1.5rem, 2.2vw, 2.5rem);
+    --fs-card-title: clamp(1.1rem, 1.1vw, 1.25rem);
+}
+
 /* Akışkan yazı boyutu — masaüstü.
 
    Arayüzün tamamı rem ile ölçülüyor ama html için hiç font-size

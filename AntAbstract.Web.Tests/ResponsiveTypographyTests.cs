@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace AntAbstract.Web.Tests;
 
@@ -13,6 +14,10 @@ namespace AntAbstract.Web.Tests;
 /// </summary>
 public sealed class ResponsiveTypographyTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public ResponsiveTypographyTests(ITestOutputHelper output) => _output = output;
+
     private static string Css(string name)
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -65,6 +70,62 @@ public sealed class ResponsiveTypographyTests
         Assert.True(
             double.Parse(min, System.Globalization.CultureInfo.InvariantCulture) * 16 >= 14,
             $"Alt sınır {min}rem — 14px'in altında.");
+    }
+
+    /// <summary>Ölçek değişkenleri tek yerde tanımlı olmalı.</summary>
+    [Theory]
+    [InlineData("--fs-hero")]
+    [InlineData("--fs-section")]
+    [InlineData("--fs-card-title")]
+    public void TipografiOlcegi_TekYerdeTanimli(string token)
+    {
+        Assert.Contains(token + ":", Css("site.css"), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Başlıklar ölçeğe bağlı kalmalı. Sayfanın kendi içinde büyük bir
+    /// clamp tanımlanırsa o sayfa ölçekten kopar ve eskisi gibi "her sayfa
+    /// başka telden çalar" duruma dönülür.
+    /// </summary>
+    [Fact]
+    public void Gorunumler_KendiBuyukBaslikOlceginiTanimlamiyor()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (root != null && !Directory.Exists(Path.Combine(root.FullName, "AntAbstract.Web")))
+        {
+            root = root.Parent;
+        }
+
+        Assert.NotNull(root);
+
+        var web = Path.Combine(root!.FullName, "AntAbstract.Web");
+        var big = new Regex(@"font-size:\s*clamp\(\s*([2-9](?:\.\d+)?)rem");
+        var findings = new List<string>();
+
+        foreach (var view in Directory.EnumerateFiles(web, "*.cshtml", SearchOption.AllDirectories))
+        {
+            if (view.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
+                view.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            {
+                continue;
+            }
+
+            foreach (Match m in big.Matches(File.ReadAllText(view)))
+            {
+                findings.Add($"{Path.GetFileName(view)}: {m.Value}");
+            }
+        }
+
+        foreach (var f in findings)
+        {
+            _output.WriteLine(f);
+        }
+
+        Assert.True(
+            findings.Count == 0,
+            "Sayfa içinde 2rem ve üzeri başlık ölçüsü tanımlanmış; " +
+            "var(--fs-hero) veya var(--fs-section) kullanılmalı.");
     }
 
     /// <summary>Dar ekranda form alanları 16px kalmalı (iOS yakınlaştırma).</summary>
