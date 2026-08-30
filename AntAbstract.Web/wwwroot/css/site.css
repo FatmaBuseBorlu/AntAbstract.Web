@@ -6,6 +6,29 @@ html, body {
     margin: 0;
 }
 
+/* Akışkan yazı boyutu — masaüstü.
+
+   Arayüzün tamamı rem ile ölçülüyor ama html için hiç font-size
+   tanımlı değildi; dolayısıyla her şey sabit 16px'e bağlıydı ve dar
+   bir tarayıcı penceresinde yazılar olduğundan büyük duruyordu.
+   Kökü ölçeklemek bütün arayüzü orantılı küçültüyor.
+
+   992px'de 14px, 1440px'de ~14.7px, 1920px'de ~15.5px; bugünkü
+   16px'e ancak 2200px üstünde çıkıyor. Yani her masaüstü genişliğinde
+   bir miktar küçülüyor — şikâyet "yazılar çok büyük" idi.
+   Alt sınır 14px: daha aşağısı gövde metnini okunmaz yapıyor.
+
+   Birim rem — px değil — ki tarayıcısında yazı boyutunu büyütmüş
+   kullanıcının tercihi korunsun; px yazılsaydı o ayar ezilirdi.
+
+   Yalnızca 992px üstünde çalışıyor: dar ekranların boyutları
+   ölçülerek ayarlanmıştı, onlara dokunulmuyor (bkz. mobile.css). */
+@media (min-width: 992px) {
+    html {
+        font-size: clamp(0.875rem, 0.772rem + 0.166vw, 1rem);
+    }
+}
+
 body {
     font-family: 'Inter', sans-serif;
     color: #4a5568;
