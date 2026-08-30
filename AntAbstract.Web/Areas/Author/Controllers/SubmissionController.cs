@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Author.Controllers
 {
     [Area("Author")]
@@ -1836,7 +1837,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (!withdrawableStatuses.Contains(submission.Status))
             {
-                TempData["ErrorMessage"] = "Kabul veya reddedilmiş bildiriler geri çekilemez.";
+                TempData["ErrorMessage"] = T("Msg_KabulVeyaReddedilmisBildirilerGeriCekilemez", "Kabul veya reddedilmiş bildiriler geri çekilemez.");
                 return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
             }
 
@@ -1869,7 +1870,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (!withdrawableStatuses.Contains(submission.Status))
             {
-                TempData["ErrorMessage"] = "Kabul veya reddedilmiş bildiriler geri çekilemez.";
+                TempData["ErrorMessage"] = T("Msg_KabulVeyaReddedilmisBildirilerGeriCekilemez", "Kabul veya reddedilmiş bildiriler geri çekilemez.");
                 return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
             }
 
@@ -1904,7 +1905,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 _logger.LogWarning(ex, "Bildiri geri çekme bildirimi gönderilemedi.");
             }
 
-            TempData["SuccessMessage"] = "Bildiriniz başarıyla geri çekildi.";
+            TempData["SuccessMessage"] = T("Msg_BildirinizBasariylaGeriCekildi", "Bildiriniz başarıyla geri çekildi.");
             return Redirect(BuildUrl(canonicalSlug, "/my-submissions"));
         }
 
@@ -1924,14 +1925,14 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             if (submission.Status != SubmissionStatus.RevisionRequired)
             {
-                TempData["ErrorMessage"] = "Bu bildiri için rebuttal gönderilemez.";
+                TempData["ErrorMessage"] = T("Msg_BuBildiriIcinRebuttalGonderilemez", "Bu bildiri için rebuttal gönderilemez.");
                 var canonical = GetCanonicalSlug(submission.Conference!, slug);
                 return Redirect(BuildUrl(canonical, $"/my-submissions/{id}"));
             }
 
             if (string.IsNullOrWhiteSpace(rebuttalText) || rebuttalText.Trim().Length < 10)
             {
-                TempData["ErrorMessage"] = "Yanıt metni en az 10 karakter olmalıdır.";
+                TempData["ErrorMessage"] = T("Msg_YanitMetniEnAz10Karakter", "Yanıt metni en az 10 karakter olmalıdır.");
                 var canonical = GetCanonicalSlug(submission.Conference!, slug);
                 return Redirect(BuildUrl(canonical, $"/my-submissions/{id}"));
             }
@@ -1940,7 +1941,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             submission.RebuttalDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Yanıtınız başarıyla gönderildi. Editör incelemenizin ardından nihai kararı bildirecektir.";
+            TempData["SuccessMessage"] = T("Msg_YanitinizBasariylaGonderildiEditorIncelemenizinArdindan", "Yanıtınız başarıyla gönderildi. Editör incelemenizin ardından nihai kararı bildirecektir.");
             var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
             return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
         }

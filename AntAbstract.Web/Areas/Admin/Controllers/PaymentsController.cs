@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -19,6 +21,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class PaymentsController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<PaymentsController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IAdminTenantAccessService _tenantAccess;
@@ -156,13 +170,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
                 return RedirectBack(returnUrl);
             }
 
             if (registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmis", "Bu kayıt zaten ödenmiş.");
                 return RedirectBack(returnUrl);
             }
 
@@ -264,7 +278,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 _logger.LogWarning(ex, "Ödeme onay e-postası gönderilemedi. RegistrationId={Id}", registrationId);
             }
 
-            TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı ve kullanıcıya e-posta gönderildi.";
+            TempData["SuccessMessage"] = T("Msg_OdemeBasariylaOnaylandiVeKullaniciyaE", "Ödeme başarıyla onaylandı ve kullanıcıya e-posta gönderildi.");
 
             // In-app bildirim
             if (registration.AppUserId != null)
@@ -314,7 +328,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
                 return RedirectBack(returnUrl);
             }
 
@@ -377,7 +391,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 _logger.LogWarning(ex, "Makbuz ret e-postası gönderilemedi. RegistrationId={Id}", registrationId);
             }
 
-            TempData["SuccessMessage"] = "Makbuz reddedildi ve kullanıcıya bildirim gönderildi.";
+            TempData["SuccessMessage"] = T("Msg_MakbuzReddedildiVeKullaniciyaBildirimGonderildi", "Makbuz reddedildi ve kullanıcıya bildirim gönderildi.");
 
             // In-app bildirim
             if (registration.AppUserId != null)
@@ -427,13 +441,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
                 return RedirectBack(returnUrl);
             }
 
             if (registration.Status == RegistrationStatus.Cancelled)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten iptal edilmiş.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenIptalEdilmis", "Bu kayıt zaten iptal edilmiş.");
                 return RedirectBack(returnUrl);
             }
 
@@ -497,7 +511,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 _logger.LogWarning(ex, "Kayıt iptal e-postası gönderilemedi. RegistrationId={Id}", registrationId);
             }
 
-            TempData["SuccessMessage"] = "Kayıt iptal edildi ve kullanıcıya bildirim gönderildi.";
+            TempData["SuccessMessage"] = T("Msg_KayitIptalEdildiVeKullaniciyaBildirim", "Kayıt iptal edildi ve kullanıcıya bildirim gönderildi.");
 
             // In-app bildirim
             if (registration.AppUserId != null)
@@ -615,13 +629,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
                 return RedirectBack(returnUrl);
             }
 
             if (!registration.IsPaid)
             {
-                TempData["ErrorMessage"] = "Sadece ödemesi tamamlanmış kayıtlar iade edilebilir.";
+                TempData["ErrorMessage"] = T("Msg_SadeceOdemesiTamamlanmisKayitlarIadeEdilebilir", "Sadece ödemesi tamamlanmış kayıtlar iade edilebilir.");
                 return RedirectBack(returnUrl);
             }
 
@@ -706,7 +720,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 conferenceId: registration.ConferenceId,
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
 
-            TempData["SuccessMessage"] = "Ödeme iade edildi ve kullanıcıya bildirim gönderildi.";
+            TempData["SuccessMessage"] = T("Msg_OdemeIadeEdildiVeKullaniciyaBildirim", "Ödeme iade edildi ve kullanıcıya bildirim gönderildi.");
             return RedirectBack(returnUrl);
         }
 

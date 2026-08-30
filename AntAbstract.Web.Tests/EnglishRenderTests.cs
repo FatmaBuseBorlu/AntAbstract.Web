@@ -64,17 +64,16 @@ public sealed class EnglishRenderTests : IClassFixture<AuthenticatedTestFactory>
     /// İngilizce seçiliyken de Türkçe kalıyorlardı. Bu kontrol sayıma değil,
     /// sayfanın gerçekten ne bastığına bakıyor.
     /// </summary>
-    /// Kapsam dışı bırakılan iki ekran ve sebepleri:
-    ///  - /Admin/ReviewCriteria kongre seçilmemişse Kongre Seç ekranına
-    ///    gidiyor; oradaki metinler denetleyicide çıplak dizi olarak duruyor
-    ///    (T(...) ile sarılmamış). Bu ayrı bir iş kalemi.
-    ///  - /Admin/EmailTemplates listesindeki Türkçe, şablon adlarının kendisi;
-    ///    veritabanı içeriği, arayüz metni değil.
+    /// /Admin/EmailTemplates kapsam dışı: oradaki Türkçe, e-posta şablonlarının
+    /// adlarının kendisi — veritabanı içeriği, arayüz metni değil.
     [Theory]
     [InlineData("/Admin/Users")]
     [InlineData("/Admin/Reports")]
     [InlineData("/Admin/Speakers")]
     [InlineData("/Admin/Sponsors")]
+    [InlineData("/Admin/ReviewCriteria")]
+    [InlineData("/Admin/Registrations")]
+    [InlineData("/Admin/ProceedingBook")]
     public async Task YoneticiEkranlari_IngilizceIsteninceTurkceBasmiyor(string path)
     {
         var client = _factory.CreateClient(new() { AllowAutoRedirect = true });

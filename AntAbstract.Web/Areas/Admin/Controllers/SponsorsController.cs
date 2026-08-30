@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -15,6 +17,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class SponsorsController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<SponsorsController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly IAdminTenantAccessService _tenantAccess;
 
@@ -49,7 +63,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
             var conference = await GetConferenceAsync(slug, conferenceId);
-            if (conference == null) { TempData["ErrorMessage"] = "Kongre bulunamadı."; return Redirect($"/{slug}/Admin/Reports"); }
+            if (conference == null) { TempData["ErrorMessage"] = T("Msg_KongreBulunamadi", "Kongre bulunamadı."); return Redirect($"/{slug}/Admin/Reports"); }
             SetViewBag(conference, slug);
             var sponsors = await _context.Sponsors.AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)

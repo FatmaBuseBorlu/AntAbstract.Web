@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.WebUI.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -17,6 +19,18 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
     [Route("Admin/AllConferences/{action=Index}/{id?}")]
     public class AllConferencesController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<AllConferencesController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
 
         public AllConferencesController(AppDbContext context)
@@ -207,7 +221,7 @@ namespace AntAbstract.WebUI.Areas.Admin.Controllers
             _context.Conferences.Add(conference);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kongre başarıyla oluşturuldu.";
+            TempData["SuccessMessage"] = T("Msg_KongreBasariylaOlusturuldu", "Kongre başarıyla oluşturuldu.");
             return RedirectToAction("Index");
         }
 

@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Infrastructure.Context;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -375,7 +376,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UserNotFound",
-                    "Kullanıcı bulunamadı.");
+                    T("Msg_KullaniciBulunamadi", "Kullanıcı bulunamadı."));
 
                 return RedirectToAction(nameof(Index));
             }
@@ -551,13 +552,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (targetUser == null)
             {
-                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KullaniciBulunamadi", "Kullanıcı bulunamadı.");
                 return RedirectToAction(nameof(Index));
             }
 
             if (currentUser?.Id == targetUser.Id)
             {
-                TempData["ErrorMessage"] = "Kendi hesabınızı kilitleyemezsiniz.";
+                TempData["ErrorMessage"] = T("Msg_KendiHesabiniziKilitleyemezsiniz", "Kendi hesabınızı kilitleyemezsiniz.");
                 return RedirectToAction(nameof(Index));
             }
 
@@ -577,7 +578,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (targetUser == null)
             {
-                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KullaniciBulunamadi", "Kullanıcı bulunamadı.");
                 return RedirectToAction(nameof(Index));
             }
 
@@ -597,14 +598,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(newPassword))
             {
-                TempData["ErrorMessage"] = "Kullanıcı ID veya şifre boş olamaz.";
+                TempData["ErrorMessage"] = T("Msg_KullaniciIDVeyaSifreBosOlamaz", "Kullanıcı ID veya şifre boş olamaz.");
                 return RedirectToAction(nameof(Index));
             }
 
             var targetUser = await _userManager.FindByIdAsync(userId);
             if (targetUser == null)
             {
-                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KullaniciBulunamadi", "Kullanıcı bulunamadı.");
                 return RedirectToAction(nameof(Index));
             }
 
@@ -613,7 +614,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!result.Succeeded)
             {
-                TempData["ErrorMessage"] = "Şifre sıfırlanamadı: " +
+                TempData["ErrorMessage"] = T("Msg_SifreSifirlanamadi", "Şifre sıfırlanamadı: ") +
                     string.Join(", ", result.Errors.Select(e => e.Description));
                 return RedirectToAction(nameof(Index));
             }
@@ -632,7 +633,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var targetUser = await _userManager.FindByIdAsync(userId);
             if (targetUser == null)
             {
-                TempData["ErrorMessage"] = "Kullanıcı bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KullaniciBulunamadi", "Kullanıcı bulunamadı.");
                 return RedirectToAction(nameof(Index));
             }
 
@@ -644,7 +645,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                TempData["InfoMessage"] = "Bu kullanıcının e-postası zaten doğrulanmış.";
+                TempData["InfoMessage"] = T("Msg_BuKullanicininEPostasiZatenDogrulanmis", "Bu kullanıcının e-postası zaten doğrulanmış.");
             }
 
             return RedirectToAction(nameof(Index));
@@ -688,7 +689,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_UserNotFound",
-                    "Kullanıcı bulunamadı.");
+                    T("Msg_KullaniciBulunamadi", "Kullanıcı bulunamadı."));
 
                 return RedirectToAction(nameof(Index));
             }

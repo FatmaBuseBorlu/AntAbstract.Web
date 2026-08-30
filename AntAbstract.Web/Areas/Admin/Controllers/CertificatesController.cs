@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -262,7 +263,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadi", "Kongre bulunamadı.");
                 return RedirectToAction("Index");
             }
 

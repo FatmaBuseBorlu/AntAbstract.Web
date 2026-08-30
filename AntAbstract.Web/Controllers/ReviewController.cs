@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize(Roles = "Referee,Hakem,Reviewer")]
@@ -935,13 +936,13 @@ namespace AntAbstract.Web.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Geçerli bir kongre seçilmedi.";
+                TempData["ErrorMessage"] = T("Msg_GecerliBirKongreSecilmedi", "Geçerli bir kongre seçilmedi.");
                 return RedirectToAction(nameof(Index), new { slug = currentSlug });
             }
 
             if (!conference.IsBiddingOpen)
             {
-                TempData["InfoMessage"] = "Bu kongre için teklif fazı henüz açılmamış.";
+                TempData["InfoMessage"] = T("Msg_BuKongreIcinTeklifFaziHenuz", "Bu kongre için teklif fazı henüz açılmamış.");
                 return RedirectToAction(nameof(Index), new { slug = currentSlug });
             }
 

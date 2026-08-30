@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Localization;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
@@ -178,7 +179,7 @@ namespace AntAbstract.Web.Controllers
                 .CountAsync(b => b.RoomTypeId == roomTypeId);
             if (bookedCount >= roomType.TotalQuota)
             {
-                TempData["ErrorMessage"] = "Bu oda tipi için kontenjan dolmuştur.";
+                TempData["ErrorMessage"] = T("Msg_BuOdaTipiIcinKontenjanDolmustur", "Bu oda tipi için kontenjan dolmuştur.");
                 return Redirect($"/{resolvedSlug}/Accommodation?conferenceId={conference.Id}");
             }
 
@@ -188,7 +189,7 @@ namespace AntAbstract.Web.Controllers
                 .FirstOrDefaultAsync(b => b.ConferenceId == conference.Id && b.AppUserId == user.Id);
             if (existing != null)
             {
-                TempData["InfoMessage"] = "Bu kongre için zaten bir konaklama rezervasyonunuz bulunmaktadır.";
+                TempData["InfoMessage"] = T("Msg_BuKongreIcinZatenBirKonaklama", "Bu kongre için zaten bir konaklama rezervasyonunuz bulunmaktadır.");
                 return Redirect($"/{resolvedSlug}/Accommodation/MyBooking?conferenceId={conference.Id}");
             }
 
@@ -236,13 +237,13 @@ namespace AntAbstract.Web.Controllers
                 .CountAsync(b => b.RoomTypeId == roomTypeId);
             if (bookedCount >= roomType.TotalQuota)
             {
-                TempData["ErrorMessage"] = "Bu oda tipi için kontenjan dolmuştur.";
+                TempData["ErrorMessage"] = T("Msg_BuOdaTipiIcinKontenjanDolmustur", "Bu oda tipi için kontenjan dolmuştur.");
                 return Redirect($"/{resolvedSlug}/Accommodation?conferenceId={conference.Id}");
             }
 
             if (checkInDate >= checkOutDate || checkInDate.Date < DateTime.UtcNow.AddHours(-12).Date)
             {
-                TempData["ErrorMessage"] = "Geçersiz tarih aralığı.";
+                TempData["ErrorMessage"] = T("Msg_GecersizTarihAraligi", "Geçersiz tarih aralığı.");
                 return Redirect($"/{resolvedSlug}/Accommodation/Book/{roomTypeId}?conferenceId={conference.Id}");
             }
 
@@ -275,7 +276,7 @@ namespace AntAbstract.Web.Controllers
             _context.AccommodationBookings.Add(booking);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Rezervasyonunuz alındı. Ödeme tamamlandıktan sonra onaylanacaktır.";
+            TempData["SuccessMessage"] = T("Msg_RezervasyonunuzAlindiOdemeTamamlandiktanSonraOnaylanacaktir", "Rezervasyonunuz alındı. Ödeme tamamlandıktan sonra onaylanacaktır.");
             return Redirect($"/{resolvedSlug}/Accommodation/MyBooking?conferenceId={conference.Id}");
         }
 
@@ -289,7 +290,7 @@ namespace AntAbstract.Web.Controllers
             var selectedId = conferenceId ?? _selectedConferenceService.GetSelectedConferenceId();
             if (!selectedId.HasValue)
             {
-                TempData["ErrorMessage"] = "Kongre seçilmedi.";
+                TempData["ErrorMessage"] = T("Msg_KongreSecilmedi", "Kongre seçilmedi.");
                 return Redirect("/Dashboard/MyConferences");
             }
 
@@ -305,7 +306,7 @@ namespace AntAbstract.Web.Controllers
 
             if (booking == null)
             {
-                TempData["InfoMessage"] = "Bu kongre için konaklama rezervasyonunuz bulunmamaktadır.";
+                TempData["InfoMessage"] = T("Msg_BuKongreIcinKonaklamaRezervasyonunuzBulunmamaktadir", "Bu kongre için konaklama rezervasyonunuz bulunmamaktadır.");
                 return Redirect($"/{slug}/Accommodation?conferenceId={selectedId}");
             }
 

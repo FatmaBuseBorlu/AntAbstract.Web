@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -608,15 +609,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!conferences.Any())
             {
                 TempData["ErrorMessage"] = IsSuperAdminUser()
-                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
-                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+                    ? T("Msg_SistemdeGoruntulenebilecekKongreBulunamadi", "Sistemde görüntülenebilecek kongre bulunamadı.")
+                    : T("Msg_KurumunuzaBagliGoruntulenebilecekKongreBulunamadi", "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.");
             }
 
             var vm = new SelectConferenceViewModel
             {
                 Title = T("SelectConference_Title", "Kongre Seç"),
                 Lead = IsSuperAdminUser()
-                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Başvurularını incelemek istediğiniz kongreyi seçiniz."
+                    ? T("Msg_SuperAdminOlarakSistemdekiTumKongreleriGorebilirsiniz", "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Başvurularını incelemek istediğiniz kongreyi seçiniz.")
                     : T("SelectConference_Lead", "Başvuruları yönetmek için önce kongre seçiniz."),
                 PostUrl = "/Admin/Submissions/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
@@ -1055,7 +1056,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (submission == null)
             {
-                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_BildiriBulunamadi", "Bildiri bulunamadı.");
                 return RedirectBack(returnUrl, slug);
             }
 
@@ -1066,7 +1067,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (fullTextFile == null)
             {
-                TempData["ErrorMessage"] = "Bu bildiriye ait tam metin dosyası bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_BuBildiriyeAitTamMetinDosyasi", "Bu bildiriye ait tam metin dosyası bulunamadı.");
                 return RedirectBack(returnUrl, slug);
             }
 
@@ -1077,7 +1078,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             catch
             {
-                TempData["ErrorMessage"] = "Dosya yoluna erişilemedi.";
+                TempData["ErrorMessage"] = T("Msg_DosyaYolunaErisilemedi", "Dosya yoluna erişilemedi.");
                 return RedirectBack(returnUrl, slug, id);
             }
 
@@ -1095,7 +1096,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                TempData["SuccessMessage"] = "İntihal kontrolü başlatıldı. Sonuç hazır olduğunda bu sayfada gösterilecektir.";
+                TempData["SuccessMessage"] = T("Msg_IntihalKontroluBaslatildiSonucHazirOldugunda", "İntihal kontrolü başlatıldı. Sonuç hazır olduğunda bu sayfada gösterilecektir.");
             }
 
             return RedirectBack(returnUrl, slug, id);
@@ -1110,7 +1111,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (report == null)
             {
-                TempData["ErrorMessage"] = "Rapor bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_RaporBulunamadi", "Rapor bulunamadı.");
                 return RedirectBack(returnUrl, slug);
             }
 
@@ -1120,7 +1121,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else if (report.Status == PlagiarismStatus.Processing)
             {
-                TempData["InfoMessage"] = "Rapor henüz hazır değil. Lütfen birkaç dakika sonra tekrar deneyin.";
+                TempData["InfoMessage"] = T("Msg_RaporHenuzHazirDegilLutfenBirkac", "Rapor henüz hazır değil. Lütfen birkaç dakika sonra tekrar deneyin.");
             }
             else
             {
@@ -1138,19 +1139,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var submission = await GetAccessibleSubmissionAsync(id, slug, null);
             if (submission == null)
             {
-                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_BildiriBulunamadi", "Bildiri bulunamadı.");
                 return RedirectBack(returnUrl, slug);
             }
 
             if (submission.Status != SubmissionStatus.Accepted && submission.Status != SubmissionStatus.Presented)
             {
-                TempData["ErrorMessage"] = "DOI yalnızca kabul edilmiş bildiriler için atanabilir.";
+                TempData["ErrorMessage"] = T("Msg_DOIYalnizcaKabulEdilmisBildirilerIcin", "DOI yalnızca kabul edilmiş bildiriler için atanabilir.");
                 return RedirectBack(returnUrl, slug, id);
             }
 
             if (string.IsNullOrWhiteSpace(doiUrl) || !Uri.TryCreate(doiUrl, UriKind.Absolute, out _))
             {
-                TempData["ErrorMessage"] = "Geçerli bir DOI URL'si giriniz.";
+                TempData["ErrorMessage"] = T("Msg_GecerliBirDOIURLSiGiriniz", "Geçerli bir DOI URL'si giriniz.");
                 return RedirectBack(returnUrl, slug, id);
             }
 
@@ -1163,7 +1164,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 tracked.DoiAssignedAt = DateTime.UtcNow;
                 tracked.DoiErrorMessage = null;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "DOI başarıyla atandı.";
+                TempData["SuccessMessage"] = T("Msg_DOIBasariylaAtandi", "DOI başarıyla atandı.");
             }
 
             return RedirectBack(returnUrl, slug, id);
@@ -1177,7 +1178,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var submission = await GetAccessibleSubmissionAsync(id, slug, null);
             if (submission == null)
             {
-                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_BildiriBulunamadi", "Bildiri bulunamadı.");
                 return RedirectBack(returnUrl, slug);
             }
 
@@ -1205,20 +1206,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (!_doiRegistration.IsConfigured)
             {
-                TempData["ErrorMessage"] = "DataCite servisi yapılandırılmamış.";
+                TempData["ErrorMessage"] = T("Msg_DataCiteServisiYapilandirilmamis", "DataCite servisi yapılandırılmamış.");
                 return RedirectBack(returnUrl, slug, id);
             }
 
             var submission = await GetAccessibleSubmissionAsync(id, slug, null);
             if (submission == null)
             {
-                TempData["ErrorMessage"] = "Bildiri bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_BildiriBulunamadi", "Bildiri bulunamadı.");
                 return RedirectBack(returnUrl, slug);
             }
 
             if (submission.Status != SubmissionStatus.Accepted && submission.Status != SubmissionStatus.Presented)
             {
-                TempData["ErrorMessage"] = "DOI yalnızca kabul edilmiş bildiriler için kaydedilebilir.";
+                TempData["ErrorMessage"] = T("Msg_DOIYalnizcaKabulEdilmisBildirilerIcin2", "DOI yalnızca kabul edilmiş bildiriler için kaydedilebilir.");
                 return RedirectBack(returnUrl, slug, id);
             }
 

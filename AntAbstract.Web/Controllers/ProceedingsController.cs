@@ -10,10 +10,24 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Controllers
 {
     public class ProceedingsController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<ProceedingsController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
@@ -101,7 +115,7 @@ namespace AntAbstract.Web.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Bildiri kitabı görüntülenecek kongre bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_BildiriKitabiGoruntulenecekKongreBulunamadi", "Bildiri kitabı görüntülenecek kongre bulunamadı.");
                 return RedirectToAction(nameof(IndexRoot));
             }
 

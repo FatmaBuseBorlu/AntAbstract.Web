@@ -483,15 +483,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!conferences.Any())
             {
                 TempData["ErrorMessage"] = IsSuperAdminUser()
-                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
-                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+                    ? T("Msg_SistemdeGoruntulenebilecekKongreBulunamadi", "Sistemde görüntülenebilecek kongre bulunamadı.")
+                    : T("Msg_KurumunuzaBagliGoruntulenebilecekKongreBulunamadi", "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.");
             }
 
             var vm = new SelectConferenceViewModel
             {
                 Title = T("SelectConference_Title", "Kongre Seç"),
                 Lead = IsSuperAdminUser()
-                    ? "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Hakem ataması yapmak istediğiniz kongreyi seçiniz."
+                    ? T("Msg_SuperAdminOlarakSistemdekiTumKongreleriGorebilirsiniz", "SuperAdmin olarak sistemdeki tüm kongreleri görebilirsiniz. Hakem ataması yapmak istediğiniz kongreyi seçiniz.")
                     : T("SelectConference_Lead", "Hakem ataması yapmak için önce kongre seçiniz."),
                 PostUrl = "/Admin/Assignment/Select",
                 SubmitText = T("SelectConference_Submit", "Devam Et"),
