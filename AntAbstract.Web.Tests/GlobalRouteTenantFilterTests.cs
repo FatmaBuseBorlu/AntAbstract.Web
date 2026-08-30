@@ -33,6 +33,8 @@ public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTe
     private static readonly Guid ConferenceId = new("99990000-1111-2222-3333-444455556667");
     private static readonly Guid SubmissionId = new("99990000-1111-2222-3333-444455556668");
     private static readonly Guid CertificateId = new("99990000-1111-2222-3333-444455556669");
+    private static readonly Guid HotelId = new("99990000-1111-2222-3333-44445555666a");
+    private const string HotelName = "Global Rota Oteli";
 
     public GlobalRouteTenantFilterTests(AuthenticatedTestFactory factory, ITestOutputHelper output)
     {
@@ -109,6 +111,24 @@ public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTe
             FilePath = "wwwroot/certificates/global-rota-sertifika.pdf"
         });
 
+        db.Hotels.Add(new Hotel
+        {
+            Id = HotelId,
+            ConferenceId = ConferenceId,
+            Name = HotelName,
+            Address = "İzmir",
+            RoomTypes = new List<RoomType>
+            {
+                new()
+                {
+                    Name = "Tek Kişilik",
+                    Price = 1500m,
+                    Capacity = 1,
+                    TotalQuota = 10
+                }
+            }
+        });
+
         db.SaveChanges();
     }
 
@@ -158,5 +178,21 @@ public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTe
 
         Assert.True(slugHas, "Slug'lı adreste sertifika görünmüyor — kurulum hatalı.");
         Assert.True(globalHas, "Slug'sız /Certificates adresinde sertifika kayboldu.");
+    }
+
+    [Fact]
+    public async Task Konaklama_SlugsuzAdresteDeDolu()
+    {
+        var withSlug = await BodyAsync(_referee, $"/{TenantSlug}/Accommodation");
+        var withoutSlug = await BodyAsync(_referee, "/Accommodation");
+
+        var slugHas = withSlug.Contains(HotelName, StringComparison.Ordinal);
+        var globalHas = withoutSlug.Contains(HotelName, StringComparison.Ordinal);
+
+        _output.WriteLine($"konaklama slug'lı  : {slugHas}");
+        _output.WriteLine($"konaklama slug'sız : {globalHas}");
+
+        Assert.True(slugHas, "Slug'lı adreste otel görünmüyor — kurulum hatalı.");
+        Assert.True(globalHas, "Slug'sız /Accommodation adresinde otel kayboldu.");
     }
 }

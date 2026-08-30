@@ -59,7 +59,14 @@ namespace AntAbstract.Web.Controllers
                 selectedConferenceId = _selectedConferenceService.GetSelectedConferenceId();
             }
 
+            // Konaklama ekranları slug taşımayan adresten de açılıyor
+            // (/Accommodation). Slug yoksa tenant bağlamı boş kalıyor ve
+            // kiracı filtresi kongreyi de otelleri de eliyor; kullanıcı
+            // "Kongre bulunamadı." ile dışarı atılıyordu. Kiracı kısıtı
+            // slug'lı dalda aşağıda ayrıca uygulanıyor, kişisel kayıtlar
+            // ise AppUserId ile kapsanıyor.
             var conferenceQuery = _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .AsQueryable();
@@ -131,6 +138,7 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString("SelectedConferenceTitle", conference.Title ?? "");
 
             var hotels = await _context.Hotels
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(h => h.RoomTypes)
                 .Include(h => h.Conference)
@@ -153,6 +161,7 @@ namespace AntAbstract.Web.Controllers
             if (user == null) return Challenge();
 
             var roomType = await _context.RoomTypes
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(r => r.Hotel)
                     .ThenInclude(h => h.Conference)
@@ -165,6 +174,7 @@ namespace AntAbstract.Web.Controllers
             var resolvedSlug = conference.Tenant?.Slug ?? slug ?? "";
 
             var bookedCount = await _context.AccommodationBookings
+                .IgnoreQueryFilters()
                 .CountAsync(b => b.RoomTypeId == roomTypeId);
             if (bookedCount >= roomType.TotalQuota)
             {
@@ -173,6 +183,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var existing = await _context.AccommodationBookings
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.ConferenceId == conference.Id && b.AppUserId == user.Id);
             if (existing != null)
@@ -182,6 +193,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var transfers = await _context.TransferOptions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(t => t.ConferenceId == conference.Id)
                 .OrderBy(t => t.Name)
@@ -208,6 +220,7 @@ namespace AntAbstract.Web.Controllers
             if (user == null) return Challenge();
 
             var roomType = await _context.RoomTypes
+                .IgnoreQueryFilters()
                 .Include(r => r.Hotel)
                     .ThenInclude(h => h.Conference)
                         .ThenInclude(c => c.Tenant)
@@ -219,6 +232,7 @@ namespace AntAbstract.Web.Controllers
             var resolvedSlug = conference.Tenant?.Slug ?? slug ?? "";
 
             var bookedCount = await _context.AccommodationBookings
+                .IgnoreQueryFilters()
                 .CountAsync(b => b.RoomTypeId == roomTypeId);
             if (bookedCount >= roomType.TotalQuota)
             {
@@ -280,6 +294,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             var booking = await _context.AccommodationBookings
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(b => b.RoomType)
                     .ThenInclude(r => r.Hotel)
