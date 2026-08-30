@@ -57,7 +57,12 @@ namespace AntAbstract.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
+            // İndirme adresleri slug taşımıyor; slug yoksa tenant bağlamı boş
+            // kalıyor ve kiracı filtresi normal kullanıcı için her satırı
+            // eliyor — kullanıcı kendi dosyasını indiremiyordu. Kapsamı
+            // aşağıdaki sahiplik/yetki kontrolü sağlıyor.
             var file = await _context.SubmissionFiles
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(f => f.Submission)
                     .ThenInclude(s => s.Conference)
@@ -88,6 +93,7 @@ namespace AntAbstract.Web.Controllers
             {
                 isReviewer = User.IsInRole("Referee") &&
                     await _context.ReviewAssignments
+                        .IgnoreQueryFilters()
                         .AsNoTracking()
                         .AnyAsync(ra => ra.SubmissionId == submission.Id && ra.ReviewerId == user.Id);
             }
@@ -122,7 +128,10 @@ namespace AntAbstract.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
+            // Bildiri dosyasıyla aynı sebep: slug taşımayan adreste kiracı
+            // filtresi kullanıcının kendi makbuzunu da eliyordu.
             var registration = await _context.Registrations
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(r => r.Conference)
                 .FirstOrDefaultAsync(r => r.Id == registrationId);

@@ -46,7 +46,11 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 return new List<Certificate>();
             }
 
+            // Sertifikalarım ekranı slug taşımayan /Certificates adresinden de
+            // açılıyor; orada tenant bağlamı boş kaldığı için kiracı filtresi
+            // listeyi sessizce boşaltıyordu. Kapsamı userId zaten sağlıyor.
             var query = _context.Certificates
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(x => x.Conference)
                     .ThenInclude(x => x!.Tenant)
