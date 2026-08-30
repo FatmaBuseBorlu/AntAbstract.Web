@@ -1,4 +1,5 @@
 @model AntAbstract.Domain.Entities.Conference
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -180,11 +181,11 @@
                     </div>
                     <div class="modern-card-body">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold small text-muted">Bildiri Son Gönderme</label>
+                            <label class="form-label fw-semibold small text-muted">@Localizer["BildiriSonGonderme"]</label>
                             <input asp-for="AbstractSubmissionDeadline" type="datetime-local" class="form-control" />
                         </div>
                         <div class="mb-0">
-                            <label class="form-label fw-semibold small text-muted">Tam Metin Son Gönderme</label>
+                            <label class="form-label fw-semibold small text-muted">@Localizer["TamMetinSonGonderme"]</label>
                             <input asp-for="FullTextSubmissionDeadline" type="datetime-local" class="form-control" />
                         </div>
                     </div>
@@ -197,7 +198,7 @@
                         </div>
                         <div>
                             <h5 class="modern-card-title mb-1">Ayarlar</h5>
-                            <p class="modern-card-text mb-0">Başvuru ve kayıt durumları.</p>
+                            <p class="modern-card-text mb-0">@Localizer["BasvuruVeKayitDurumlari"]</p>
                         </div>
                     </div>
                     <div class="modern-card-body">
@@ -206,15 +207,15 @@
                                 
                                 <small class="text-muted"></small>
                             </label>
-                            <input asp-for="MaxRegistrations" type="number" min="1" class="form-control" placeholder="Örn: 500" />
+                            <input asp-for="MaxRegistrations" type="number" min="1" class="form-control" placeholder="@Localizer["Orn500"]" />
                         </div>
                         <div class="form-check form-switch mb-3">
                             <input asp-for="IsSubmissionOpen" class="form-check-input" type="checkbox" role="switch" checked />
-                            <label class="form-check-label fw-medium">Bildiri Gönderme Açık</label>
+                            <label class="form-check-label fw-medium">@Localizer["BildiriGondermeAcik"]</label>
                         </div>
                         <div class="form-check form-switch">
                             <input asp-for="IsRegistrationOpen" class="form-check-input" type="checkbox" role="switch" checked />
-                            <label class="form-check-label fw-medium">Kayıt Açık</label>
+                            <label class="form-check-label fw-medium">@Localizer["KayitAcik"]</label>
                         </div>
                     </div>
                 </div>

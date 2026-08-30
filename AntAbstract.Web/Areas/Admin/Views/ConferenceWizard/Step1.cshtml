@@ -1,4 +1,5 @@
-﻿@{
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var slug = ViewBag.Slug as string ?? "";
@@ -8,7 +9,7 @@
 
     <div class="mb-4">
         <h4 class="fw-bold mb-1"><i class="fas fa-magic me-2 text-primary"></i>@Localizer["ConferenceWizard"]</h4>
-        <p class="text-muted small mb-3">Adım adım kongrenizi oluşturun. Her adım kaydedilir.</p>
+        <p class="text-muted small mb-3">@Localizer["AdimAdimKongreniziOlusturunHer"]</p>
         @await Html.PartialAsync("_WizardProgress", 1)
     </div>
 
@@ -25,7 +26,7 @@
                     <label class="form-label fw-semibold"> <span class="text-danger">*</span></label>
                     <input type="text" name="title" class="form-control form-control-lg"
                            placeholder="" required maxlength="300" autofocus />
-                    <div class="form-text">Kongrenin tam resmi adı. URL slug'ı otomatik oluşturulur.</div>
+                    <div class="form-text">@Localizer["KongreninTamResmiAdiURL"]</div>
                 </div>
 
                 <div class="mb-3">
@@ -60,10 +61,8 @@
 
                 <div class="d-flex gap-2 justify-content-between">
                     <a href="/@slug/Admin/Conferences" class="btn btn-outline-secondary">
-                        <i class="fas fa-times me-1"></i> Vazgeç
-                    </a>
-                    <button type="submit" class="btn btn-primary px-4 fw-bold">
-                        Kaydet & İleri <i class="fas fa-arrow-right ms-1"></i>
+                        <i class="fas fa-times me-1"></i>@Localizer["Vazgec"]</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">@Localizer["KaydetIleri"]<i class="fas fa-arrow-right ms-1"></i>
                     </button>
                 </div>
             </form>

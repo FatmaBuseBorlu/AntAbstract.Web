@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -63,17 +64,14 @@
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
             <h4 class="fw-bold mb-1">
-                <i class="fas fa-chart-line me-2 text-success"></i>Finans Özeti
-            </h4>
+                <i class="fas fa-chart-line me-2 text-success"></i>@Localizer["FinansOzeti"]</h4>
             <p class="text-muted small mb-0">@(conference?.Title ?? "")</p>
         </div>
         <div class="d-flex gap-2">
             <a href="@ExportUrl" class="btn btn-outline-success btn-sm">
-                <i class="fas fa-file-excel me-1"></i> Excel İndir
-            </a>
+                <i class="fas fa-file-excel me-1"></i>@Localizer["ExcelIndir"]</a>
             <a href="@IndexUrl" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left me-1"></i> Ödemelere Dön
-            </a>
+                <i class="fas fa-arrow-left me-1"></i>@Localizer["OdemelereDon"]</a>
         </div>
     </div>
 
@@ -109,7 +107,7 @@
                     <div class="fin-stat-icon" style="background:rgba(13,110,253,0.12);color:#1d4ed8;">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="fin-stat-label">Ödeme Oranı</div>
+                    <div class="fin-stat-label">@Localizer["OdemeOrani"]</div>
                 </div>
                 @{
                     int total = paidCnt + pendCnt + cancelCnt;
@@ -125,10 +123,10 @@
                     <div class="fin-stat-icon" style="background:rgba(239,68,68,0.10);color:#dc2626;">
                         <i class="fas fa-ban"></i>
                     </div>
-                    <div class="fin-stat-label">İptal / İade</div>
+                    <div class="fin-stat-label">@Localizer["IptalIade"]</div>
                 </div>
                 <div class="fin-stat-value">@cancelCnt</div>
-                <div class="fin-stat-sub">kayıt iptal edildi</div>
+                <div class="fin-stat-sub">@Localizer["KayitIptalEdildi"]</div>
             </div>
         </div>
     </div>
@@ -138,7 +136,7 @@
         @* Kayıt tipine göre gelir *@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm p-4" style="border-radius:16px;">
-                <div class="fin-section-title"><i class="fas fa-tags me-1"></i> Kayıt Tipine Göre Gelir</div>
+                <div class="fin-section-title"><i class="fas fa-tags me-1"></i>@Localizer["KayitTipineGoreGelir"]</div>
                 @if (!byType.Any())
                 {
                     <p class="text-muted small">Veri yok.</p>
@@ -168,10 +166,10 @@
         @* Ödeme yöntemi dağılımı *@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm p-4" style="border-radius:16px;">
-                <div class="fin-section-title"><i class="fas fa-credit-card me-1"></i> Ödeme Yöntemine Göre</div>
+                <div class="fin-section-title"><i class="fas fa-credit-card me-1"></i>@Localizer["OdemeYontemineGore"]</div>
                 @if (!byMethod.Any())
                 {
-                    <p class="text-muted small">Henüz ödeme kaydı yok.</p>
+                    <p class="text-muted small">@Localizer["HenuzOdemeKaydiYok"]</p>
                 }
                 else
                 {
@@ -210,7 +208,7 @@
         {
             <div class="col-12">
                 <div class="card border-0 shadow-sm p-4" style="border-radius:16px;">
-                    <div class="fin-section-title"><i class="fas fa-chart-bar me-1"></i> Aylık Gelir Trendi</div>
+                    <div class="fin-section-title"><i class="fas fa-chart-bar me-1"></i>@Localizer["AylikGelirTrendi"]</div>
                     @{
                         var dynMonthly = monthly.Select(x => (dynamic)x).ToList();
                         decimal maxMonth = dynMonthly.Max(x => (decimal)x.Total);

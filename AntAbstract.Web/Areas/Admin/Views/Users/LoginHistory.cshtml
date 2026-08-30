@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = "Giriş Geçmişi";
     var logs = ViewBag.Logs as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
@@ -13,7 +14,7 @@
             <i class="fas fa-arrow-left"></i>
         </a>
         <div>
-            <h4 class="mb-0 fw-bold">Giriş Geçmişi</h4>
+            <h4 class="mb-0 fw-bold">@Localizer["GirisGecmisi"]</h4>
             <small class="text-muted">Toplam @(total) kayıt</small>
         </div>
     </div>
@@ -24,7 +25,7 @@
             {
                 <div class="text-center text-muted py-5">
                     <i class="fas fa-clock-rotate-left fa-3x mb-3 opacity-25"></i>
-                    <div>Henüz giriş kaydı yok.</div>
+                    <div>@Localizer["HenuzGirisKaydiYok"]</div>
                 </div>
             }
             else
@@ -34,9 +35,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4" style="width:20%">Tarih & Saat</th>
-                                <th style="width:25%">Kullanıcı</th>
+                                <th style="width:25%">@Localizer["Kullanici"]</th>
                                 <th style="width:18%">IP Adresi</th>
-                                <th class="pe-4">Açıklama</th>
+                                <th class="pe-4">@Localizer["Aciklama"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -73,7 +74,7 @@
                     <div class="d-flex justify-content-center py-3 gap-2">
                         @if (currentPage > 1)
                         {
-                            <a href="@Url.Action("LoginHistory", new { page = prevPage })" class="btn btn-outline-secondary btn-sm">← Önceki</a>
+                            <a href="@Url.Action("LoginHistory", new { page = prevPage })" class="btn btn-outline-secondary btn-sm">@Localizer["Onceki"]</a>
                         }
                         <span class="btn btn-light btn-sm disabled">@(currentPage) / @(totalPages)</span>
                         @if (currentPage < totalPages)

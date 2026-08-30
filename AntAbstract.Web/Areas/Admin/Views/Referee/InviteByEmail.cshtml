@@ -1,4 +1,5 @@
-﻿@{
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     ViewData["Title"] = Localizer["PageTitle"].Value;
     var conference = ViewBag.Conference as AntAbstract.Domain.Entities.Conference;
@@ -19,8 +20,7 @@
             }
         </div>
         <a href="@returnUrl" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i>Geri Dön
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["GeriDon"]</a>
     </div>
 
 
@@ -38,7 +38,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">E-posta Adresi <span class="text-danger">*</span></label>
                             <input type="email" name="email" class="form-control" placeholder="hakem@example.com" required autofocus />
-                            <div class="form-text">Daveti bu adrese göndereceğiz.</div>
+                            <div class="form-text">@Localizer["DavetiBuAdreseGonderecegiz"]</div>
                         </div>
 
                         <div class="row g-3 mb-3">
@@ -64,8 +64,7 @@
 
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane me-2"></i>Daveti Gönder
-                            </button>
+                                <i class="fas fa-paper-plane me-2"></i>@Localizer["DavetiGonder"]</button>
                             <a href="@returnUrl" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
                         </div>
                     </form>

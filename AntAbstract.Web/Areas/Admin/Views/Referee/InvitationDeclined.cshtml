@@ -1,4 +1,5 @@
-﻿@{
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
     Layout = null;
     var slug = (string?)ViewBag.Slug ?? "";
 }
@@ -19,7 +20,7 @@ min-height:100dvh;">
                 <i class="fas fa-times-circle fa-3x text-secondary"></i>
             </div>
             <h3 class="fw-bold">Davet Reddedildi</h3>
-            <p class="text-muted mt-2">Teşekkür ederiz. Yanıtınız kaydedildi.</p>
+            <p class="text-muted mt-2">@Localizer["TesekkurEderizYanitinizKaydedildi"]</p>
         </div>
         <a href="/@slug" class="btn btn-outline-secondary">
             <i class="fas fa-home me-2"></i>Ana Sayfaya Git

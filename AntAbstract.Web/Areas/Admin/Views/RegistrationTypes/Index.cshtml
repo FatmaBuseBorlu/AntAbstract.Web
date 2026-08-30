@@ -4,6 +4,7 @@
 
 
 @model AdminRegistrationTypesIndexModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -141,7 +142,7 @@
                                         }
                                         else
                                         {
-                                            <span class="badge bg-info text-dark">Erken Kayıt</span>
+                                            <span class="badge bg-info text-dark">@Localizer["ErkenKayit"]</span>
                                             <div class="text-muted small">@item.Deadline.Value.ToString("dd.MM.yyyy")</div>
                                         }
                                     }

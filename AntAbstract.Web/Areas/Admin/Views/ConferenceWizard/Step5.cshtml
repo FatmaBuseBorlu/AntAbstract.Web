@@ -16,21 +16,20 @@
 
     <div class="card border-0 shadow-sm" style="border-radius:20px;">
         <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
-            <h5 class="fw-bold mb-0"><i class="fas fa-credit-card me-2"></i>Ödeme Ayarları</h5>
+            <h5 class="fw-bold mb-0"><i class="fas fa-credit-card me-2"></i>@Localizer["OdemeAyarlari"]</h5>
         </div>
         <div class="card-body p-4">
             <form asp-action="Step5Post" asp-route-slug="@slug" asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
 
                 <div class="mb-4">
-                    <label class="form-label fw-semibold mb-3">Aktif Ödeme Yöntemleri</label>
+                    <label class="form-label fw-semibold mb-3">@Localizer["AktifOdemeYontemleri"]</label>
                     <div class="d-flex flex-column gap-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="isStripeEnabled"
                                    id="stripeCheck" value="true" @(Model.IsStripeEnabled ? "checked" : "") />
                             <label class="form-check-label fw-semibold" for="stripeCheck">
-                                <i class="fab fa-stripe text-primary me-1"></i> Stripe (Kredi Kartı)
-                            </label>
+                                <i class="fab fa-stripe text-primary me-1"></i>@Localizer["StripeKrediKarti"]</label>
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="isPayTREnabled"
@@ -87,8 +86,7 @@
                     <a href="/@slug/Admin/ConferenceWizard/Step4/@Model.Id" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i> Geri
                     </a>
-                    <button type="submit" class="btn btn-primary px-4 fw-bold">
-                        Kaydet & İleri <i class="fas fa-arrow-right ms-1"></i>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">@Localizer["KaydetIleri"]<i class="fas fa-arrow-right ms-1"></i>
                     </button>
                 </div>
             </form>

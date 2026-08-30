@@ -606,7 +606,7 @@
                 </div>
             </div>
             <div class="inc-stat-val">@Model.NoAbstractCount</div>
-            <div class="inc-stat-label">Özet Yazılmamış</div>
+            <div class="inc-stat-label">@Localizer["OzetYazilmamis"]</div>
         </a>
 
         <a href="@FilterUrl("file")" class="inc-stat-card @(Model.MissingFilter == "file" ? "active" : "")">
@@ -616,7 +616,7 @@
                 </div>
             </div>
             <div class="inc-stat-val">@Model.NoFileCount</div>
-            <div class="inc-stat-label">Dosya Yüklenmemiş</div>
+            <div class="inc-stat-label">@Localizer["DosyaYuklenmemis"]</div>
         </a>
 
         <a href="@FilterUrl("stale")" class="inc-stat-card @(Model.MissingFilter == "stale" ? "active" : "")">
@@ -626,7 +626,7 @@
                 </div>
             </div>
             <div class="inc-stat-val">@Model.StaleCount</div>
-            <div class="inc-stat-label">7+ Gün Hareketsiz</div>
+            <div class="inc-stat-label">@Localizer["T7GunHareketsiz"]</div>
         </a>
     </div>
 
@@ -719,8 +719,7 @@
                                         @if (!row.HasAbstract)
                                         {
                                             <span class="missing-pill pill-missing">
-                                                <i class="fas fa-xmark"></i> Özet
-                                            </span>
+                                                <i class="fas fa-xmark"></i>@Localizer["Ozet"]</span>
                                         }
                                         @if (!row.HasKeywords)
                                         {

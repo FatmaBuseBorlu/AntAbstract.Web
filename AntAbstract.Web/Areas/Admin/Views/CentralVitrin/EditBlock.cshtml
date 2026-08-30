@@ -2,6 +2,7 @@
 
 @using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.WebsiteBlocks
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -814,30 +815,30 @@
                             <div class="d-flex align-items-start gap-3 mb-4">
                                 <div class="edit-card-icon"><i class="fas fa-tags"></i></div>
                                 <div>
-                                    <div class="edit-card-title">Kongre Konuları</div>
-                                    <p class="edit-card-subtitle">Bildiri gönderilebilecek konu başlıklarını girin.</p>
+                                    <div class="edit-card-title">@Localizer["KongreKonulari"]</div>
+                                    <p class="edit-card-subtitle">@Localizer["BildiriGonderilebilecekKonuBasliklariniGirin"]</p>
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="edit-label">Giriş Metni</label>
+                                <label class="edit-label">@Localizer["GirisMetni"]</label>
                                 <textarea name="topicsContent.Description" rows="3"
                                           class="form-control edit-form-control"
-                                          placeholder="Konu başlıklarının üstünde görünecek kısa açıklama">@topicsContent.Description</textarea>
+                                          placeholder="@Localizer["KonuBasliklarininUstundeGorunecekKisa"]">@topicsContent.Description</textarea>
                             </div>
 
-                            <label class="edit-label">Konu Başlıkları</label>
+                            <label class="edit-label">@Localizer["KonuBasliklari"]</label>
                             <div class="repeater" data-repeater="topics" data-repeater-name="topicsContent.Items">
                                 @foreach (var (item, i) in topicsContent.Items.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
                                         <div class="repeater-fields">
                                             <input data-field="Name" value="@item.Name"
-                                                   class="form-control edit-form-control" placeholder="Konu başlığı" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["KonuBasligi"]" />
                                             <input data-field="Description" value="@item.Description"
-                                                   class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["AciklamaIstegeBagli"]" />
                                         </div>
-                                        <button type="button" class="repeater-remove" title="Satırı sil">
+                                        <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -848,11 +849,11 @@
                                 <div class="repeater-row">
                                     <div class="repeater-fields">
                                         <input data-field="Name"
-                                               class="form-control edit-form-control" placeholder="Konu başlığı" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["KonuBasligi"]" />
                                         <input data-field="Description"
-                                               class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["AciklamaIstegeBagli"]" />
                                     </div>
-                                    <button type="button" class="repeater-remove" title="Satırı sil">
+                                    <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -869,8 +870,8 @@
                             <div class="d-flex align-items-start gap-3 mb-4">
                                 <div class="edit-card-icon"><i class="fas fa-calendar-days"></i></div>
                                 <div>
-                                    <div class="edit-card-title">Önemli Tarihler</div>
-                                    <p class="edit-card-subtitle">Son başvuru, bildirim ve kongre tarihlerini girin.</p>
+                                    <div class="edit-card-title">@Localizer["OnemliTarihler"]</div>
+                                    <p class="edit-card-subtitle">@Localizer["SonBasvuruBildirimVeKongre"]</p>
                                 </div>
                             </div>
 
@@ -880,18 +881,18 @@
                                     <div class="repeater-row">
                                         <div class="repeater-fields">
                                             <input data-field="Label" value="@item.Label"
-                                                   class="form-control edit-form-control" placeholder="Örn: Bildiri Son Gönderim" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["OrnBildiriSonGonderim"]" />
                                             <input data-field="Date" value="@item.Date"
-                                                   class="form-control edit-form-control" placeholder="Örn: 15 Ağustos 2026" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["Orn15Agustos2026"]" />
                                             <input data-field="Description" value="@item.Description"
-                                                   class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["AciklamaIstegeBagli"]" />
                                         </div>
-                                        <label class="repeater-check" title="Tarihi geçti olarak işaretle">
+                                        <label class="repeater-check" title="@Localizer["TarihiGectiOlarakIsaretle"]">
                                             <input type="checkbox" data-field="IsPassed"
                                                    value="true" @(item.IsPassed ? "checked" : "") />
-                                            <span>Geçti</span>
+                                            <span>@Localizer["Gecti"]</span>
                                         </label>
-                                        <button type="button" class="repeater-remove" title="Satırı sil">
+                                        <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -902,17 +903,17 @@
                                 <div class="repeater-row">
                                     <div class="repeater-fields">
                                         <input data-field="Label"
-                                               class="form-control edit-form-control" placeholder="Örn: Bildiri Son Gönderim" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["OrnBildiriSonGonderim"]" />
                                         <input data-field="Date"
-                                               class="form-control edit-form-control" placeholder="Örn: 15 Ağustos 2026" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["Orn15Agustos2026"]" />
                                         <input data-field="Description"
-                                               class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["AciklamaIstegeBagli"]" />
                                     </div>
-                                    <label class="repeater-check" title="Tarihi geçti olarak işaretle">
+                                    <label class="repeater-check" title="@Localizer["TarihiGectiOlarakIsaretle"]">
                                         <input type="checkbox" data-field="IsPassed" value="true" />
-                                        <span>Geçti</span>
+                                        <span>@Localizer["Gecti"]</span>
                                     </label>
-                                    <button type="button" class="repeater-remove" title="Satırı sil">
+                                    <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -929,8 +930,8 @@
                             <div class="d-flex align-items-start gap-3 mb-4">
                                 <div class="edit-card-icon"><i class="fas fa-credit-card"></i></div>
                                 <div>
-                                    <div class="edit-card-title">Katılım Ücretleri</div>
-                                    <p class="edit-card-subtitle">Kayıt türlerine göre ücret tablosunu oluşturun.</p>
+                                    <div class="edit-card-title">@Localizer["KatilimUcretleri"]</div>
+                                    <p class="edit-card-subtitle">@Localizer["KayitTurlerineGoreUcretTablosunu"]</p>
                                 </div>
                             </div>
 
@@ -945,34 +946,34 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="edit-label">Giriş Metni</label>
+                                    <label class="edit-label">@Localizer["GirisMetni"]</label>
                                     <input name="feesContent.Description" value="@feesContent.Description"
                                            class="form-control edit-form-control"
-                                           placeholder="Tablonun üstünde görünecek not" />
+                                           placeholder="@Localizer["TablonunUstundeGorunecekNot"]" />
                                 </div>
                             </div>
 
-                            <label class="edit-label">Ücret Kalemleri</label>
+                            <label class="edit-label">@Localizer["UcretKalemleri"]</label>
                             <div class="repeater" data-repeater="fees" data-repeater-name="feesContent.Items">
                                 @foreach (var (item, i) in feesContent.Items.Select((x, i) => (x, i)))
                                 {
                                     <div class="repeater-row">
                                         <div class="repeater-fields">
                                             <input data-field="Name" value="@item.Name"
-                                                   class="form-control edit-form-control" placeholder="Örn: Öğrenci" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["OrnOgrenci"]" />
                                             <input data-field="Price" value="@item.Price"
-                                                   class="form-control edit-form-control" placeholder="Örn: 1500" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["Orn1500"]" />
                                             <input data-field="Deadline" value="@item.Deadline"
-                                                   class="form-control edit-form-control" placeholder="Son tarih (isteğe bağlı)" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["SonTarihIstegeBagli"]" />
                                             <input data-field="Description" value="@item.Description"
-                                                   class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["AciklamaIstegeBagli"]" />
                                         </div>
-                                        <label class="repeater-check" title="Tabloda öne çıkar">
+                                        <label class="repeater-check" title="@Localizer["TablodaOneCikar"]">
                                             <input type="checkbox" data-field="IsHighlighted"
                                                    value="true" @(item.IsHighlighted ? "checked" : "") />
-                                            <span>Öne çıkar</span>
+                                            <span>@Localizer["OneCikar"]</span>
                                         </label>
-                                        <button type="button" class="repeater-remove" title="Satırı sil">
+                                        <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -983,27 +984,26 @@
                                 <div class="repeater-row">
                                     <div class="repeater-fields">
                                         <input data-field="Name"
-                                               class="form-control edit-form-control" placeholder="Örn: Öğrenci" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["OrnOgrenci"]" />
                                         <input data-field="Price"
-                                               class="form-control edit-form-control" placeholder="Örn: 1500" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["Orn1500"]" />
                                         <input data-field="Deadline"
-                                               class="form-control edit-form-control" placeholder="Son tarih (isteğe bağlı)" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["SonTarihIstegeBagli"]" />
                                         <input data-field="Description"
-                                               class="form-control edit-form-control" placeholder="Açıklama (isteğe bağlı)" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["AciklamaIstegeBagli"]" />
                                     </div>
-                                    <label class="repeater-check" title="Tabloda öne çıkar">
+                                    <label class="repeater-check" title="@Localizer["TablodaOneCikar"]">
                                         <input type="checkbox" data-field="IsHighlighted" value="true" />
-                                        <span>Öne çıkar</span>
+                                        <span>@Localizer["OneCikar"]</span>
                                     </label>
-                                    <button type="button" class="repeater-remove" title="Satırı sil">
+                                    <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </template>
 
                             <button type="button" class="repeater-add" data-repeater-add="fees">
-                                <i class="fas fa-plus"></i> Ücret Ekle
-                            </button>
+                                <i class="fas fa-plus"></i>@Localizer["UcretEkle"]</button>
                         </div>
                     }
                     else if (Model.BlockType == ConferencePageBlockType.Committees && committeesContent != null)
@@ -1013,7 +1013,7 @@
                                 <div class="edit-card-icon"><i class="fas fa-users"></i></div>
                                 <div>
                                     <div class="edit-card-title">Kurullar</div>
-                                    <p class="edit-card-subtitle">Bilim kurulu, düzenleme kurulu gibi grupları ve üyelerini girin.</p>
+                                    <p class="edit-card-subtitle">@Localizer["BilimKuruluDuzenlemeKuruluGibi"]</p>
                                 </div>
                             </div>
 
@@ -1025,7 +1025,7 @@
                                         <div class="committee-group-head">
                                             <input data-field="Name" value="@grp.Name"
                                                    class="form-control edit-form-control fw-bold"
-                                                   placeholder="Kurul adı — örn: Bilim Kurulu" />
+                                                   placeholder="@Localizer["KurulAdiOrnBilimKurulu"]" />
                                             <button type="button" class="repeater-remove" title="Kurulu sil">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -1045,7 +1045,7 @@
                                                         <input data-field="Institution" value="@mem.Institution"
                                                                class="form-control edit-form-control" placeholder="Kurum" />
                                                     </div>
-                                                    <button type="button" class="repeater-remove" title="Üyeyi sil">
+                                                    <button type="button" class="repeater-remove" title="@Localizer["UyeyiSil"]">
                                                         <i class="fas fa-xmark"></i>
                                                     </button>
                                                 </div>
@@ -1062,7 +1062,7 @@
                                                     <input data-field="Institution"
                                                            class="form-control edit-form-control" placeholder="Kurum" />
                                                 </div>
-                                                <button type="button" class="repeater-remove" title="Üyeyi sil">
+                                                <button type="button" class="repeater-remove" title="@Localizer["UyeyiSil"]">
                                                     <i class="fas fa-xmark"></i>
                                                 </button>
                                             </div>
@@ -1070,8 +1070,7 @@
 
                                         <button type="button" class="repeater-add repeater-add-sm"
                                                 data-repeater-add="members">
-                                            <i class="fas fa-plus"></i> Üye Ekle
-                                        </button>
+                                            <i class="fas fa-plus"></i>@Localizer["UyeEkle"]</button>
                                     </div>
                                 }
                             </div>
@@ -1083,7 +1082,7 @@
                                     <div class="committee-group-head">
                                         <input data-field="Name"
                                                class="form-control edit-form-control fw-bold"
-                                               placeholder="Kurul adı — örn: Bilim Kurulu" />
+                                               placeholder="@Localizer["KurulAdiOrnBilimKurulu"]" />
                                         <button type="button" class="repeater-remove" title="Kurulu sil">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -1102,7 +1101,7 @@
                                                 <input data-field="Institution"
                                                        class="form-control edit-form-control" placeholder="Kurum" />
                                             </div>
-                                            <button type="button" class="repeater-remove" title="Üyeyi sil">
+                                            <button type="button" class="repeater-remove" title="@Localizer["UyeyiSil"]">
                                                 <i class="fas fa-xmark"></i>
                                             </button>
                                         </div>
@@ -1110,8 +1109,7 @@
 
                                     <button type="button" class="repeater-add repeater-add-sm"
                                             data-repeater-add="members">
-                                        <i class="fas fa-plus"></i> Üye Ekle
-                                    </button>
+                                        <i class="fas fa-plus"></i>@Localizer["UyeEkle"]</button>
                                 </div>
                             </template>
 
@@ -1126,16 +1124,16 @@
                             <div class="d-flex align-items-start gap-3 mb-4">
                                 <div class="edit-card-icon"><i class="fas fa-envelope"></i></div>
                                 <div>
-                                    <div class="edit-card-title">İletişim Bilgileri</div>
-                                    <p class="edit-card-subtitle">Kongre sekretaryası iletişim bilgilerini girin.</p>
+                                    <div class="edit-card-title">@Localizer["IletisimBilgileri"]</div>
+                                    <p class="edit-card-subtitle">@Localizer["KongreSekretaryasiIletisimBilgileriniGirin"]</p>
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="edit-label">Açıklama</label>
+                                <label class="edit-label">@Localizer["Aciklama"]</label>
                                 <textarea name="contactContent.Description" rows="3"
                                           class="form-control edit-form-control"
-                                          placeholder="Kısa bir iletişim notu">@contactContent.Description</textarea>
+                                          placeholder="@Localizer["KisaBirIletisimNotu"]">@contactContent.Description</textarea>
                             </div>
 
                             <div class="edit-form-grid mb-4">
@@ -1159,13 +1157,11 @@
                             </div>
 
                             <div>
-                                <label class="edit-label">Harita Gömme Bağlantısı</label>
+                                <label class="edit-label">@Localizer["HaritaGommeBaglantisi"]</label>
                                 <input name="contactContent.MapEmbedUrl" value="@contactContent.MapEmbedUrl"
                                        class="form-control edit-form-control"
                                        placeholder="https://www.google.com/maps/embed?..." />
-                                <div class="text-muted small fw-semibold mt-1">
-                                    Google Haritalar'da "Paylaş → Harita yerleştir" bölümündeki adresi yapıştırın.
-                                </div>
+                                <div class="text-muted small fw-semibold mt-1">@Localizer["GoogleHaritalarDaPaylasHarita"]</div>
                             </div>
                         </div>
                     }
@@ -1175,8 +1171,8 @@
                             <div class="d-flex align-items-start gap-3 mb-4">
                                 <div class="edit-card-icon"><i class="fas fa-circle-question"></i></div>
                                 <div>
-                                    <div class="edit-card-title">Sıkça Sorulan Sorular</div>
-                                    <p class="edit-card-subtitle">Katılımcıların sık sorduğu soruları ve yanıtlarını girin.</p>
+                                    <div class="edit-card-title">@Localizer["SikcaSorulanSorular"]</div>
+                                    <p class="edit-card-subtitle">@Localizer["KatilimcilarinSikSorduguSorulariVe"]</p>
                                 </div>
                             </div>
 
@@ -1188,9 +1184,9 @@
                                             <input data-field="Question" value="@item.Question"
                                                    class="form-control edit-form-control fw-bold" placeholder="Soru" />
                                             <textarea data-field="Answer" rows="2"
-                                                      class="form-control edit-form-control" placeholder="Yanıt">@item.Answer</textarea>
+                                                      class="form-control edit-form-control" placeholder="@Localizer["Yanit"]">@item.Answer</textarea>
                                         </div>
-                                        <button type="button" class="repeater-remove" title="Satırı sil">
+                                        <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -1203,9 +1199,9 @@
                                         <input data-field="Question"
                                                class="form-control edit-form-control fw-bold" placeholder="Soru" />
                                         <textarea data-field="Answer" rows="2"
-                                                  class="form-control edit-form-control" placeholder="Yanıt"></textarea>
+                                                  class="form-control edit-form-control" placeholder="@Localizer["Yanit"]"></textarea>
                                     </div>
-                                    <button type="button" class="repeater-remove" title="Satırı sil">
+                                    <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -1223,7 +1219,7 @@
                                 <div class="edit-card-icon"><i class="fas fa-handshake"></i></div>
                                 <div>
                                     <div class="edit-card-title">Sponsorlar</div>
-                                    <p class="edit-card-subtitle">Destekçi kurumları ve logolarını girin.</p>
+                                    <p class="edit-card-subtitle">@Localizer["DestekciKurumlariVeLogolariniGirin"]</p>
                                 </div>
                             </div>
 
@@ -1233,9 +1229,9 @@
                                     <div class="repeater-row">
                                         <div class="repeater-fields">
                                             <input data-field="Name" value="@item.Name"
-                                                   class="form-control edit-form-control" placeholder="Kurum adı" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["KurumAdi"]" />
                                             <input data-field="LogoUrl" value="@item.LogoUrl"
-                                                   class="form-control edit-form-control" placeholder="Logo bağlantısı" />
+                                                   class="form-control edit-form-control" placeholder="@Localizer["LogoBaglantisi"]" />
                                             <input data-field="WebsiteUrl" value="@item.WebsiteUrl"
                                                    class="form-control edit-form-control" placeholder="Web sitesi" />
                                             <select data-field="Tier" class="form-control edit-form-control">
@@ -1245,7 +1241,7 @@
                                                 }
                                             </select>
                                         </div>
-                                        <button type="button" class="repeater-remove" title="Satırı sil">
+                                        <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -1256,9 +1252,9 @@
                                 <div class="repeater-row">
                                     <div class="repeater-fields">
                                         <input data-field="Name"
-                                               class="form-control edit-form-control" placeholder="Kurum adı" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["KurumAdi"]" />
                                         <input data-field="LogoUrl"
-                                               class="form-control edit-form-control" placeholder="Logo bağlantısı" />
+                                               class="form-control edit-form-control" placeholder="@Localizer["LogoBaglantisi"]" />
                                         <input data-field="WebsiteUrl"
                                                class="form-control edit-form-control" placeholder="Web sitesi" />
                                         <select data-field="Tier" class="form-control edit-form-control">
@@ -1268,7 +1264,7 @@
                                             <option value="Bronze">Bronze</option>
                                         </select>
                                     </div>
-                                    <button type="button" class="repeater-remove" title="Satırı sil">
+                                    <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -1285,25 +1281,25 @@
                             <div class="d-flex align-items-start gap-3 mb-4">
                                 <div class="edit-card-icon"><i class="fas fa-bullhorn"></i></div>
                                 <div>
-                                    <div class="edit-card-title">Kongreye Çağrı</div>
-                                    <p class="edit-card-subtitle">Bildiri çağrısı metnini ve yazım kurallarını girin.</p>
+                                    <div class="edit-card-title">@Localizer["KongreyeCagri"]</div>
+                                    <p class="edit-card-subtitle">@Localizer["BildiriCagrisiMetniniVeYazim"]</p>
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="edit-label">Çağrı Metni</label>
+                                <label class="edit-label">@Localizer["CagriMetni"]</label>
                                 <textarea name="callContent.Description" rows="5"
                                           class="form-control edit-form-control"
-                                          placeholder="Katılımcılara yönelik çağrı metni">@callContent.Description</textarea>
+                                          placeholder="@Localizer["KatilimcilaraYonelikCagriMetni"]">@callContent.Description</textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="edit-label">Son Gönderim Tarihi</label>
+                                <label class="edit-label">@Localizer["SonGonderimTarihi"]</label>
                                 <input name="callContent.Deadline" value="@callContent.Deadline"
-                                       class="form-control edit-form-control" placeholder="Örn: 15 Ağustos 2026" />
+                                       class="form-control edit-form-control" placeholder="@Localizer["Orn15Agustos2026"]" />
                             </div>
 
-                            <label class="edit-label">Yazım Kuralları</label>
+                            <label class="edit-label">@Localizer["YazimKurallari"]</label>
                             <div class="repeater" data-repeater="guides" data-repeater-name="callContent.Guidelines">
                                 @foreach (var (g, i) in callContent.Guidelines.Select((x, i) => (x, i)))
                                 {
@@ -1312,7 +1308,7 @@
                                             <input data-field="" value="@g"
                                                    class="form-control edit-form-control" placeholder="Kural maddesi" />
                                         </div>
-                                        <button type="button" class="repeater-remove" title="Satırı sil">
+                                        <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -1325,7 +1321,7 @@
                                         <input data-field=""
                                                class="form-control edit-form-control" placeholder="Kural maddesi" />
                                     </div>
-                                    <button type="button" class="repeater-remove" title="Satırı sil">
+                                    <button type="button" class="repeater-remove" title="@Localizer["SatiriSil"]">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>

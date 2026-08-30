@@ -1,4 +1,5 @@
-﻿@using AntAbstract.Domain.Entities
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@using AntAbstract.Domain.Entities
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -18,12 +19,11 @@
 
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="@backUrl" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Kullanıcılar
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["Kullanicilar"]</a>
         <h4 class="fw-bold mb-0">@(string.IsNullOrWhiteSpace(fullName) ? user?.Email : fullName)</h4>
         @if (isLockedOut)
         {
-            <span class="badge bg-danger">Askıda</span>
+            <span class="badge bg-danger">@Localizer["Askida"]</span>
         }
         else if (user?.EmailConfirmed == true)
         {
@@ -31,7 +31,7 @@
         }
         else
         {
-            <span class="badge bg-warning text-dark">E-posta Doğrulanmamış</span>
+            <span class="badge bg-warning text-dark">@Localizer["EPostaDogrulanmamis"]</span>
         }
     </div>
 
@@ -42,7 +42,7 @@
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i>Kullanıcı Bilgileri</h6>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i>@Localizer["KullaniciBilgileri"]</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -52,7 +52,7 @@
                             <tr><th class="text-muted">@Localizer["University"]</th><td>@(string.IsNullOrWhiteSpace(user?.University) ? "—" : user.University)</td></tr>
                             <tr><th class="text-muted">@Localizer["Institution"]</th><td>@(string.IsNullOrWhiteSpace(user?.Institution) ? "—" : user.Institution)</td></tr>
                             <tr><th class="text-muted">@Localizer["City"]</th><td>@(string.IsNullOrWhiteSpace(user?.City) ? "—" : user.City)</td></tr>
-                            <tr><th class="text-muted">E-posta Doğrulama</th><td>@(user?.EmailConfirmed == true ? "✅ Doğrulanmış" : "❌ Doğrulanmamış")</td></tr>
+                            <tr><th class="text-muted">@Localizer["EPostaDogrulama"]</th><td>@(user?.EmailConfirmed == true ? "✅ Doğrulanmış" : "❌ Doğrulanmamış")</td></tr>
                             <tr><th class="text-muted">Durum</th><td>@(isLockedOut ? "🔒 Askıda" : "✅ Aktif")</td></tr>
                             <tr>
                                 <th class="text-muted">@Localizer["Roles"]</th>
@@ -88,7 +88,7 @@
                 <div class="col-6">
                     <div class="card border-0 shadow-sm text-center p-3">
                         <div class="fs-2 fw-bold text-success">@payCount</div>
-                        <div class="text-muted small">Ödeme</div>
+                        <div class="text-muted small">@Localizer["Odeme"]</div>
                     </div>
                 </div>
                 <div class="col-12">
@@ -109,8 +109,7 @@
                     <!-- Rol Yönetimi -->
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Users/ManageRoles?userId={user?.Id}" : $"/{slug}/Admin/Users/ManageRoles?userId={user?.Id}")"
                        class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-user-tag me-1"></i> Rolleri Düzenle
-                    </a>
+                        <i class="fas fa-user-tag me-1"></i>@Localizer["RolleriDuzenle"]</a>
 
                     <!-- E-posta doğrulama -->
                     @if (user?.EmailConfirmed == false)
@@ -119,8 +118,7 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="userId" value="@user?.Id" />
                             <button type="submit" class="btn btn-outline-info btn-sm w-100">
-                                <i class="fas fa-envelope-circle-check me-1"></i> E-postayı Onayla
-                            </button>
+                                <i class="fas fa-envelope-circle-check me-1"></i>@Localizer["EPostayiOnayla"]</button>
                         </form>
                     }
 
@@ -131,8 +129,7 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="userId" value="@user?.Id" />
                             <button type="submit" class="btn btn-outline-success btn-sm w-100">
-                                <i class="fas fa-lock-open me-1"></i> Kilidi Aç
-                            </button>
+                                <i class="fas fa-lock-open me-1"></i>@Localizer["KilidiAc"]</button>
                         </form>
                     }
                     else
@@ -142,8 +139,7 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="userId" value="@user?.Id" />
                             <button type="submit" class="btn btn-outline-warning btn-sm w-100">
-                                <i class="fas fa-ban me-1"></i> Hesabı Askıya Al
-                            </button>
+                                <i class="fas fa-ban me-1"></i>@Localizer["HesabiAskiyaAl"]</button>
                         </form>
                     }
 
@@ -154,15 +150,13 @@
                             ? $"/Admin/Users/ExportLoginHistory?userId={user.Id}"
                             : $"/{slug}/Admin/Users/ExportLoginHistory?userId={user.Id}";
                         <a href="@exportUrl" class="btn btn-outline-success btn-sm">
-                            <i class="fas fa-file-excel me-1"></i> Giriş Geçmişi Excel
-                        </a>
+                            <i class="fas fa-file-excel me-1"></i>@Localizer["GirisGecmisiExcel"]</a>
                     }
 
                     <!-- Şifre Sıfırla -->
                     <button type="button" class="btn btn-outline-danger btn-sm"
                             data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
-                        <i class="fas fa-key me-1"></i> Şifre Sıfırla
-                    </button>
+                        <i class="fas fa-key me-1"></i>@Localizer["SifreSifirla"]</button>
                 </div>
             </div>
         </div>
@@ -175,7 +169,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">Şifre Sıfırla</h5>
+                <h5 class="modal-title fw-bold">@Localizer["SifreSifirla"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="ResetPassword" asp-route-slug="@slug" method="post">
@@ -183,11 +177,9 @@
                 <input type="hidden" name="userId" value="@user?.Id" />
                 <div class="modal-body">
                     <div class="alert alert-warning border-0 small mb-3">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        Kullanıcının şifresi değiştirilecek. Yeni şifreyi kullanıcıya kendiniz iletmelisiniz.
-                    </div>
+                        <i class="fas fa-exclamation-triangle me-1"></i>@Localizer["KullanicininSifresiDegistirilecekYeniSifreyi"]</div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Yeni Şifre</label>
+                        <label class="form-label fw-semibold">@Localizer["YeniSifre"]</label>
                         <input type="password" name="newPassword" class="form-control"
                                minlength="6" required placeholder="En az 6 karakter" />
                     </div>
@@ -195,8 +187,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
                     <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-key me-1"></i> Şifreyi Sıfırla
-                    </button>
+                        <i class="fas fa-key me-1"></i>@Localizer["SifreyiSifirla"]</button>
                 </div>
             </form>
         </div>

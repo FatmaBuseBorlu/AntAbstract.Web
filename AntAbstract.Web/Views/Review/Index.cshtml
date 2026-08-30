@@ -523,14 +523,14 @@
                 <span class="d-none d-lg-inline">Teklifler</span>
             </a>
             <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Review/Interests" : $"/{slug}/Review/Interests")"
-               class="btn review-action-btn review-btn-secondary" title="Uzmanlık Alanları">
+               class="btn review-action-btn review-btn-secondary" title="@Localizer["UzmanlikAlanlari"]">
                 <i class="fas fa-brain"></i>
-                <span class="d-none d-lg-inline">Uzmanlık</span>
+                <span class="d-none d-lg-inline">@Localizer["Uzmanlik"]</span>
             </a>
             <a href="@(string.IsNullOrWhiteSpace(slug) ? "/Review/Conflicts" : $"/{slug}/Review/Conflicts")"
-               class="btn review-action-btn review-btn-secondary" title="Çıkar Çatışmaları">
+               class="btn review-action-btn review-btn-secondary" title="@Localizer["CikarCatismalari"]">
                 <i class="fas fa-shield-halved"></i>
-                <span class="d-none d-lg-inline">Çıkar Çatışması</span>
+                <span class="d-none d-lg-inline">@Localizer["CikarCatismasi"]</span>
             </a>
             <a href="@certificatesUrl"
                class="btn btn-outline-primary review-action-btn">
@@ -581,9 +581,9 @@
                 <div class="rsc-body">
                     <div class="rsc-value">
                         @if (daysLeft < 0)
-                        { <span class="text-danger">Geçti</span> }
+                        { <span class="text-danger">@Localizer["Gecti"]</span> }
                         else if (daysLeft == 0)
-                        { <span class="text-danger">Bugün</span> }
+                        { <span class="text-danger">@Localizer["Bugun"]</span> }
                         else
                         { <text>@daysLeft </text> }
                     </div>

@@ -27,17 +27,15 @@
         <div class="d-flex gap-2">
             <a href="@(string.IsNullOrEmpty(slug) ? $"/Admin/Attendance/Badges?conferenceId={conference?.Id}" : $"/{slug}/Admin/Attendance/Badges?conferenceId={conference?.Id}")"
                class="btn btn-outline-primary">
-                <i class="fas fa-id-badge me-2"></i> Yaka Kartı Baskı
-            </a>
+                <i class="fas fa-id-badge me-2"></i>@Localizer["YakaKartiBaski"]</a>
             <a href="@scanUrl" class="btn btn-primary">
-                <i class="fas fa-qrcode me-2"></i> QR Tarayıcı Aç
-            </a>
+                <i class="fas fa-qrcode me-2"></i>@Localizer["QRTarayiciAc"]</a>
         </div>
     </div>
 
     @if (ViewBag.NoConference == true)
     {
-        <div class="alert alert-warning">Erişilebilir kongre bulunamadı.</div>
+        <div class="alert alert-warning">@Localizer["ErisilebilirKongreBulunamadi"]</div>
     }
     else
     {
@@ -45,19 +43,19 @@
             <div class="col-sm-4">
                 <div class="card border-0 shadow-sm text-center p-3">
                     <div class="fs-1 fw-bold text-primary">@total</div>
-                    <div class="text-muted small">Toplam Kayıtlı (Ödenen)</div>
+                    <div class="text-muted small">@Localizer["ToplamKayitliOdenen"]</div>
                 </div>
             </div>
             <div class="col-sm-4">
                 <div class="card border-0 shadow-sm text-center p-3">
                     <div class="fs-1 fw-bold text-success">@totalIn</div>
-                    <div class="text-muted small">Check-In Yapıldı</div>
+                    <div class="text-muted small">@Localizer["CheckInYapildi"]</div>
                 </div>
             </div>
             <div class="col-sm-4">
                 <div class="card border-0 shadow-sm text-center p-3">
                     <div class="fs-1 fw-bold text-warning">@(total - totalIn)</div>
-                    <div class="text-muted small">Henüz Gelmedi</div>
+                    <div class="text-muted small">@Localizer["HenuzGelmedi"]</div>
                 </div>
             </div>
         </div>
@@ -87,7 +85,7 @@
                                     <td class="text-center">
                                         @if (reg.CheckedInAt.HasValue)
                                         {
-                                            <span class="badge bg-success">✓ Giriş Yapıldı</span>
+                                            <span class="badge bg-success">@Localizer["GirisYapildi"]</span>
                                         }
                                         else
                                         {

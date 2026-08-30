@@ -1,6 +1,7 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -805,8 +806,7 @@
                         <div class="info-note">
                             <i class="fas fa-circle-info me-2"></i>
                             
-                            <strong>@Localizer["Edit"]</strong> ekranından güncelleyebilirsiniz.
-                        </div>
+                            <strong>@Localizer["Edit"]</strong>@Localizer["EkranindanGuncelleyebilirsiniz"]</div>
 
                     </div>
                 </div>

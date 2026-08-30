@@ -1,5 +1,6 @@
 @using AntAbstract.Domain.Entities
 @model Sponsor
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     var slug   = (string?)ViewBag.Slug ?? "";
     var confId = (Guid)ViewBag.ConferenceId;
@@ -27,7 +28,7 @@
 
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label fw-semibold">Sponsor Adı <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@Localizer["SponsorAdi"]<span class="text-danger">*</span></label>
                     <input type="text" name="Name" value="@Model.Name" class="form-control" required maxlength="200" />
                 </div>
                 <div class="col-md-4">
@@ -36,12 +37,12 @@
                         @foreach (SponsorTier tier in Enum.GetValues(typeof(SponsorTier)))
                         {
                             var label = tier switch {
-                                SponsorTier.Platinum => "Platin",
-                                SponsorTier.Gold     => Localizer.GetString("Gold").Value,
-                                SponsorTier.Silver   => Localizer.GetString("Silver").Value,
-                                SponsorTier.Bronze   => "Bronz",
-                                SponsorTier.Partner  => "Partner",
-                                SponsorTier.Media    => "Medya",
+                                SponsorTier.Platinum => Localizer.GetString("Tier_Platinum").Value,
+                                SponsorTier.Gold     => Localizer.GetString("Tier_Gold").Value,
+                                SponsorTier.Silver   => Localizer.GetString("Tier_Silver").Value,
+                                SponsorTier.Bronze   => Localizer.GetString("Tier_Bronze").Value,
+                                SponsorTier.Partner  => Localizer.GetString("Tier_Partner").Value,
+                                SponsorTier.Media    => Localizer.GetString("Tier_Media").Value,
                                 _                    => tier.ToString()
                             };
                             var selected = Model.Tier == tier ? "selected" : "";
@@ -54,7 +55,7 @@
                     <input type="url" name="LogoUrl" value="@Model.LogoUrl" class="form-control" maxlength="500"
                            placeholder="https://..." id="logoUrlInput" oninput="previewLogo(this.value)" />
                     <div class="mt-2" id="logoPreview" style="@(string.IsNullOrWhiteSpace(Model.LogoUrl) ? "display:none" : "")">
-                        <img src="@Model.LogoUrl" id="logoImg" alt="Logo önizleme" height="48"
+                        <img src="@Model.LogoUrl" id="logoImg" alt="@Localizer["LogoOnizleme"]" height="48"
                              style="object-fit:contain;max-width:200px;border:1px solid #e2e8f0;border-radius:8px;padding:4px;" />
                     </div>
                 </div>
@@ -80,7 +81,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-1"></i>@(isEdit ? "Güncelle" : "Kaydet")
                 </button>
-                <a href="/@slug/Admin/Sponsors?conferenceId=@confId" class="btn btn-outline-secondary">İptal</a>
+                <a href="/@slug/Admin/Sponsors?conferenceId=@confId" class="btn btn-outline-secondary">@Localizer["Iptal"]</a>
             </div>
         </form>
     </div>

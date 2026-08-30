@@ -1,5 +1,6 @@
 ﻿@using AntAbstract.Domain.Entities
 @model List<Certificate>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -230,7 +231,7 @@
                                         </form>
                                         <form asp-action="ResendEmail" asp-route-id="@c.Id" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
-                                            <button type="submit" class="cert-action-btn cert-action-email" title="E-posta Gönder">
+                                            <button type="submit" class="cert-action-btn cert-action-email" title="@Localizer["EPostaGonder"]">
                                                 <i class="fas fa-envelope"></i>
                                             </button>
                                         </form>

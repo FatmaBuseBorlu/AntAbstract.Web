@@ -1,5 +1,6 @@
 ﻿@using AntAbstract.Domain.Entities
 @model Conference
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = "Yeni Kongre Ekle";
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -10,8 +11,7 @@
 
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="/Admin/AllConferences" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Tüm Kongreler
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["TumKongreler"]</a>
         <h4 class="fw-bold mb-0">Yeni Kongre Ekle</h4>
     </div>
 
@@ -29,61 +29,60 @@
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Kurum <span class="text-danger">*</span></label>
                     <select asp-for="TenantId" asp-items="tenants" class="form-select">
-                        <option value="">— Kurum Seçin —</option>
+                        <option value="">@Localizer["KurumSecin"]</option>
                     </select>
                     <span asp-validation-for="TenantId" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Kongre Adı (TR) <span class="text-danger">*</span></label>
-                    <input asp-for="Title" class="form-control" placeholder="Kongre adını girin" required />
+                    <label class="form-label fw-semibold">@Localizer["KongreAdiTR"]<span class="text-danger">*</span></label>
+                    <input asp-for="Title" class="form-control" placeholder="@Localizer["KongreAdiniGirin"]" required />
                     <span asp-validation-for="Title" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Kongre Adı (EN)</label>
+                    <label class="form-label fw-semibold">@Localizer["KongreAdiEN"]</label>
                     <input asp-for="TitleEn" class="form-control" placeholder="Congress name in English" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Slug <span class="text-danger">*</span></label>
                     <input asp-for="Slug" class="form-control" placeholder="ornek-kongre-2026" required />
-                    <div class="form-text">URL'de kullanılır — sadece küçük harf, rakam ve tire</div>
+                    <div class="form-text">@Localizer["URLDeKullanilirSadeceKucuk"]</div>
                     <span asp-validation-for="Slug" class="text-danger small"></span>
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Başlangıç Tarihi <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">@Localizer["BaslangicTarihi"]<span class="text-danger">*</span></label>
                         <input asp-for="StartDate" type="date" class="form-control" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Bitiş Tarihi <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">@Localizer["BitisTarihi"]<span class="text-danger">*</span></label>
                         <input asp-for="EndDate" type="date" class="form-control" required />
                     </div>
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Şehir</label>
+                        <label class="form-label fw-semibold">@Localizer["Sehir"]</label>
                         <input asp-for="City" class="form-control" placeholder="İstanbul" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Ülke</label>
+                        <label class="form-label fw-semibold">@Localizer["Ulke"]</label>
                         <input asp-for="Country" class="form-control" placeholder="Türkiye" />
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="form-label fw-semibold">Mekan</label>
-                    <input asp-for="Venue" class="form-control" placeholder="Kongre Merkezi Adı" />
+                    <input asp-for="Venue" class="form-control" placeholder="@Localizer["KongreMerkeziAdi"]" />
                 </div>
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4">
-                        <i class="fas fa-plus me-1"></i> Kongreyi Oluştur
-                    </button>
-                    <a href="/Admin/AllConferences" class="btn btn-outline-secondary">İptal</a>
+                        <i class="fas fa-plus me-1"></i>@Localizer["KongreyiOlustur"]</button>
+                    <a href="/Admin/AllConferences" class="btn btn-outline-secondary">@Localizer["Iptal"]</a>
                 </div>
             </form>
         </div>

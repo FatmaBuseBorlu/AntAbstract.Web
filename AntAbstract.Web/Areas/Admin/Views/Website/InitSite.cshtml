@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = "Yeni Kongre Sitesi Oluştur";
     var slug = ViewBag.Slug as string;
@@ -15,18 +16,16 @@
             <i class="fas fa-arrow-left"></i>
         </a>
         <div>
-            <h4 class="mb-0 fw-bold">Yeni Kongre Sitesi Oluştur</h4>
-            <small class="text-muted">Seçilen kongre için varsayılan site blokları otomatik oluşturulur.</small>
+            <h4 class="mb-0 fw-bold">@Localizer["YeniKongreSitesiOlustur"]</h4>
+            <small class="text-muted">@Localizer["SecilenKongreIcinVarsayilanSite"]</small>
         </div>
     </div>
 
     @if (!(ViewBag.ConferenceList as SelectList)?.Any() ?? false)
     {
         <div class="alert alert-info">
-            <i class="fas fa-info-circle me-2"></i>
-            Tüm kongreler için site zaten oluşturulmuş. Yeni kongre ekledikten sonra buradan site oluşturabilirsiniz.
-        </div>
-        <a href="@backUrl" class="btn btn-primary">Geri Dön</a>
+            <i class="fas fa-info-circle me-2"></i>@Localizer["TumKongrelerIcinSiteZaten"]</div>
+        <a href="@backUrl" class="btn btn-primary">@Localizer["GeriDon"]</a>
     }
     else
     {
@@ -36,35 +35,34 @@
                     @Html.AntiForgeryToken()
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Kongre Seç <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">@Localizer["KongreSec"]<span class="text-danger">*</span></label>
                         <select name="conferenceId" class="form-select form-select-lg" required>
-                            <option value="">-- Kongre seçin --</option>
+                            <option value="">@Localizer["KongreSecin"]</option>
                             @foreach (SelectListItem item in (ViewBag.ConferenceList as SelectList ?? new SelectList(Enumerable.Empty<object>())))
                             {
                                 <option value="@item.Value">@item.Text</option>
                             }
                         </select>
-                        <div class="form-text">Listede yalnızca henüz sitesi oluşturulmamış kongreler görünür.</div>
+                        <div class="form-text">@Localizer["ListedeYalnizcaHenuzSitesiOlusturulmamis"]</div>
                     </div>
 
                     <div class="alert alert-light border mb-4">
-                        <p class="fw-semibold mb-2"><i class="fas fa-layer-group me-2 text-primary"></i>Oluşturulacak varsayılan bölümler:</p>
+                        <p class="fw-semibold mb-2"><i class="fas fa-layer-group me-2 text-primary"></i>@Localizer["OlusturulacakVarsayilanBolumler"]</p>
                         <div class="d-flex flex-wrap gap-2">
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">Hero</span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">Hakkında</span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">Konu Başlıkları</span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">Önemli Tarihler</span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">Ücretler</span>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">İletişim</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">@Localizer["Hakkinda"]</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">@Localizer["KonuBasliklari"]</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">@Localizer["OnemliTarihler"]</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">@Localizer["Ucretler"]</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">@Localizer["Iletisim"]</span>
                         </div>
-                        <p class="text-muted small mt-2 mb-0">TR ve EN dilleri için ayrı ayrı oluşturulur. Oluşturduktan sonra içerikleri düzenleyebilirsiniz.</p>
+                        <p class="text-muted small mt-2 mb-0">@Localizer["TRVeENDilleriIcin"]</p>
                     </div>
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary px-4">
-                            <i class="fas fa-globe me-2"></i>Siteyi Oluştur
-                        </button>
-                        <a href="@backUrl" class="btn btn-outline-secondary px-4">İptal</a>
+                            <i class="fas fa-globe me-2"></i>@Localizer["SiteyiOlustur"]</button>
+                        <a href="@backUrl" class="btn btn-outline-secondary px-4">@Localizer["Iptal"]</a>
                     </div>
                 </form>
             </div>

@@ -18,7 +18,7 @@
 
     <div class="card border-0 shadow-sm mb-3" style="border-radius:20px;">
         <div class="card-header bg-primary text-white p-4" style="border-radius:20px 20px 0 0;">
-            <h5 class="fw-bold mb-0"><i class="fas fa-tags me-2"></i>Bildiri Konuları</h5>
+            <h5 class="fw-bold mb-0"><i class="fas fa-tags me-2"></i>@Localizer["BildiriKonulari"]</h5>
         </div>
         <div class="card-body p-4">
 
@@ -46,14 +46,14 @@
             }
             else
             {
-                <p class="text-muted small mb-3">Henüz konu eklenmedi. Atlamak için İleri butonuna tıklayın.</p>
+                <p class="text-muted small mb-3">@Localizer["HenuzKonuEklenmediAtlamakIcin"]</p>
             }
 
             <form asp-action="Step4AddTopic" asp-route-slug="@slug" asp-route-id="@confId" method="post">
                 @Html.AntiForgeryToken()
                 <div class="row g-2">
                     <div class="col-md-5">
-                        <input type="text" name="name" class="form-control" placeholder="Konu adı (TR)" required maxlength="300" />
+                        <input type="text" name="name" class="form-control" placeholder="@Localizer["KonuAdiTR"]" required maxlength="300" />
                     </div>
                     <div class="col-md-5">
                         <input type="text" name="nameEn" class="form-control" placeholder="Topic name (EN — opsiyonel)" maxlength="300" />
