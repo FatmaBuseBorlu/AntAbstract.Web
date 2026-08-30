@@ -630,7 +630,10 @@ namespace AntAbstract.Web.Controllers
         [HttpGet("/proceedings")]
         public IActionResult Proceedings()
         {
-            return Redirect("/Proceedings/Index");
+            // Sorgu dizesi taşınmalı: yalnızca yolu yazan yönlendirme
+            // ?culture=en-US gibi parametreleri düşürüyor ve sayfa istenen
+            // dilde açılmıyordu.
+            return Redirect($"/Proceedings/Index{Request.QueryString}");
         }
 
         [HttpPost]
