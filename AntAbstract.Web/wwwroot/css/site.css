@@ -216,3 +216,12 @@ footer a:hover {
         padding-right: 0.5rem;
     }
 }
+
+/* Doğrulama özeti: hata yokken boş kırmızı kutu çiziliyordu.
+   asp-validation-summary etiketi "alert alert-danger" sınıflarını koşulsuz
+   taşıyor; içerik boş olsa da kutu görünüyor. ASP.NET hata yokken kabı
+   validation-summary-valid ile işaretliyor, biz de o hâlde gizliyoruz.
+   Hata olduğunda sınıf validation-summary-errors'a dönüyor ve kutu çıkıyor. */
+.validation-summary-valid {
+    display: none;
+}
