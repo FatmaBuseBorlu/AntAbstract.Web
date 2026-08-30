@@ -29,6 +29,33 @@ public sealed class EnglishRenderTests : IClassFixture<AuthenticatedTestFactory>
 
     private static readonly Regex Tags = new(@"(?is)<(script|style|svg).*?</\1>|<[^>]+>");
 
+    /// <summary>
+    /// Oturum açmış kullanıcının menüsü paylaşılan düzende; buradaki bir
+    /// sızıntı her sayfada görünür. Metinler eskiden doğrudan görünüme
+    /// yazılıydı, İngilizcede de Türkçe kalıyordu.
+    /// </summary>
+    [Fact]
+    public async Task KullaniciMenusu_IngilizceIsteninceTurkceBasmiyor()
+    {
+        var client = _factory.CreateClient(new() { AllowAutoRedirect = true });
+        client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, "Author");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "menu-en-test");
+
+        var response = await client.GetAsync("/?culture=en-US&ui-culture=en-US");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        foreach (var leak in new[]
+                 { "Çıkış Yap", "Hesap Ayarları", "Sistem Paneli", "Giriş Yap", "Kayıt Ol" })
+        {
+            Assert.False(
+                html.Contains(leak, StringComparison.Ordinal),
+                $"Kullanıcı menüsü İngilizcede Türkçe basıyor: {leak}");
+        }
+    }
+
     [Theory]
     [InlineData("/proceedings")]
     [InlineData("/about")]

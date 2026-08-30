@@ -7,6 +7,7 @@
 @inject UserManager<AppUser> UserManager
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
 @inject ISelectedConferenceService SelectedConferenceService
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     var isSignedIn = SignInManager.IsSignedIn(User);
@@ -31,7 +32,7 @@
 
     if (string.IsNullOrWhiteSpace(displayName))
     {
-        displayName = user?.Email ?? "Kullanıcı";
+        displayName = user?.Email ?? Localizer["DefaultUserName"].Value;
     }
 
     var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
@@ -44,27 +45,27 @@
     var isListener = User.IsInRole("Listener");
     var isReferee = User.IsInRole("Referee");
 
-    var roleText = "Kullanıcı";
+    var roleText = Localizer["Role_User"].Value;
 
     if (isSuperAdmin)
     {
-        roleText = "Süper Admin";
+        roleText = Localizer["Role_SuperAdmin"].Value;
     }
     else if (isAdmin)
     {
-        roleText = "Admin";
+        roleText = Localizer["Role_Admin"].Value;
     }
     else if (isReferee)
     {
-        roleText = "Hakem";
+        roleText = Localizer["Role_Referee"].Value;
     }
     else if (isAuthor)
     {
-        roleText = "Yazar";
+        roleText = Localizer["Role_Author"].Value;
     }
     else if (isListener)
     {
-        roleText = "Katılımcı";
+        roleText = Localizer["Role_Listener"].Value;
     }
 
     var panelUrl = "/Dashboard";
@@ -124,7 +125,7 @@
 
                     <span>
                         <span class="public-account-item-title">
-                            Sistem Paneli
+                            @Localizer["SystemPanel"]
                         </span>
                     </span>
                 </a>
@@ -136,7 +137,7 @@
 
                     <span>
                         <span class="public-account-item-title">
-                            Hesap Ayarları
+                            @Localizer["AccountSettings"]
                         </span>
                     </span>
                 </a>
@@ -160,7 +161,7 @@
 
                         <span>
                             <span class="public-account-item-title">
-                                Çıkış Yap
+                                @Localizer["Logout"]
                             </span>
                         </span>
                     </button>
@@ -173,10 +174,10 @@
 else
 {
     <a href="/login" class="btn btn-outline-dark">
-        Giriş Yap
+        @Localizer["Login"]
     </a>
 
     <a href="/register" class="btn btn-primary">
-        Kayıt Ol
+        @Localizer["Register"]
     </a>
 }
