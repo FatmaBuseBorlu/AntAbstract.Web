@@ -301,7 +301,11 @@ namespace AntAbstract.Web.Controllers
         {
             var ids = GetUserConferenceIds(userId);
 
+            // Kapsam kullanıcının kendi kayıt/bildiri/hakemlik kimlikleriyle
+            // belirleniyor; kiracı filtresi burada yalnızca global adreste
+            // listeyi boşaltmaya yarıyor.
             return _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .Where(c => ids.Contains(c.Id))
@@ -329,7 +333,11 @@ namespace AntAbstract.Web.Controllers
                     return false;
                 }
 
+                // Kiracı kısıtı zaten aşağıdaki koşulda; global bağlamda
+                // filtrenin ayrıca elemesi yöneticiyi kendi kongresinden
+                // mahrum bırakıyordu.
                 return await _context.Conferences
+                    .IgnoreQueryFilters()
                     .AsNoTracking()
                     .AnyAsync(c =>
                         c.Id == conferenceId &&
@@ -556,7 +564,13 @@ namespace AntAbstract.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Bu ekran slug taşımayan global adreste çalışıyor; orada tenant
+            // bağlamı boş kalıyor ve kiracı filtresi normal kullanıcı için her
+            // satırı eliyor. Filtre uygulanırsa kart listede görünür ama
+            // seçilince "kongre yok" sayılır. Kapsamı zaten aşağıdaki erişim
+            // kontrolü sağlıyor.
             var conference = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(x => x.Tenant)
                 .FirstOrDefaultAsync(x => x.Id == conferenceId);
