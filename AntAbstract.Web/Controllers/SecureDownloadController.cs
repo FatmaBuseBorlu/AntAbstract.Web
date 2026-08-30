@@ -183,8 +183,19 @@ namespace AntAbstract.Web.Controllers
                 return BadRequest();
             }
 
+            // Kayıt veritabanında dururken dosyanın diskte olmaması ayrı bir
+            // durum: yükleme başka bir makinede yapılmış olabilir (örneğin
+            // üretim veritabanına bağlı bir geliştirme ortamında; dosya o
+            // makinede kalır, sunucuya hiç ulaşmaz). Eskiden bu da "kayıt yok"
+            // ile aynı boş 404'ü döndürdüğü için hangisi olduğu anlaşılmıyordu.
             if (!System.IO.File.Exists(fullPath))
-                return NotFound();
+            {
+                _logger.LogWarning(
+                    "Dosya kaydı var ama disk üzerinde bulunamadı. Yol: {Path}",
+                    relativePath);
+
+                return NotFound("Dosya sunucuda bulunamadı. Kaydı duruyor ancak içeriği yüklenmemiş.");
+            }
 
             var ext = Path.GetExtension(fullPath).ToLowerInvariant();
             var anonymousName = $"submission-{submissionId.ToString("N")[..8]}{ext}";
@@ -221,8 +232,19 @@ namespace AntAbstract.Web.Controllers
                 return BadRequest();
             }
 
+            // Kayıt veritabanında dururken dosyanın diskte olmaması ayrı bir
+            // durum: yükleme başka bir makinede yapılmış olabilir (örneğin
+            // üretim veritabanına bağlı bir geliştirme ortamında; dosya o
+            // makinede kalır, sunucuya hiç ulaşmaz). Eskiden bu da "kayıt yok"
+            // ile aynı boş 404'ü döndürdüğü için hangisi olduğu anlaşılmıyordu.
             if (!System.IO.File.Exists(fullPath))
-                return NotFound();
+            {
+                _logger.LogWarning(
+                    "Dosya kaydı var ama disk üzerinde bulunamadı. Yol: {Path}",
+                    relativePath);
+
+                return NotFound("Dosya sunucuda bulunamadı. Kaydı duruyor ancak içeriği yüklenmemiş.");
+            }
 
             var ext = Path.GetExtension(fullPath).ToLowerInvariant();
             var contentType = ext switch

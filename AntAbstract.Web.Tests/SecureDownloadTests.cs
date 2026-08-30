@@ -157,6 +157,46 @@ public sealed class SecureDownloadTests : IClassFixture<AuthenticatedTestFactory
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>
+    /// Kayıt dururken dosya diskte yoksa, "kayıt yok" ile aynı boş 404
+    /// dönmemeli; hangisi olduğu anlaşılamıyordu.
+    /// </summary>
+    [Fact]
+    public async Task DosyaDiskteYoksa_AyirtEdilebilirCevapDoner()
+    {
+        Guid submissionId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            submissionId = SubmissionId;
+
+            if (!db.SubmissionFiles.IgnoreQueryFilters().Any(f => f.Id == FileId + 1))
+            {
+                db.SubmissionFiles.Add(new SubmissionFile
+                {
+                    Id = FileId + 1,
+                    SubmissionId = submissionId,
+                    FileName = "olmayan.pdf",
+                    StoredFileName = "olmayan.pdf",
+                    FilePath = "private-uploads/submissions/olmayan.pdf",
+                    Version = 2,
+                    UploadedAt = DateTime.UtcNow
+                });
+
+                db.SaveChanges();
+            }
+        }
+
+        var response = await _author.GetAsync($"/download/submission/{FileId + 1}");
+        var body = await response.Content.ReadAsStringAsync();
+
+        _output.WriteLine($"{(int)response.StatusCode} '{body}'");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.False(string.IsNullOrWhiteSpace(body), "Boş 404 — sebep anlaşılmıyor.");
+    }
+
     /// <summary>Düzeltme yetkiyi gevşetmemeli: başkasının dosyası indirilememeli.</summary>
     [Fact]
     public async Task Yabanci_BaskasininDosyasiniIndiremez()
