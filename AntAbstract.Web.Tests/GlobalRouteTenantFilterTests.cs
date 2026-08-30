@@ -180,6 +180,45 @@ public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTe
         Assert.True(globalHas, "Slug'sız /Certificates adresinde sertifika kayboldu.");
     }
 
+    /// <summary>
+    /// Slug'sız adres, slug'lı adres çalışırken kullanıcıyı dışarı atmamalı.
+    /// "Kongrelerim'e geri gönderme" bu hatanın imzası: kiracı filtresi
+    /// kaydı bulamıyor, ekran da kullanıcıyı listeye yolluyor.
+    /// </summary>
+    [Theory]
+    [InlineData("Hakem paneli", "/Review")]
+    [InlineData("Uzmanlık alanları", "/Review/Interests")]
+    [InlineData("Müsaitlik", "/Review/Availability")]
+    [InlineData("Çıkar çatışması", "/Review/Conflicts")]
+    [InlineData("Hakem sertifikaları", "/Review/MyCertificates")]
+    [InlineData("Sertifikalarım", "/Certificates")]
+    [InlineData("Konaklama", "/Accommodation")]
+    [InlineData("Ödemelerim", "/Payment/My")]
+    [InlineData("Bildiri kitabı", "/Proceedings/Index")]
+    public async Task SlugsuzAdres_KullaniciyiDisariAtmiyor(string ad, string path)
+    {
+        var withSlug = await _referee.GetAsync($"/{TenantSlug}{path}");
+        var withoutSlug = await _referee.GetAsync(path);
+
+        var slugTarget = withSlug.Headers.Location?.ToString() ?? "";
+        var globalTarget = withoutSlug.Headers.Location?.ToString() ?? "";
+
+        _output.WriteLine(
+            $"{ad}: slug'lı {(int)withSlug.StatusCode} {slugTarget} | " +
+            $"slug'sız {(int)withoutSlug.StatusCode} {globalTarget}");
+
+        var slugBounced = slugTarget.Contains("MyConferences", StringComparison.OrdinalIgnoreCase);
+        var globalBounced = globalTarget.Contains("MyConferences", StringComparison.OrdinalIgnoreCase);
+
+        Assert.False(
+            globalBounced && !slugBounced,
+            $"{ad}: slug'lı adres çalışıyor ama slug'sız adres kullanıcıyı dışarı attı.");
+
+        Assert.True(
+            (int)withoutSlug.StatusCode < 500,
+            $"{ad}: slug'sız adres {(int)withoutSlug.StatusCode} verdi.");
+    }
+
     [Fact]
     public async Task Konaklama_SlugsuzAdresteDeDolu()
     {

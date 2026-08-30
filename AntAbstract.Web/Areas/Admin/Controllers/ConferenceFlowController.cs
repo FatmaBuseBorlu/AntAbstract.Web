@@ -1015,7 +1015,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/ConferenceFlow/Index")]
         public IActionResult LegacyRoot()
         {
-            return Redirect("/Admin/ConferenceFlow");
+            // Sorgu dizesi korunmali: takma ad ayni icerige gidiyor.
+            return Redirect($"/Admin/ConferenceFlow{Request.QueryString}");
         }
 
         [HttpGet("/{slug}/ConferenceFlow/Index")]

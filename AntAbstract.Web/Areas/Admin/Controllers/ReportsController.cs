@@ -1105,7 +1105,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/Reports/Index")]
         public IActionResult LegacyRoot()
         {
-            return Redirect("/Admin/Reports");
+            // Sorgu dizesi korunmali: takma ad ayni icerige gidiyor.
+            return Redirect($"/Admin/Reports{Request.QueryString}");
         }
 
         [HttpGet("/{slug}/Reports/Index")]
