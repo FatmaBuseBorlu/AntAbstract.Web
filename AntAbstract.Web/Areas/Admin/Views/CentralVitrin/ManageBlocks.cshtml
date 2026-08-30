@@ -1,4 +1,5 @@
-﻿@model IEnumerable<AntAbstract.Domain.Entities.ConferencePageBlock>
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@model IEnumerable<AntAbstract.Domain.Entities.ConferencePageBlock>
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -727,9 +728,7 @@
                         @(string.IsNullOrWhiteSpace(conferenceSlug) ? "-" : "Aktif")
                     </div>
 
-                    <div class="vitrin-stat-label">
-                        Kongre Vitrini
-                    </div>
+                    <div class="vitrin-stat-label">@Localizer["KongreVitrini"]</div>
                 </div>
             </div>
         </div>
@@ -786,9 +785,7 @@
                                 
                             </th>
 
-                            <th class="text-center" style="width: 14%;">
-                                Durum
-                            </th>
+                            <th class="text-center" style="width: 14%;">@Localizer["Durum"]</th>
 
                             <th class="text-end pe-4" style="width: 14%;">
  

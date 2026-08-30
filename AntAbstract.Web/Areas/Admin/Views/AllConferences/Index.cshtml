@@ -2,6 +2,7 @@
 @using AntAbstract.WebUI.Models.ViewModels.Admin.AllConferences
 
 @model List<AllConferenceListItemViewModel>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -724,9 +725,7 @@
 
             <a href="/Admin/AllConferences/Create"
                class="admin-hero-btn admin-hero-btn-light">
-                <i class="fas fa-plus"></i>
-                Yeni Kongre Ekle
-            </a>
+                <i class="fas fa-plus"></i>@Localizer["YeniKongreEkle"]</a>
 
             <a href="/Admin/SystemReports"
                class="admin-hero-btn admin-hero-btn-primary">

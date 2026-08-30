@@ -58,21 +58,21 @@
             <div class="csc-icon csc-blue"><i class="fas fa-certificate"></i></div>
             <div class="csc-body">
                 <div class="csc-value">@totalCount</div>
-                <div class="csc-label">Toplam</div>
+                <div class="csc-label">@Localizer["Toplam"]</div>
             </div>
         </a>
         <a href="?conferenceId=@qConferenceId&type=Author" class="cert-stat-card @(selectedType == "Author" ? "csc-active" : "")">
             <div class="csc-icon csc-purple"><i class="fas fa-user-graduate"></i></div>
             <div class="csc-body">
                 <div class="csc-value">@authorCount</div>
-                <div class="csc-label">Yazar</div>
+                <div class="csc-label">@Localizer["Yazar"]</div>
             </div>
         </a>
         <a href="?conferenceId=@qConferenceId&type=Reviewer" class="cert-stat-card @(selectedType == "Reviewer" ? "csc-active" : "")">
             <div class="csc-icon csc-cyan"><i class="fas fa-gavel"></i></div>
             <div class="csc-body">
                 <div class="csc-value">@reviewerCount</div>
-                <div class="csc-label">Hakem</div>
+                <div class="csc-label">@Localizer["Hakem"]</div>
             </div>
         </a>
         <a href="?conferenceId=@qConferenceId&onlyMissingFile=true" class="cert-stat-card @(onlyMissingFile ? "csc-active" : "")">
@@ -112,18 +112,18 @@
                     <option value="">@Localizer["All"]</option>
                     @if (selectedType == "Author")
                     {
-                        <option value="Author" selected>Yazar</option>
-                        <option value="Reviewer">Hakem</option>
+                        <option value="Author" selected>@Localizer["Yazar"]</option>
+                        <option value="Reviewer">@Localizer["Hakem"]</option>
                     }
                     else if (selectedType == "Reviewer")
                     {
-                        <option value="Author">Yazar</option>
-                        <option value="Reviewer" selected>Hakem</option>
+                        <option value="Author">@Localizer["Yazar"]</option>
+                        <option value="Reviewer" selected>@Localizer["Hakem"]</option>
                     }
                     else
                     {
-                        <option value="Author">Yazar</option>
-                        <option value="Reviewer">Hakem</option>
+                        <option value="Author">@Localizer["Yazar"]</option>
+                        <option value="Reviewer">@Localizer["Hakem"]</option>
                     }
                 </select>
             </div>

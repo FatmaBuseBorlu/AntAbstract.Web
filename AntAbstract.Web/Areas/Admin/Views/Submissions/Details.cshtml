@@ -400,8 +400,7 @@
                                     if (!string.IsNullOrWhiteSpace(plagReport.ReportUrl))
                                     {
                                         <a href="@plagReport.ReportUrl" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-external-link-alt me-1"></i>Rapor
-                                        </a>
+                                            <i class="fas fa-external-link-alt me-1"></i>@Localizer["Rapor"]</a>
                                     }
                                     <span style="font-size:0.68rem;color:#94a3b8;">@plagReport.CompletedAt?.ToString("dd.MM.yyyy HH:mm")</span>
                                 }
@@ -579,7 +578,7 @@
                             <div class="rounded-3 border bg-white p-3 mb-3" style="font-size:0.78rem;">
                                 <div class="fw-bold text-muted mb-2">@Localizer["MetadataOnizleme"]</div>
                                 <div class="mb-1"><strong>@Localizer["Baslik"]</strong> @doiMetadata.Title</div>
-                                <div class="mb-1"><strong>Kongre:</strong> @doiMetadata.ConferenceTitle</div>
+                                <div class="mb-1"><strong>@Localizer["Kongre"]</strong> @doiMetadata.ConferenceTitle</div>
                                 <div class="mb-1"><strong>Yazarlar:</strong> @(doiMetadata.Authors.Any() ? string.Join(", ", doiMetadata.Authors) : "-")</div>
                                 @if (!string.IsNullOrWhiteSpace(doiMetadata.SuggestedDoiUrl))
                                 {
@@ -618,8 +617,7 @@
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
                                 <button type="submit" class="btn btn-primary btn-sm w-100">
-                                    <i class="fas fa-cloud-upload-alt me-1"></i>DataCite'a Otomatik Kaydet
-                                </button>
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>@Localizer["DataCiteAOtomatikKaydet"]</button>
                             </form>
                             <div class="text-center text-muted small mb-2">veya</div>
                         }
@@ -635,8 +633,7 @@
                                        placeholder="https://doi.org/10.xxxx/..."
                                        required />
                                 <button type="submit" class="btn btn-outline-primary">
-                                    <i class="fas fa-save me-1"></i>Manuel Kaydet
-                                </button>
+                                    <i class="fas fa-save me-1"></i>@Localizer["ManuelKaydet"]</button>
                             </div>
                         </form>
                     </div>

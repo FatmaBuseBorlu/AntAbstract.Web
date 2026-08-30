@@ -39,7 +39,7 @@
             <h3 class="fw-bold mb-1 text-dark">
                 <i class="fas fa-satellite-dish me-2 text-primary"></i>Webhook & Callback Log
             </h3>
-            <p class="text-muted mb-0">Toplam <strong>@total</strong> @Localizer["Records"]</p>
+            <p class="text-muted mb-0">@Localizer["Toplam"]<strong>@total</strong> @Localizer["Records"]</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left me-1"></i>@Localizer["Odemeler"]</a>
@@ -90,7 +90,7 @@
                            placeholder="checkout.session..." style="width:220px" />
                 </div>
                 <div>
-                    <label class="form-label small mb-1">Durum</label>
+                    <label class="form-label small mb-1">@Localizer["Durum"]</label>
                     <select name="status" class="form-select form-select-sm" style="width:140px">
                         <option value="">@Localizer["All"]</option>
                         @if (filterStatus == "processed") { <option value="processed" selected>processed</option> } else { <option value="processed">processed</option> }
@@ -120,7 +120,7 @@
                             <th>Event ID</th>
                             <th>Object ID</th>
                             <th>Payment ID</th>
-                            <th>Durum</th>
+                            <th>@Localizer["Durum"]</th>
                             <th>Dup</th>
                             <th>Hata</th>
                         </tr>

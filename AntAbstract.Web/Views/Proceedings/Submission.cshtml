@@ -1,5 +1,6 @@
 ﻿@using System.Linq
 @model AntAbstract.Web.Models.ViewModels.Proceedings.ProceedingSubmissionViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Model.Title;
@@ -25,11 +26,11 @@
 
         <div class="meta-grid">
             <div>
-                <span>Kongre</span>
+                <span>@Localizer["Kongre"]</span>
                 <strong>@Model.ConferenceTitle</strong>
             </div>
             <div>
-                <span>Tarih</span>
+                <span>@Localizer["Tarih"]</span>
                 <strong>@Model.ConferenceStartDate.ToString("dd.MM.yyyy") - @Model.ConferenceEndDate.ToString("dd.MM.yyyy")</strong>
             </div>
             @if (!string.IsNullOrWhiteSpace(Model.PresentationType))
@@ -54,7 +55,7 @@
         @if (!string.IsNullOrWhiteSpace(Model.Topic))
         {
             <div class="info-pill">
-                <span>Konu</span>
+                <span>@Localizer["Konu"]</span>
                 @Model.Topic
             </div>
         }

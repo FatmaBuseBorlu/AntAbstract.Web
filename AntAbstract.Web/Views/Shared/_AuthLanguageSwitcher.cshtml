@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Localization
 @using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     var requestCulture = Context.Features.Get<IRequestCultureFeature>();
@@ -63,6 +64,6 @@
 
     <a href="/" class="auth-close-link">
         <i class="fas fa-times"></i>
-        <span>Kapat</span>
+        <span>@Localizer["Kapat"]</span>
     </a>
 </div>

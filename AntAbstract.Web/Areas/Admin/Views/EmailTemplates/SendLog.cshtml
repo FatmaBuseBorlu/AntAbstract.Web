@@ -19,7 +19,7 @@
     <div>
         <h4 class="fw-bold mb-1">
             <i class="fas fa-history me-2 text-secondary"></i>@Localizer["EPostaGonderimGecmisi"]</h4>
-        <p class="text-muted mb-0">Toplam <strong>@total</strong> @Localizer["Records"]</p>
+        <p class="text-muted mb-0">@Localizer["Toplam"]<strong>@total</strong> @Localizer["Records"]</p>
     </div>
     <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-arrow-left me-1"></i>@Localizer["Sablonlar"]</a>
@@ -34,7 +34,7 @@
                        placeholder="ornek@eposta.com" style="width:220px" />
             </div>
             <div>
-                <label class="form-label small mb-1">Durum</label>
+                <label class="form-label small mb-1">@Localizer["Durum"]</label>
                 <select name="status" class="form-select form-select-sm" style="width:130px">
                     <option value="">@Localizer["All"]</option>
                     @if (filterStatus == "sent")   { <option value="sent" selected>sent</option> }   else { <option value="sent">sent</option> }
@@ -76,10 +76,10 @@
                     <tr>
                         <th class="px-4 py-3">@Localizer["Date"]</th>
                         <th>@Localizer["Recipient"]</th>
-                        <th>Konu</th>
+                        <th>@Localizer["Konu"]</th>
                         <th>@Localizer["Template"]</th>
                         <th>Kaynak</th>
-                        <th>Durum</th>
+                        <th>@Localizer["Durum"]</th>
                         <th>Hata</th>
                     </tr>
                 </thead>

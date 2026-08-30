@@ -2,7 +2,7 @@
 @model Conference
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "Yeni Kongre Ekle";
+    ViewData["Title"] = Localizer["PageHeading"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
     var tenants = ViewBag.Tenants as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
 }
@@ -12,22 +12,29 @@
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="/Admin/AllConferences" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left me-1"></i>@Localizer["TumKongreler"]</a>
-        <h4 class="fw-bold mb-0">Yeni Kongre Ekle</h4>
+        <h4 class="fw-bold mb-0">@Localizer["PageHeading"]</h4>
     </div>
 
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom py-3">
-            <h6 class="fw-bold mb-0"><i class="fas fa-calendar-plus me-2 text-primary"></i>Kongre Bilgileri</h6>
+    @* Panelin geri kalanı modern-card kullanıyor; bu ekran eski Bootstrap
+       kartıyla kalmış ve yanındaki sayfalardan farklı duruyordu. *@
+    <div class="modern-card mb-4">
+        <div class="modern-card-header">
+            <div class="modern-card-icon soft-primary">
+                <i class="fas fa-calendar-plus"></i>
+            </div>
+            <div>
+                <h5 class="modern-card-title mb-1">@Localizer["CardTitle"]</h5>
+                <p class="modern-card-text mb-0">@Localizer["CardLead"]</p>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="modern-card-body">
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
 
                 <div asp-validation-summary="All" class="alert alert-danger border-0 small mb-3"></div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Kurum <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold small text-muted">@Localizer["KurumLabel"] <span class="text-danger">*</span></label>
                     <select asp-for="TenantId" asp-items="tenants" class="form-select">
                         <option value="">@Localizer["KurumSecin"]</option>
                     </select>
@@ -35,18 +42,18 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">@Localizer["KongreAdiTR"]<span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold small text-muted">@Localizer["KongreAdiTR"]<span class="text-danger">*</span></label>
                     <input asp-for="Title" class="form-control" placeholder="@Localizer["KongreAdiniGirin"]" required />
                     <span asp-validation-for="Title" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">@Localizer["KongreAdiEN"]</label>
-                    <input asp-for="TitleEn" class="form-control" placeholder="Congress name in English" />
+                    <label class="form-label fw-semibold small text-muted">@Localizer["KongreAdiEN"]</label>
+                    <input asp-for="TitleEn" class="form-control" placeholder="@Localizer["TitleEnPlaceholder"]" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Slug <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold small text-muted">@Localizer["SlugLabel"] <span class="text-danger">*</span></label>
                     <input asp-for="Slug" class="form-control" placeholder="ornek-kongre-2026" required />
                     <div class="form-text">@Localizer["URLDeKullanilirSadeceKucuk"]</div>
                     <span asp-validation-for="Slug" class="text-danger small"></span>
@@ -54,28 +61,28 @@
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">@Localizer["BaslangicTarihi"]<span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold small text-muted">@Localizer["BaslangicTarihi"]<span class="text-danger">*</span></label>
                         <input asp-for="StartDate" type="date" class="form-control" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">@Localizer["BitisTarihi"]<span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold small text-muted">@Localizer["BitisTarihi"]<span class="text-danger">*</span></label>
                         <input asp-for="EndDate" type="date" class="form-control" required />
                     </div>
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">@Localizer["Sehir"]</label>
+                        <label class="form-label fw-semibold small text-muted">@Localizer["Sehir"]</label>
                         <input asp-for="City" class="form-control" placeholder="İstanbul" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">@Localizer["Ulke"]</label>
+                        <label class="form-label fw-semibold small text-muted">@Localizer["Ulke"]</label>
                         <input asp-for="Country" class="form-control" placeholder="Türkiye" />
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-semibold">Mekan</label>
+                    <label class="form-label fw-semibold small text-muted">@Localizer["VenueLabel"]</label>
                     <input asp-for="Venue" class="form-control" placeholder="@Localizer["KongreMerkeziAdi"]" />
                 </div>
 
