@@ -8,7 +8,7 @@
 #   hostingModel=InProcess → OutOfProcess 502.5 verir
 #
 # Kullanım: ./deploy.sh
-# Çıktı:    ~/Desktop/AntAbstract-Plesk-x86-YYYYMMDD.zip
+# Çıktı:    ~/Desktop/AntAbstract-Plesk-x86-YYYYMMDD-HHMM.zip
 # ─────────────────────────────────────────────────────────────────────────────
 set -e
 
@@ -16,7 +16,9 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT="$ROOT_DIR/AntAbstract.Web/AntAbstract.Web.csproj"
 INFRA="$ROOT_DIR/AntAbstract.Infrastructure/AntAbstract.Infrastructure.csproj"
 OUTPUT="$ROOT_DIR/deploy_output"
-ZIP_NAME="AntAbstract-Plesk-x86-$(date +%Y%m%d).zip"
+# Ada saat de giriyor: aynı gün ikinci kez paketlenince eskisinin üzerine
+# yazıyordu ve hangisinin kurulduğu anlaşılmıyordu.
+ZIP_NAME="AntAbstract-Plesk-x86-$(date +%Y%m%d-%H%M).zip"
 ZIP_PATH="$HOME/Desktop/$ZIP_NAME"
 
 echo ""
