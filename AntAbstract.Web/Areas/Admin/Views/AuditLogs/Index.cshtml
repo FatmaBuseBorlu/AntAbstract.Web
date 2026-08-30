@@ -1,4 +1,4 @@
-@model IEnumerable<AntAbstract.Domain.Entities.AuditLog>
+﻿@model IEnumerable<AntAbstract.Domain.Entities.AuditLog>
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     var slug         = ViewBag.Slug as string ?? "";
@@ -82,10 +82,6 @@
     </div>
 </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-}
 
 <div class="admin-filter-card">
     <form method="get" class="row g-2 align-items-end">

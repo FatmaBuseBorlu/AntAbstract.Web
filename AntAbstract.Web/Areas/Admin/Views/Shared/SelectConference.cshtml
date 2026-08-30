@@ -1123,6 +1123,13 @@
 
 @section Scripts {
     <script>
+        // Bu metin sunucuda çözülüp JS'e sabit olarak gömülüyor. Eskiden burada
+        // doğrudan C# çağrısı vardı (Localizer.GetString(...)); tarayıcıda
+        // "Localizer is not defined" fırlatıyor, seçim fonksiyonu o satırda
+        // kesiliyor ve hemen altındaki "Devam Et" butonunu aktifleştiren satır
+        // hiç çalışmıyordu. Kongre seçilse de buton pasif kalıyordu.
+        const selectedConferencePrefix = @Json.Serialize(Localizer["SelectedConference"].Value);
+
         document.addEventListener("DOMContentLoaded", function () {
             const searchInput = document.getElementById("conferenceSearchInput");
             const tenantFilter = document.getElementById("tenantFilterSelect");
@@ -1160,7 +1167,7 @@
                     const title = titleElement ? titleElement.innerText.trim() : "Kongre";
 
                     if (selectedText) {
-                        selectedText.innerText = Localizer.GetString("SelectedConference").Value + title;
+                        selectedText.innerText = selectedConferencePrefix + title;
                     }
 
                     if (continueButton) {

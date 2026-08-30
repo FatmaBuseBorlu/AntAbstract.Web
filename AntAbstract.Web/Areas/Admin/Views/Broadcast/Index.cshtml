@@ -1,4 +1,4 @@
-@using AntAbstract.Domain.Entities
+﻿@using AntAbstract.Domain.Entities
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -45,18 +45,6 @@
     </div>
 </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success border-0 shadow-sm mb-4">
-        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger border-0 shadow-sm mb-4">
-        <i class="fas fa-times-circle me-2"></i>@TempData["ErrorMessage"]
-    </div>
-}
 
 <div class="admin-list-card">
     <div class="admin-list-card-header">
@@ -142,7 +130,7 @@
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary px-4"
-                        onclick="return confirm('');">
+                        onclick="return confirm('Toplu e-posta gönderilecek. Devam etmek istiyor musunuz?');">
                     <i class="fas fa-paper-plane me-2"></i>@Localizer["Send"]
                 </button>
                 <button type="reset" class="btn btn-outline-secondary">@Localizer["Clear"]</button>
@@ -197,7 +185,7 @@
                                 @if (b.Status == BroadcastStatus.Pending)
                                 {
                                     <form action="@cancelUrl" method="post" class="d-inline"
-                                          onsubmit="return confirm('');">
+                                          onsubmit="return confirm('Bu toplu gönderimi iptal etmek istediğinize emin misiniz?');">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="broadcastId" value="@b.Id" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="@Localizer["Cancel"]">

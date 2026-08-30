@@ -1,4 +1,4 @@
-@using AntAbstract.Web.Models.ViewModels
+﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Reports
 @model ReportsIndexViewModel
 
@@ -53,20 +53,6 @@
 
 <div class="reports-page">
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert reports-alert reports-alert-success mb-4">
-            <i class="fas fa-check-circle"></i>
-            @TempData["SuccessMessage"]
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert reports-alert reports-alert-error mb-4">
-            <i class="fas fa-times-circle"></i>
-            @TempData["ErrorMessage"]
-        </div>
-    }
 
     @* Hero header *@
     <div class="reports-hero-card mb-4">
@@ -90,15 +76,15 @@
             </a>
             <a href="@refereeReportUrl" class="btn reports-btn-ref">
                 <i class="fas fa-user-graduate"></i>
-                
+                Hakem Raporu
             </a>
             <a href="@unregisteredAuthorsUrl" class="btn btn-warning text-dark">
                 <i class="fas fa-user-times"></i>
-                
+                Kayıtsız Yazarlar
             </a>
             <a href="@surveyResultsUrl" class="btn btn-info text-white">
                 <i class="fas fa-poll-h"></i>
-                
+                Anket Sonuçları
             </a>
         </div>
     </div>
@@ -318,19 +304,19 @@
                         <form method="get" action="@participantsExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                             <button type="submit" class="export-action-btn">
-                                <i class="fas fa-users"></i> 
+                                <i class="fas fa-users"></i> Katılımcılar
                             </button>
                         </form>
                         <form method="get" action="@revenueExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                             <button type="submit" class="export-action-btn">
-                                <i class="fas fa-coins"></i> 
+                                <i class="fas fa-coins"></i> Gelir
                             </button>
                         </form>
                         <form method="get" action="@submissionsExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                             <button type="submit" class="export-action-btn">
-                                <i class="fas fa-file-alt"></i> 
+                                <i class="fas fa-file-alt"></i> Bildiriler
                             </button>
                         </form>
                     </div>
@@ -339,15 +325,15 @@
                 <div class="export-btn-row js-export-buttons">
                     <button type="button" class="export-action-btn" onclick="triggerExport('@participantsExportUrl')">
                         <i class="fas fa-users"></i>
-                        
+                        Katılımcılar
                     </button>
                     <button type="button" class="export-action-btn" onclick="triggerExport('@revenueExportUrl')">
                         <i class="fas fa-coins"></i>
-                        
+                        Gelir
                     </button>
                     <button type="button" class="export-action-btn" onclick="triggerExport('@submissionsExportUrl')">
                         <i class="fas fa-file-alt"></i>
-                        
+                        Bildiriler
                     </button>
                 </div>
             </div>

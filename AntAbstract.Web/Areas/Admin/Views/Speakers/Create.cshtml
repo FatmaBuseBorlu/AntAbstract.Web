@@ -1,4 +1,4 @@
-@using AntAbstract.Domain.Entities
+﻿@using AntAbstract.Domain.Entities
 @model InvitedSpeaker
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
@@ -13,7 +13,7 @@
         <a href="/@slug/Admin/Speakers?conferenceId=@confId" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left"></i>
         </a>
-        <h4 class="fw-bold mb-0"><i class="fas fa-user-plus text-primary me-2"></i>Konuşmacı Ekle</h4>
+        <h4 class="fw-bold mb-0"><i class="fas fa-user-plus text-primary me-2"></i>@Localizer["PageHeading"]</h4>
     </div>
 
     <div class="card border-0 shadow-sm p-4">
@@ -49,7 +49,7 @@
                 <div class="col-md-8">
                     <label class="form-label fw-semibold">@Localizer["PhotoUrl"]</label>
                     <input type="url" name="PhotoUrl" value="@Model.PhotoUrl" class="form-control" maxlength="500" placeholder="https://..." />
-                    <div class="form-text">Harici CDN veya yüklenmiş fotoğrafın URL'si</div>
+                    <div class="form-text">@Localizer["PhotoUrlHelp"]</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Web Sitesi</label>

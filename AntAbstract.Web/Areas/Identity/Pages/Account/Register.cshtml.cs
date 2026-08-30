@@ -850,7 +850,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 var errorMessage = validation.Error switch
                 {
                     UploadValidationError.TooLarge =>
-                        "Profil resmi en fazla 10 MB olabilir.",
+                        "Profil resmi en fazla 45 MB olabilir.",
                     UploadValidationError.InvalidExtension =>
                         "Profil resmi yalnızca JPG, JPEG, PNG veya WEBP formatında olabilir.",
                     _ =>
@@ -903,10 +903,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     file.Length
                 );
 
+                // Buraya gelindiyse dosya doğrulamayı geçmiştir; sorun diske
+                // yazmakta (izin, kota, yol). Kullanıcıyı dosyasını değiştirmeye
+                // yönlendirmek yanlış olur.
                 return (
                     false,
                     null,
-                    "Profil resmi yüklenirken bir hata oluştu. Lütfen dosya formatını kontrol ediniz veya daha küçük bir dosya deneyiniz."
+                    "Profil resmi sunucuya kaydedilemedi. Dosyanızda bir sorun yok; " +
+                    "lütfen birazdan tekrar deneyin. Sorun sürerse yöneticiyle iletişime geçin."
                 );
             }
         }

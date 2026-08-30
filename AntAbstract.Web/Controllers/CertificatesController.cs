@@ -107,6 +107,11 @@ namespace AntAbstract.Web.Controllers
             HttpContext.Session.SetString($"SelectedConferenceTitle:{conference.TenantId}", conference.Title ?? "");
         }
 
+        // Bu ekranın adresleri slug taşımayabiliyor (/Certificates). Slug yoksa
+        // tenant bağlamı boş kalıyor ve kiracı filtresi aşağıdaki yardımcı
+        // sorguların hepsini boşaltıyor: kullanıcı kendi sertifikasını
+        // göremiyor, hatta "Kongre bulunamadı." ile dışarı atılıyordu.
+        // Kapsamı her sorgunun kendi userId/id koşulu sağlıyor.
         private async Task<Conference?> GetConferenceBySlugAsync(string? slug)
         {
             if (string.IsNullOrWhiteSpace(slug))
@@ -115,6 +120,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             return await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .Where(c =>
@@ -135,6 +141,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             return await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(c => c.Tenant)
                 .FirstOrDefaultAsync(c => c.Id == conferenceId);
@@ -145,6 +152,7 @@ namespace AntAbstract.Web.Controllers
             Guid conferenceId)
         {
             return await _context.ConferenceAttendances
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(x =>
                     x.UserId == userId &&
@@ -169,6 +177,7 @@ namespace AntAbstract.Web.Controllers
             }
 
             return await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(c => ids.Contains(c.Id))
                 .Select(c => new
@@ -263,7 +272,10 @@ namespace AntAbstract.Web.Controllers
                 return Challenge();
             }
 
+            // Listeyle aynı sebep: slug'sız adreste kiracı filtresi kullanıcının
+            // kendi sertifikasını da eliyordu. Sahiplik koşulu zaten burada.
             var certificate = await _context.Certificates
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&

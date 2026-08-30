@@ -471,13 +471,20 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var paidRegistrations = await baseQuery.CountAsync(x => x.IsPaid);
             var pendingPayments = await baseQuery.CountAsync(x => !x.IsPaid);
 
-            var totalRevenue = await baseQuery
+            // SQLite decimal uzerinde SUM yapamiyor (SQL Server yapabiliyor).
+            // Tutarlar tek kolon olarak cekilip bellekte toplaniyor.
+            var totalRevenue = (await baseQuery
                 .Where(x => x.IsPaid)
-                .SumAsync(x => x.Amount);
+                .Select(x => x.Amount)
+                .ToListAsync())
+                .Sum();
 
-            var registrationTypes = await _context.RegistrationTypes
+            // SQLite ORDER BY icinde decimal cevirmiyor (SQL Server cevirebiliyor).
+            // Kayit turu sayisi az oldugu icin siralama bellekte yapiliyor.
+            var registrationTypes = (await _context.RegistrationTypes
                 .AsNoTracking()
                 .Where(x => x.ConferenceId == conference.Id)
+                .ToListAsync())
                 .OrderBy(x => x.Price)
                 .ThenBy(x => x.Name)
                 .Select(x => new RegistrationTypeFilterItem
@@ -487,7 +494,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     Price = x.Price,
                     Currency = x.Currency
                 })
-                .ToListAsync();
+                .ToList();
 
             var filteredQuery = baseQuery;
 
@@ -868,15 +875,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetConferenceSession(conference);
 
-            var sessions = await _context.Sessions
+            // SQLite ORDER BY icinde TimeSpan cevirmiyor (SQL Server cevirebiliyor).
+            // Gun veritabaninda siralaniyor, gun ici sira bellekte tamamlaniyor.
+            var sessions = (await _context.Sessions
                 .AsNoTracking()
                 .Include(x => x.Submissions)
                     .ThenInclude(x => x.Author)
                 .Where(x => x.ConferenceId == conference.Id)
                 .OrderBy(x => x.SessionDate)
+                .ToListAsync())
+                .OrderBy(x => x.SessionDate)
                 .ThenBy(x => x.StartTime)
                 .ThenBy(x => x.SortOrder)
-                .ToListAsync();
+                .ToList();
 
             var totalSessions = sessions.Count;
 
@@ -931,7 +942,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetConferenceSession(conference);
 
-            var sessions = await _context.Sessions
+            // SQLite ORDER BY icinde TimeSpan cevirmiyor (SQL Server cevirebiliyor).
+            // Gun veritabaninda siralaniyor, gun ici sira bellekte tamamlaniyor.
+            var sessions = (await _context.Sessions
                 .AsNoTracking()
                 .Include(x => x.Submissions)
                     .ThenInclude(x => x.Author)
@@ -939,9 +952,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     x.ConferenceId == conference.Id &&
                     x.IsActive)
                 .OrderBy(x => x.SessionDate)
+                .ToListAsync())
+                .OrderBy(x => x.SessionDate)
                 .ThenBy(x => x.StartTime)
                 .ThenBy(x => x.SortOrder)
-                .ToListAsync();
+                .ToList();
 
             ViewBag.ConferenceId = conference.Id;
             ViewBag.ConferenceTitle = conference.Title ?? "";
@@ -1000,7 +1015,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/ConferenceFlow/Index")]
         public IActionResult LegacyRoot()
         {
-            return Redirect("/Admin/ConferenceFlow");
+            // Sorgu dizesi korunmali: takma ad ayni icerige gidiyor.
+            return Redirect($"/Admin/ConferenceFlow{Request.QueryString}");
         }
 
         [HttpGet("/{slug}/ConferenceFlow/Index")]

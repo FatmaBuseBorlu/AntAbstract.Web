@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class WebsiteController : Controller
     {
         private const int MaxContentJsonLength = 10000;
@@ -89,12 +89,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
+        private bool IsSuperAdmin()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
         private async Task<bool> CanAccessCurrentTenantAsync(string? slug = null)
         {
             return await _tenantAccess.CanAccessCurrentTenantAsync(
                 User,
                 slug,
-                allowSuperAdmin: false);
+                allowSuperAdmin: true);
+        }
+
+        /// <summary>
+        /// Kurum eşleşmesi yalnızca kurum adminleri için aranır; SuperAdmin
+        /// hiçbir kuruma bağlı değil (TenantId = null) ve bu kontrol onu her
+        /// kongrede dışarıda bırakıyordu. Kongrenin adresteki kuruma ait olma
+        /// şartı iki rol için de geçerli kalıyor.
+        /// </summary>
+        private async Task<bool> IsAdminOfCurrentTenantAsync(Tenant tenant)
+        {
+            if (IsSuperAdmin())
+            {
+                return true;
+            }
+
+            var adminTenantId = await GetCurrentAdminTenantIdAsync();
+
+            return adminTenantId.HasValue && adminTenantId.Value == tenant.Id;
         }
 
         private async Task<bool> ConferenceBelongsToCurrentTenantAsync(Guid conferenceId)
@@ -106,9 +129,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return false;
             }
 
-            var adminTenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!adminTenantId.HasValue || adminTenantId.Value != tenant.Id)
+            if (!await IsAdminOfCurrentTenantAsync(tenant))
             {
                 return false;
             }
@@ -129,9 +150,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return new List<Conference>();
             }
 
-            var adminTenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!adminTenantId.HasValue || adminTenantId.Value != tenant.Id)
+            if (!await IsAdminOfCurrentTenantAsync(tenant))
             {
                 return new List<Conference>();
             }
@@ -399,6 +418,80 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ToListAsync();
 
             return View(blocks);
+        }
+
+        [HttpGet("/Admin/Website/InitSite")]
+        [HttpGet("/{slug}/Admin/Website/InitSite")]
+        public async Task<IActionResult> InitSite(string? slug = null)
+        {
+            var tenant = _tenantContext.Current;
+            if (tenant == null) return RedirectToSafePage();
+            if (!await CanAccessCurrentTenantAsync(slug)) return RedirectToSafePage();
+
+            var conferences = await GetCurrentTenantConferencesAsync();
+
+            // sadece henüz hiç bloğu olmayan kongreler
+            var conferenceIdsWithBlocks = await _context.ConferencePageBlocks
+                .AsNoTracking()
+                .Where(b => b.TenantId == tenant.Id)
+                .Select(b => b.ConferenceId)
+                .Distinct()
+                .ToListAsync();
+
+            var available = conferences
+                .Where(c => !conferenceIdsWithBlocks.Contains(c.Id))
+                .ToList();
+
+            ViewBag.Slug = CurrentSlug;
+            ViewBag.ConferenceList = new SelectList(available, "Id", "Title");
+            return View();
+        }
+
+        [HttpPost("/Admin/Website/InitSite")]
+        [HttpPost("/{slug}/Admin/Website/InitSite")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InitSite(string? slug, Guid conferenceId)
+        {
+            var tenant = _tenantContext.Current;
+            if (tenant == null) return RedirectToSafePage();
+            if (!await CanAccessCurrentTenantAsync(slug)) return RedirectToSafePage();
+            if (!await ConferenceBelongsToCurrentTenantAsync(conferenceId))
+            {
+                TempData["ErrorMessage"] = T("Error_ValidConferenceNotFound", "Geçerli kongre bulunamadı.");
+                return RedirectToSafePage();
+            }
+
+            // Zaten blok varsa direkt website yönetimine gönder
+            var alreadyExists = await _context.ConferencePageBlocks
+                .AnyAsync(b => b.TenantId == tenant.Id && b.ConferenceId == conferenceId);
+            if (alreadyExists)
+            {
+                TempData["SuccessMessage"] = T("Info_SiteAlreadyExists", "Bu kongreye ait site zaten mevcut.");
+                return RedirectToWebsiteIndex("tr-TR", "Home", conferenceId);
+            }
+
+            var now = DateTime.UtcNow;
+            var defaultBlocks = new List<ConferencePageBlock>
+            {
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "tr-TR", Page = "Home", BlockType = ConferencePageBlockType.Hero,          Order = 1, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "tr-TR", Page = "Home", BlockType = ConferencePageBlockType.About,         Order = 2, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "tr-TR", Page = "Home", BlockType = ConferencePageBlockType.Topics,        Order = 3, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "tr-TR", Page = "Home", BlockType = ConferencePageBlockType.ImportantDates,Order = 4, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "tr-TR", Page = "Home", BlockType = ConferencePageBlockType.Fees,          Order = 5, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "tr-TR", Page = "Home", BlockType = ConferencePageBlockType.Contact,       Order = 6, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "en-US", Page = "Home", BlockType = ConferencePageBlockType.Hero,          Order = 1, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "en-US", Page = "Home", BlockType = ConferencePageBlockType.About,         Order = 2, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "en-US", Page = "Home", BlockType = ConferencePageBlockType.Topics,        Order = 3, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "en-US", Page = "Home", BlockType = ConferencePageBlockType.ImportantDates,Order = 4, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "en-US", Page = "Home", BlockType = ConferencePageBlockType.Fees,          Order = 5, IsActive = true, ContentJson = "{}", CreatedAt = now },
+                new() { TenantId = tenant.Id, ConferenceId = conferenceId, Culture = "en-US", Page = "Home", BlockType = ConferencePageBlockType.Contact,       Order = 6, IsActive = true, ContentJson = "{}", CreatedAt = now },
+            };
+
+            _context.ConferencePageBlocks.AddRange(defaultBlocks);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = T("Success_SiteCreated", "Kongre sitesi oluşturuldu. İçerikleri düzenleyebilirsiniz.");
+            return RedirectToWebsiteIndex("tr-TR", "Home", conferenceId);
         }
 
         [HttpGet("/Admin/Website/Create")]

@@ -1,4 +1,4 @@
-@model List<AntAbstract.Domain.Entities.ReviewerInvitation>
+﻿@model List<AntAbstract.Domain.Entities.ReviewerInvitation>
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -33,13 +33,6 @@
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
 
     @if (!Model.Any())
     {
@@ -65,7 +58,7 @@
                                 <th>@Localizer["Email"]</th>
                                 <th>@Localizer["FullName"]</th>
                                 <th>@Localizer["Institution"]</th>
-                                <th>Durum</th>
+                                <th>@Localizer["Status"]</th>
                                 <th>@Localizer["SentDate"]</th>
                                 <th>@Localizer["Expiry"]</th>
                                 <th>@Localizer["Response"]</th>

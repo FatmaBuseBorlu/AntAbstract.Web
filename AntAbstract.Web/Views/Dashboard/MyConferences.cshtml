@@ -28,6 +28,35 @@
     var isAuthor = User.IsInRole("Author") || User.IsInRole("Yazar");
     var isListener = User.IsInRole("Listener") || User.IsInRole("Dinleyici");
 
+    // Sayfa iki mesaj birden gösteriyordu: üstte kırmızı uyarı şeridi
+    // ("Kongre bulunamadı."), altında da aynı şeyi söyleyen karşılama kartı
+    // ("...aşağıdan seçiniz"). Üstelik kırmızı şerit, hemen altında kongresi
+    // listelenen kullanıcıya "hiç kongren yok" gibi okunuyordu.
+    //
+    // Mesajı şeritten alıp karşılama kartının içine taşıyoruz. Anahtarları
+    // burada siliyoruz; gövde layout'tan önce çalıştığı için şerit basılmıyor
+    // ve ekranda tek bir yönlendirme kalıyor.
+    var noticeText = TempData["ErrorMessage"] as string
+                     ?? TempData["InfoMessage"] as string
+                     ?? TempData["SuccessMessage"] as string;
+
+    var noticeKind = TempData["ErrorMessage"] != null
+        ? "error"
+        : TempData["InfoMessage"] != null
+            ? "info"
+            : "success";
+
+    TempData.Remove("ErrorMessage");
+    TempData.Remove("InfoMessage");
+    TempData.Remove("SuccessMessage");
+
+    var noticeIcon = noticeKind switch
+    {
+        "error" => "circle-exclamation",
+        "info" => "circle-info",
+        _ => "circle-check"
+    };
+
     string? selectedIdStr = null;
 
     if (Tc.Current != null)
@@ -269,6 +298,40 @@
             font-weight: 650;
             line-height: 1.65;
             max-width: 850px;
+        }
+
+        /* Yönlendirme sebebi kartın içinde duruyor; sayfanın tepesinde ayrı
+           bir uyarı şeridi açmıyoruz ki tek mesaj kalsın. */
+        .selection-notice {
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin: 0 0 0.5rem;
+            padding: 0.5rem 0.85rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            line-height: 1.5;
+            max-width: 850px;
+        }
+
+            .selection-notice i {
+                margin-top: 0.15rem;
+            }
+
+        .selection-notice-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #b91c1c;
+        }
+
+        .selection-notice-info {
+            background: rgba(0, 174, 239, 0.1);
+            color: #0369a1;
+        }
+
+        .selection-notice-success {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
         }
 
         .selection-hero-actions {
@@ -842,6 +905,14 @@
                         ? @Localizer["AdminConferences"]
                         : L("Welcome", "Hoş Geldiniz"))
                 </h2>
+
+                @if (!string.IsNullOrWhiteSpace(noticeText))
+                {
+                    <div class="selection-notice selection-notice-@noticeKind">
+                        <i class="fas fa-@noticeIcon"></i>
+                        <span>@noticeText</span>
+                    </div>
+                }
 
                 <p class="selection-description">
                     @if (isAdmin)

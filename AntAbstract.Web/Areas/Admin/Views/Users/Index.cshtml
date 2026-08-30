@@ -365,7 +365,7 @@
     }
 
     .users-table {
-        min-width: 1180px;
+        min-width: 1380px;
         margin-bottom: 0;
         position: relative;
     }
@@ -531,7 +531,7 @@
 
     .actions-cell {
         position: relative;
-        min-width: 280px;
+        min-width: 400px;
         white-space: nowrap;
         overflow: visible;
     }
@@ -541,21 +541,21 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.38rem;
         flex-wrap: nowrap;
         overflow: visible;
     }
 
     .user-action-btn {
-        min-height: 36px;
-        border-radius: 12px;
-        padding: 0 0.78rem;
+        min-height: 34px;
+        border-radius: 10px;
+        padding: 0 0.65rem;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.42rem;
-        font-size: 0.78rem;
-        font-weight: 950;
+        gap: 0.38rem;
+        font-size: 0.75rem;
+        font-weight: 700;
         text-decoration: none;
         border: 1px solid transparent;
         background: #ffffff;
@@ -968,7 +968,11 @@
                                 @Localizer["Status"]
                             </th>
 
-                            <th class="pe-4 text-end" style="min-width: 280px;">
+                            <th style="width: 130px; min-width: 130px;">
+                                Son Giriş
+                            </th>
+
+                            <th class="pe-4 text-end" style="min-width: 400px;">
                                 @Localizer["Actions"]
                             </th>
                         </tr>
@@ -1074,6 +1078,24 @@
                                     }
                                 </td>
 
+                                <td style="font-size:0.78rem; color:#64748b;">
+                                    @if (item.LastLoginAt.HasValue)
+                                    {
+                                        var localTime = item.LastLoginAt.Value.AddHours(3); // UTC+3
+                                        <div class="fw-semibold text-dark">@localTime.ToString("dd.MM.yyyy")</div>
+                                        <div>@localTime.ToString("HH:mm")</div>
+                                        @if (!string.IsNullOrWhiteSpace(item.LastLoginIp))
+                                        {
+                                            <div class="text-muted" style="font-size:0.7rem;">@item.LastLoginIp</div>
+                                        }
+                                        <div class="text-muted" style="font-size:0.7rem;">@item.LoginCount giriş</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
                                 <td class="pe-4 text-end actions-cell">
                                     <div class="action-buttons">
                                         <a asp-area="Admin"
@@ -1110,7 +1132,7 @@
                                         {
                                             <form asp-area="Admin" asp-controller="Users"
                                                   asp-action="Lock" method="post" class="d-inline"
-                                                  onsubmit="return confirm(Localizer.GetString('ConfirmSuspend').Value);">
+                                                  onsubmit="return confirm('@Html.Raw(Localizer["ConfirmSuspend"].Value.Replace("'", "\\'"))');">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="userId" value="@item.UserId" />
                                                 <button type="submit" class="user-action-btn"

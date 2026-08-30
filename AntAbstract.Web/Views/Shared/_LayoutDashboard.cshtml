@@ -308,6 +308,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/mobile.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link rel="stylesheet" href="~/css/admin-design-system.css" asp-append-version="true" />
@@ -610,6 +611,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
+            height: 100dvh;
             position: fixed;
             top: 0;
             left: 0;
@@ -701,10 +703,10 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
         .main-content {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
+            min-height: 100dvh;
             transition: all 0.3s ease-in-out;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
         }
 
         body.sidebar-closed .main-content {
@@ -1531,6 +1533,12 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
             h4.fw-bold { font-size: 1.1rem; }
         }
     </style>
+
+    @* Diger iki duzen bu bolumu basiyordu, bu duzen basmiyordu. Bolumu
+       tanimlayan bir gorunum (Yaka Karti) bu yuzden her acilisinda
+       "sections have been defined but have not been rendered" hatasiyla
+       500 veriyordu. *@
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body>
@@ -1695,10 +1703,18 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                     </a>
                 }
 
-                if (isListener)
+                @* "Başvurular" başlığı yalnızca dinleyiciye basılıyordu; yazarın
+                   bildiri bağlantıları başlıksız kalıp "Genel" bölümüne yapışık
+                   görünüyordu. Başlık artık bölüm doluysa çıkıyor. *@
+                var hasSubmissionSection = isListener || (isAuthor && hasSelectedConference);
+
+                if (hasSubmissionSection)
                 {
                     <div class="menu-label">@L("Section_Submissions", "Başvurular")</div>
+                }
 
+                if (isListener)
+                {
                     <a href="@dashboardMyConferencesUrl"
                        class="nav-link @(currentController == "Dashboard" && currentAction == "MyConferences" ? "active" : "")">
                         <i class="fas fa-calendar-check text-primary"></i>
@@ -1757,7 +1773,9 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 }
             }
 
-            @if (!isSuperAdmin && isManagementTeam)
+            @* Blok eskiden SuperAdmin'i tümüyle dışlıyordu; kongre yönetim
+               ekranlarının tamamı artık yönetim ekibine açık. *@
+            @if (isManagementTeam)
             {
                 @if (hasSelectedConference)
                 {
@@ -1905,6 +1923,23 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                        class="nav-link @(currentController == "Conferences" ? "active" : "")">
                         <i class="fas fa-calendar-plus text-primary"></i>
                         @L("Management_Conferences", "Kongrelerim / Kongre Oluştur")
+                    </a>
+
+                    @* Bu iki ekran yalnızca kongre seçiliyken menüde yer
+                       alıyordu; panele yeni girildiğinde seçim henüz yapılmamış
+                       olduğu için hiç görünmüyor, kullanıcı ekranların varlığını
+                       fark edemiyordu. Adresler kongre seçme adımıyla başlıyor —
+                       Kongre Akışı'nın forceSelect ile yaptığının aynısı. *@
+                    <a href="/Admin/RegistrationTypes"
+                       class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")">
+                        <i class="fas fa-tags text-primary"></i>
+                        @L("System_RegistrationTypes", "Kayıt Türleri")
+                    </a>
+
+                    <a href="/Admin/ConferenceTopics"
+                       class="nav-link @(currentController == "ConferenceTopics" ? "active" : "")">
+                        <i class="fas fa-layer-group text-success"></i>
+                        @L("System_ConferenceTopics", "Bildiri Konuları")
                     </a>
                 }
             }

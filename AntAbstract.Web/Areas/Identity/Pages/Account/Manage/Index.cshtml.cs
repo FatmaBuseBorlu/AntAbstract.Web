@@ -180,9 +180,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                     var errorMessage = validation.Error switch
                     {
                         UploadValidationError.TooLarge =>
-                            "Profil fotoğrafı en fazla 2 MB olabilir.",
+                            "Profil fotoğrafı en fazla 45 MB olabilir.",
                         UploadValidationError.InvalidExtension =>
-                            "Profil fotoğrafı sadece JPG, JPEG veya PNG formatında olmalıdır.",
+                            "Profil fotoğrafı sadece JPG, JPEG, PNG veya WEBP formatında olmalıdır.",
                         _ =>
                             "Profil fotoğrafının içeriği seçilen formatla eşleşmiyor."
                     };

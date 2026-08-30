@@ -68,8 +68,9 @@
                         <input asp-for="Input.ProfileImage"
                                type="file"
                                id="imageUpload"
-                               accept=".png,.jpg,.jpeg"
+                               accept=".png,.jpg,.jpeg,.webp"
                                class="d-none"
+                               data-downscale
                                onchange="previewProfileImage(this)" />
 
                         <label for="imageUpload" aria-label="@T("ChangeProfilePhotoAriaLabel", "Profil fotoğrafını değiştir")">
@@ -553,6 +554,8 @@
 </style>
 
 @section Scripts {
+    <script src="~/js/image-downscale.js" asp-append-version="true"></script>
+
     <partial name="_ValidationScriptsPartial" />
 
     <script>

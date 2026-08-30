@@ -1,4 +1,4 @@
-@using AntAbstract.Web.Models.ViewModels.Admin.Conferences
+﻿@using AntAbstract.Web.Models.ViewModels.Admin.Conferences
 @model ConferencesIndexViewModel
 
 @{
@@ -11,20 +11,6 @@
 
 <div class="conf-list-page">
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert conf-alert conf-alert-success mb-4">
-            <i class="fas fa-check-circle"></i>
-            @TempData["SuccessMessage"]
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert conf-alert conf-alert-error mb-4">
-            <i class="fas fa-times-circle"></i>
-            @TempData["ErrorMessage"]
-        </div>
-    }
 
     @* Hero header *@
     <div class="conf-hero-card mb-4">
@@ -170,25 +156,25 @@
                             @if (item.IsSubmissionOpen)
                             {
                                 <span class="conf-badge badge-open-green">
-                                    <i class="fas fa-file-alt"></i> Bildiri Açık
+                                    <i class="fas fa-file-alt"></i> @Localizer["SubmissionOpen"]
                                 </span>
                             }
                             else
                             {
                                 <span class="conf-badge badge-closed">
-                                    <i class="fas fa-file-alt"></i> Bildiri Kapalı
+                                    <i class="fas fa-file-alt"></i> @Localizer["SubmissionClosed"]
                                 </span>
                             }
                             @if (item.IsRegistrationOpen)
                             {
                                 <span class="conf-badge badge-open-blue">
-                                    <i class="fas fa-user-plus"></i> Kayıt Açık
+                                    <i class="fas fa-user-plus"></i> @Localizer["RegistrationOpen"]
                                 </span>
                             }
                             else
                             {
                                 <span class="conf-badge badge-closed">
-                                    <i class="fas fa-user-plus"></i> Kayıt Kapalı
+                                    <i class="fas fa-user-plus"></i> @Localizer["RegistrationClosed"]
                                 </span>
                             }
                         </div>
@@ -197,18 +183,18 @@
                     @* Actions *@
                     <div class="conf-card-actions">
                         <div class="conf-action-left">
-                            <a href="/@item.Slug" target="_blank" class="conf-icon-btn" title="Sayfayı Görüntüle">
+                            <a href="/@item.Slug" target="_blank" class="conf-icon-btn" title="@Localizer["ViewPage"]">
                                 <i class="fas fa-external-link-alt"></i>
                             </a>
                             <a asp-action="Edit" asp-route-id="@item.Id" asp-route-slug="@slug"
-                               class="conf-icon-btn conf-icon-btn-blue" title="Düzenle">
+                               class="conf-icon-btn conf-icon-btn-blue" title="@Localizer["Edit"]">
                                 <i class="fas fa-edit"></i>
                             </a>
                             <form asp-action="Clone" asp-route-id="@item.Id" asp-route-slug="@slug"
                                   method="post" class="d-inline"
-                                  onsubmit="return confirm('');">
+                                  onsubmit="return confirm('@Localizer["CloneConfirmMessage"]');">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="conf-icon-btn conf-icon-btn-green" title="Klonla">
+                                <button type="submit" class="conf-icon-btn conf-icon-btn-green" title="@Localizer["Clone"]">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </form>
@@ -222,7 +208,7 @@
                             </form>
                         </div>
                         <a href="/@slug/Admin/ConferenceFlow" class="conf-manage-btn">
-                            Yönet <i class="fas fa-arrow-right ms-1"></i>
+                            @Localizer["Manage"] <i class="fas fa-arrow-right ms-1"></i>
                         </a>
                     </div>
                 </div>

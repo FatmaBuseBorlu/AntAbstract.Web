@@ -667,7 +667,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/Decision/Index")]
         public IActionResult LegacyRoot()
         {
-            return Redirect("/Admin/Decision");
+            // Sorgu dizesi korunmali: takma ad ayni icerige gidiyor.
+            return Redirect($"/Admin/Decision{Request.QueryString}");
         }
 
         [HttpGet("/{slug}/Decision/Index")]

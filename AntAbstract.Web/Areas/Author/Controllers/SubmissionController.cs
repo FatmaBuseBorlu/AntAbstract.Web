@@ -292,6 +292,34 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     r.ConferenceId == conferenceId);
         }
 
+        /// <summary>
+        /// Gönderim kapalıyken kullanıcı kongre anasayfasına geri atılıyor ve
+        /// sebebi orada bir uyarı şeridinde buluyordu; nerede olduğunu
+        /// kaybediyordu. Artık bildiri gönderme adresinde kalıyor, sebebi ve
+        /// devam edebileceği yerleri aynı ekranda görüyor.
+        /// </summary>
+        private IActionResult SubmissionClosedView(
+            Conference conference,
+            string canonicalSlug,
+            string message,
+            DateTime? deadline,
+            bool closedBySetting)
+        {
+            var model = new SubmissionClosedViewModel
+            {
+                ConferenceTitle = conference.Title ?? string.Empty,
+                Message = message,
+                Deadline = deadline,
+                ClosedBySetting = closedBySetting,
+                MySubmissionsUrl = string.IsNullOrWhiteSpace(canonicalSlug)
+                    ? "/Dashboard/MyConferences"
+                    : BuildUrl(canonicalSlug, "/my-submissions"),
+                ConferenceUrl = BuildUrl(canonicalSlug, "")
+            };
+
+            return View("SubmissionClosed", model);
+        }
+
         private async Task<IActionResult?> EnsureUserCanCreateSubmissionAsync(
             AppUser user,
             Conference conference,
@@ -307,34 +335,54 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             // Bildiri başvuruları kapalı mı?
             if (!conference.IsSubmissionOpen)
             {
-                TempData["ErrorMessage"] = T(
-                    "SubmissionsClosed",
-                    "Bu kongre için bildiri başvuruları kapatılmıştır.");
-
-                return Redirect(BuildUrl(canonicalSlug, ""));
+                return SubmissionClosedView(
+                    conference,
+                    canonicalSlug,
+                    T(
+                        "SubmissionsClosed",
+                        "Bu kongre için bildiri başvuruları kapatılmıştır."),
+                    deadline: null,
+                    closedBySetting: true);
             }
 
-            // Son başvuru tarihi geçmiş mi?
+            // Bu form bir ÖZET başvurusu (başlık, özet metni, anahtar kelime),
+            // dolayısıyla sınırı özet son tarihi koyar. Tam metin son tarihi
+            // kabul edilmiş bildiriye tam metin yüklemeyi kapatıyor ve
+            // UploadFullText içinde ayrıca kontrol ediliyor.
+            //
+            // Eski koşul özet tarihini yalnızca "tam metin tarihi yoksa"
+            // uyguluyordu; iki tarih birlikte tanımlıyken —kongrelerin normal
+            // kurulumu— özet süresi hiç işlemiyor, yazar özet süresi bittikten
+            // sonra da yeni bildiri gönderebiliyordu.
             var now = DateTime.UtcNow;
-            if (conference.FullTextSubmissionDeadline.HasValue &&
-                now > conference.FullTextSubmissionDeadline.Value)
-            {
-                TempData["ErrorMessage"] = T(
-                    "SubmissionDeadlinePassed",
-                    $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
-
-                return Redirect(BuildUrl(canonicalSlug, ""));
-            }
 
             if (conference.AbstractSubmissionDeadline.HasValue &&
-                !conference.FullTextSubmissionDeadline.HasValue &&
                 now > conference.AbstractSubmissionDeadline.Value)
             {
-                TempData["ErrorMessage"] = T(
-                    "AbstractDeadlinePassed",
-                    $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir.");
+                return SubmissionClosedView(
+                    conference,
+                    canonicalSlug,
+                    T(
+                        "AbstractDeadlinePassed",
+                        $"Özet gönderim süresi {conference.AbstractSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir."),
+                    conference.AbstractSubmissionDeadline.Value,
+                    closedBySetting: false);
+            }
 
-                return Redirect(BuildUrl(canonicalSlug, ""));
+            // Özet tarihi girilmemişse tek sınır tam metin tarihi kalıyor;
+            // yoksa gönderim hiç kapanmazdı.
+            if (!conference.AbstractSubmissionDeadline.HasValue &&
+                conference.FullTextSubmissionDeadline.HasValue &&
+                now > conference.FullTextSubmissionDeadline.Value)
+            {
+                return SubmissionClosedView(
+                    conference,
+                    canonicalSlug,
+                    T(
+                        "SubmissionDeadlinePassed",
+                        $"Bildiri gönderim süresi {conference.FullTextSubmissionDeadline.Value:dd.MM.yyyy} tarihinde sona ermiştir."),
+                    conference.FullTextSubmissionDeadline.Value,
+                    closedBySetting: false);
             }
 
             var registration = await GetUserRegistrationAsync(user.Id, conference.Id);
@@ -605,12 +653,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            // Kanonik slug kurum slug'ı olduğu için yönlendirmeden sonra hangi
+            // kongre olduğu bilgisi kayboluyordu; kurumda birden fazla kongre
+            // varsa en yeni tarihli seçiliyor ve kullanıcı kaydolmadığı kongreye
+            // düşüp "önce kayıt olun" ile geri atılıyordu. Bu yüzden kongreyi
+            // yönlendirmeden ÖNCE hatırlıyoruz.
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
             if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
-
-            SetSelectedConferenceSession(conference, canonicalSlug);
 
             var redirectResult = await EnsureUserCanCreateSubmissionAsync(user, conference, canonicalSlug);
 
@@ -668,12 +721,17 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             var canonicalSlug = GetCanonicalSlug(conference, slug);
 
+            // Kanonik slug kurum slug'ı olduğu için yönlendirmeden sonra hangi
+            // kongre olduğu bilgisi kayboluyordu; kurumda birden fazla kongre
+            // varsa en yeni tarihli seçiliyor ve kullanıcı kaydolmadığı kongreye
+            // düşüp "önce kayıt olun" ile geri atılıyordu. Bu yüzden kongreyi
+            // yönlendirmeden ÖNCE hatırlıyoruz.
+            SetSelectedConferenceSession(conference, canonicalSlug);
+
             if (!string.Equals(canonicalSlug, slug, StringComparison.OrdinalIgnoreCase))
             {
                 return Redirect(BuildUrl(canonicalSlug, "/submit-abstract"));
             }
-
-            SetSelectedConferenceSession(conference, canonicalSlug);
 
             var redirectResult = await EnsureUserCanCreateSubmissionAsync(user, conference, canonicalSlug);
 
@@ -693,11 +751,23 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             ConferenceTopic? selectedTopic = null;
 
+            // Kongreye hic konu tanimlanmadiysa yazarin secebilecegi bir sey
+            // yok; konuyu yine de sart kosmak formu tamamen kilitliyor ve
+            // yazar bildiriyi hicbir sekilde gonderemiyordu. Boyle bir kongrede
+            // konu istege bagli oluyor, yonetici konulari ekleyince tekrar
+            // zorunlu hale geliyor.
+            var conferenceHasTopics = await _context.ConferenceTopics
+                .AsNoTracking()
+                .AnyAsync(t => t.ConferenceId == conference.Id && t.IsActive);
+
             if (!model.ConferenceTopicId.HasValue)
             {
-                ModelState.AddModelError(
-                    nameof(model.ConferenceTopicId),
-                    T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                if (conferenceHasTopics)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ConferenceTopicId),
+                        T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                }
             }
             else
             {
@@ -779,13 +849,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 var createDto = new CreateSubmissionDto
                 {
                     ConferenceId = conference.Id,
-                    ConferenceTopicId = selectedTopic!.Id,
+                    ConferenceTopicId = selectedTopic?.Id,
 
                     Title = model.Title,
                     Abstract = model.AbstractText,
                     Keywords = model.Keywords,
 
-                    Topic = selectedTopic.Name,
+                    Topic = selectedTopic?.Name ?? string.Empty,
                     PresentationType = model.PresentationType,
 
                     FilePath = fileInfo.FilePathDb,
@@ -1035,11 +1105,23 @@ namespace AntAbstract.Web.Areas.Author.Controllers
 
             ConferenceTopic? selectedTopic = null;
 
+            // Kongreye hic konu tanimlanmadiysa yazarin secebilecegi bir sey
+            // yok; konuyu yine de sart kosmak formu tamamen kilitliyor ve
+            // yazar bildiriyi hicbir sekilde gonderemiyordu. Boyle bir kongrede
+            // konu istege bagli oluyor, yonetici konulari ekleyince tekrar
+            // zorunlu hale geliyor.
+            var conferenceHasTopics = await _context.ConferenceTopics
+                .AsNoTracking()
+                .AnyAsync(t => t.ConferenceId == conference.Id && t.IsActive);
+
             if (!model.ConferenceTopicId.HasValue)
             {
-                ModelState.AddModelError(
-                    nameof(model.ConferenceTopicId),
-                    T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                if (conferenceHasTopics)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.ConferenceTopicId),
+                        T("TopicRequired", "Lütfen bildiri konusunu seçiniz."));
+                }
             }
             else
             {
@@ -1091,13 +1173,13 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                 var updateDto = new CreateSubmissionDto
                 {
                     ConferenceId = conference.Id,
-                    ConferenceTopicId = selectedTopic!.Id,
+                    ConferenceTopicId = selectedTopic?.Id,
 
                     Title = model.Title,
                     Abstract = model.AbstractText,
                     Keywords = model.Keywords,
 
-                    Topic = selectedTopic.Name,
+                    Topic = selectedTopic?.Name ?? string.Empty,
                     PresentationType = model.PresentationType,
 
                     FilePath = filePath,

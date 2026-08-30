@@ -6,6 +6,9 @@
     var dbOk          = (bool)ViewBag.DbOk;
     var dbError       = ViewBag.DbError as string;
     var stripeOk      = (bool)ViewBag.StripeOk;
+    var payTrOk       = (bool)ViewBag.PayTrOk;
+    var payTrTestMode = (bool)ViewBag.PayTrTestMode;
+    var smtpOk        = (bool)ViewBag.SmtpOk;
     var auditPending  = (int)ViewBag.AuditQueuePending;
     var generatedAt   = (DateTime)ViewBag.GeneratedAt;
 
@@ -17,262 +20,390 @@
     var ratePolicies   = ViewBag.RateLimitPolicies as dynamic[];
     var rateRejections = ViewBag.RateLimitRejections as List<AntAbstract.Web.Infrastructure.RateLimitCounter.RateLimitRejection>
                          ?? new();
-
-    string Badge(bool ok) => ok
-        ? $"<span class=\"badge bg-success\"><i class=\"fas fa-check me-1\"></i>OK</span>"
-        : $"<span class=\"badge bg-danger\"><i class=\"fas fa-times me-1\"></i>{Localizer["Error"].Value}</span>";
 }
 
-<div class="admin-hero">
-    <div class="admin-hero-left">
-        <div class="admin-hero-icon">
-            <i class="fas fa-heartbeat"></i>
-        </div>
+<style>
+    .health-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Hero ── */
+    .health-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 18px;
+        padding: 2rem 2.5rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    .health-hero-icon {
+        width: 56px; height: 56px;
+        background: rgba(255,255,255,0.12);
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .health-hero h3 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .health-hero small { color: rgba(255,255,255,0.55); font-size: 0.82rem; }
+
+    /* ── Stat kartları ── */
+    .health-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .health-stat-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .health-stat-icon {
+        width: 44px; height: 44px;
+        border-radius: 11px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .si-green  { background: #dcfce7; color: #16a34a; }
+    .si-red    { background: #fee2e2; color: #dc2626; }
+    .si-yellow { background: #fef9c3; color: #b45309; }
+    .si-blue   { background: #dbeafe; color: #2563eb; }
+    .health-stat-value { font-size: 1.25rem; font-weight: 700; color: #0f172a; line-height: 1.2; }
+    .health-stat-label { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+    /* ── Bölüm kartları ── */
+    .health-section {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+    }
+    .health-section-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        background: #f8fafc;
+    }
+    .health-section-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+    }
+    .health-section-body { padding: 0; }
+    .health-empty {
+        display: flex; align-items: center; gap: 0.5rem;
+        color: #16a34a; font-size: 0.85rem;
+        padding: 1.1rem 1.5rem;
+    }
+
+    /* ── Tablo ── */
+    .health-table { width: 100%; font-size: 0.82rem; border-collapse: collapse; }
+    .health-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: 0.6rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .health-table tbody td {
+        padding: 0.65rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: #334155;
+    }
+    .health-table tbody tr:last-child td { border-bottom: none; }
+    .health-table tbody tr:hover td { background: #f8fafc; }
+
+    /* ── Eksik şablon uyarısı ── */
+    .health-warning {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .health-warning-title { font-weight: 700; color: #92400e; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .health-warning ul { margin: 0; padding-left: 1.25rem; }
+    .health-warning li { margin-bottom: 0.4rem; color: #78350f; font-size: 0.85rem; }
+</style>
+
+<div class="health-page">
+
+    @** Hero  *@
+    <div class="health-hero">
+        <div class="health-hero-icon"><i class="fas fa-heartbeat"></i></div>
         <div>
-            <div class="admin-hero-kicker">SYSTEM</div>
-            <h3 class="admin-hero-title">@Localizer["PageTitle"]</h3>
-            <p class="admin-hero-lead">@generatedAt.ToString("dd.MM.yyyy HH:mm:ss") UTC</p>
+            <h3>@Localizer["PageTitle"]</h3>
+            <small>@generatedAt.ToString("dd.MM.yyyy HH:mm:ss") UTC</small>
         </div>
     </div>
-</div>
 
-@* ── Özet Durum Kartları ────────────────────────────────────────── *@
-<div class="admin-stat-grid">
-    <div class="admin-stat-card">
-        <div class="admin-stat-icon @(dbOk ? "stat-green" : "stat-red")">
-            <i class="fas fa-database"></i>
+    @** Stat Kartları  *@
+    <div class="health-stat-grid">
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(dbOk ? "si-green" : "si-red")">
+                <i class="fas fa-database"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">
+                    @if (dbOk) { <span style="color:#16a34a">✓ OK</span> }
+                    else { <span style="color:#dc2626">✗ Hata</span> }
+                </div>
+                <div class="health-stat-label">@Localizer["Database"]</div>
+                @if (!dbOk && dbError != null)
+                {
+                    <div class="text-danger" style="font-size:0.7rem;margin-top:4px;word-break:break-all">@dbError</div>
+                }
+            </div>
         </div>
-        <div>
-            <div class="admin-stat-value">@Html.Raw(Badge(dbOk))</div>
-            <div class="admin-stat-label">@Localizer["Database"]</div>
-            @if (!dbOk && dbError != null)
+
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(stripeOk ? "si-green" : "si-yellow")">
+                <i class="fab fa-stripe-s"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">
+                    @if (stripeOk) { <span style="color:#16a34a">✓ OK</span> }
+                    else { <span style="color:#b45309">@Localizer["NotConfigured"]</span> }
+                </div>
+                <div class="health-stat-label">Stripe</div>
+            </div>
+        </div>
+
+        @* Kart ödemesi PayTR ve SMTP anahtarlarına da bağlı; bunlar yalnızca
+           sunucudaki appsettings.Production.json'da bulunuyor, depodaki şablon
+           yer tutucu tuttuğu için canlıda buradan bakılması gerekiyor. *@
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(!payTrOk ? "si-yellow" : payTrTestMode ? "si-yellow" : "si-green")">
+                <i class="fas fa-credit-card"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">
+                    @if (!payTrOk) { <span style="color:#b45309">@Localizer["NotConfigured"]</span> }
+                    else if (payTrTestMode) { <span style="color:#b45309">@Localizer["TestMode"]</span> }
+                    else { <span style="color:#16a34a">✓ OK</span> }
+                </div>
+                <div class="health-stat-label">PayTR</div>
+                @if (payTrOk && payTrTestMode)
+                {
+                    <div class="text-warning" style="font-size:0.7rem;margin-top:4px">
+                        @Localizer["TestModeWarning"]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(smtpOk ? "si-green" : "si-yellow")">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">
+                    @if (smtpOk) { <span style="color:#16a34a">✓ OK</span> }
+                    else { <span style="color:#b45309">@Localizer["NotConfigured"]</span> }
+                </div>
+                <div class="health-stat-label">@Localizer["SmtpLabel"]</div>
+            </div>
+        </div>
+
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(auditPending < 500 ? "si-green" : auditPending < 5000 ? "si-yellow" : "si-red")">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">@(auditPending < 0 ? "—" : auditPending.ToString())</div>
+                <div class="health-stat-label">@Localizer["AuditQueue"] — @Localizer["PendingRecords"]</div>
+            </div>
+        </div>
+
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(wStats.Failed == 0 && mStats.Failed == 0 ? "si-green" : "si-yellow")">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">@Localizer["Last24Hours"]</div>
+                <div class="health-stat-label">
+                    Webhook: @wStats.Total / <span class="@(wStats.Failed > 0 ? "text-danger fw-bold" : "")">@wStats.Failed hata</span><br/>
+                    Mail: @mStats.Total / <span class="@(mStats.Failed > 0 ? "text-danger fw-bold" : "")">@mStats.Failed hata</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @** Eksik şablon uyarısı  *@
+    @if (missingTemplates.Any())
+    {
+        <div class="health-warning">
+            <div class="health-warning-title"><i class="fas fa-exclamation-triangle me-2"></i>@Localizer["MissingMailTemplates"]</div>
+            <div style="font-size:0.82rem;color:#92400e;margin-bottom:0.5rem;">@Localizer["MissingTemplatesDescription"]</div>
+            <ul>
+                @foreach (var key in missingTemplates)
+                {
+                    <li>
+                        <code>@key</code>
+                        <a href="/Admin/EmailTemplates/Create" class="btn btn-sm btn-outline-warning ms-2" style="font-size:0.75rem;padding:2px 10px;">@Localizer["CreateTemplate"]</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    @** Webhook Hataları  *@
+    <div class="health-section">
+        <div class="health-section-header">
+            <h5 class="health-section-title">
+                <i class="fas fa-bolt text-warning"></i>@Localizer["RecentWebhookErrors"]
+                @if (webhookErrors.Any()) { <span class="badge bg-danger" style="font-size:0.7rem;">@webhookErrors.Count</span> }
+            </h5>
+            <a href="/Admin/Payments/WebhookLog?status=failed" class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem;">@Localizer["ViewAll"]</a>
+        </div>
+        <div class="health-section-body">
+            @if (!webhookErrors.Any())
             {
-                <div class="text-danger small mt-1" style="max-width:200px;word-break:break-all">@dbError</div>
+                <div class="health-empty"><i class="fas fa-check-circle"></i>@Localizer["NoRecentWebhookErrors"]</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="health-table">
+                        <thead><tr><th>@Localizer["Date"]</th><th>@Localizer["EventType"]</th><th>Stripe Event ID</th><th>@Localizer["ErrorHeader"]</th></tr></thead>
+                        <tbody>
+                            @foreach (var e in webhookErrors)
+                            {
+                                <tr>
+                                    <td style="white-space:nowrap">@e.ReceivedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td><code style="font-size:0.78rem">@e.EventType</code></td>
+                                    <td><code style="font-size:0.78rem;color:#94a3b8">@e.StripeEventId[..Math.Min(20, e.StripeEventId.Length)]…</code></td>
+                                    <td style="color:#dc2626">@e.ErrorMessage</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
         </div>
     </div>
 
-    <div class="admin-stat-card">
-        <div class="admin-stat-icon @(stripeOk ? "stat-green" : "stat-yellow")">
-            <i class="fab fa-stripe-s"></i>
+    @** Mail Hataları  *@
+    <div class="health-section">
+        <div class="health-section-header">
+            <h5 class="health-section-title">
+                <i class="fas fa-envelope text-primary"></i>@Localizer["RecentMailErrors"]
+                @if (mailErrors.Any()) { <span class="badge bg-danger" style="font-size:0.7rem;">@mailErrors.Count</span> }
+            </h5>
+            <a href="/Admin/EmailTemplates/SendLog?status=failed" class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem;">@Localizer["ViewAll"]</a>
         </div>
-        <div>
-            <div class="admin-stat-value">
-                @if (stripeOk) { @Html.Raw(Badge(true)) } else { <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>@Localizer["NotConfigured"]</span> }
-            </div>
-            <div class="admin-stat-label">Stripe</div>
-        </div>
-    </div>
-
-    <div class="admin-stat-card">
-        <div class="admin-stat-icon @(auditPending < 500 ? "stat-green" : auditPending < 5000 ? "stat-yellow" : "stat-red")">
-            <i class="fas fa-layer-group"></i>
-        </div>
-        <div>
-            <div class="admin-stat-value">@(auditPending < 0 ? "—" : auditPending.ToString())</div>
-            <div class="admin-stat-label">@Localizer["AuditQueue"] — @Localizer["PendingRecords"]</div>
-        </div>
-    </div>
-
-    <div class="admin-stat-card">
-        <div class="admin-stat-icon @(wStats.Failed == 0 && mStats.Failed == 0 ? "stat-green" : "stat-yellow")">
-            <i class="fas fa-bell"></i>
-        </div>
-        <div>
-            <div class="admin-stat-value">@Localizer["Last24Hours"]</div>
-            <div class="admin-stat-label">
-                Webhook: <strong>@wStats.Total</strong> / <span class="text-danger">@wStats.Failed @Localizer["ErrorCount"]</span><br/>
-                @Localizer["Email"]: <strong>@mStats.Total</strong> / <span class="text-danger">@mStats.Failed @Localizer["ErrorCount"]</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ── Stripe Webhook Hataları ────────────────────────────────────── *@
-<div class="admin-list-card" style="margin-top:1.5rem;">
-    <div class="admin-list-card-header">
-        <h5 class="admin-list-card-title">
-            <i class="fas fa-bolt me-2 text-warning"></i>
-            @Localizer["RecentWebhookErrors"]
-            @if (webhookErrors.Any())
+        <div class="health-section-body">
+            @if (!mailErrors.Any())
             {
-                <span class="badge bg-danger ms-2">@webhookErrors.Count</span>
+                <div class="health-empty"><i class="fas fa-check-circle"></i>@Localizer["NoRecentMailErrors"]</div>
             }
-            <a href="/Admin/Payments/WebhookLog?status=failed" class="btn btn-sm btn-outline-secondary ms-auto float-end">
-                @Localizer["ViewAll"]
-            </a>
-        </h5>
-    </div>
-    <div class="card-body p-0">
-        @if (!webhookErrors.Any())
-        {
-            <p class="text-muted p-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i>@Localizer["NoRecentWebhookErrors"]</p>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>@Localizer["Date"]</th>
-                            <th>@Localizer["EventType"]</th>
-                            <th>Stripe Event ID</th>
-                            <th>@Localizer["ErrorHeader"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var e in webhookErrors)
-                        {
-                            <tr>
-                                <td class="text-nowrap small">@e.ReceivedAt.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td><code class="small">@e.EventType</code></td>
-                                <td><code class="small text-muted">@e.StripeEventId[..Math.Min(20, e.StripeEventId.Length)]…</code></td>
-                                <td class="text-danger small">@e.ErrorMessage</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
-</div>
-
-@* ── Mail Hataları ─────────────────────────────────────────────── *@
-<div class="admin-list-card" style="margin-top:1.5rem;">
-    <div class="admin-list-card-header">
-        <h5 class="admin-list-card-title">
-            <i class="fas fa-envelope me-2 text-primary"></i>
-            @Localizer["RecentMailErrors"]
-            @if (mailErrors.Any())
+            else
             {
-                <span class="badge bg-danger ms-2">@mailErrors.Count</span>
+                <div class="table-responsive">
+                    <table class="health-table">
+                        <thead><tr><th>@Localizer["Date"]</th><th>@Localizer["Recipient"]</th><th>@Localizer["Subject"]</th><th>@Localizer["Template"]</th><th>@Localizer["ErrorHeader"]</th></tr></thead>
+                        <tbody>
+                            @foreach (var m in mailErrors)
+                            {
+                                <tr>
+                                    <td style="white-space:nowrap">@m.SentAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@m.ToEmail</td>
+                                    <td>@(m.Subject.Length > 40 ? m.Subject[..40] + "…" : m.Subject)</td>
+                                    <td><code style="font-size:0.78rem;color:#94a3b8">@m.TemplateKey</code></td>
+                                    <td style="color:#dc2626">@m.ErrorMessage</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
-            <a href="/Admin/EmailTemplates/SendLog?status=failed" class="btn btn-sm btn-outline-secondary ms-auto float-end">
-                @Localizer["ViewAll"]
-            </a>
-        </h5>
-    </div>
-    <div class="card-body p-0">
-        @if (!mailErrors.Any())
-        {
-            <p class="text-muted p-3 mb-0"><i class="fas fa-check-circle text-success me-1"></i>@Localizer["NoRecentMailErrors"]</p>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>@Localizer["Date"]</th>
-                            <th>@Localizer["Recipient"]</th>
-                            <th>@Localizer["Subject"]</th>
-                            <th>@Localizer["Template"]</th>
-                            <th>@Localizer["ErrorHeader"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var m in mailErrors)
-                        {
-                            <tr>
-                                <td class="text-nowrap small">@m.SentAt.ToString("dd.MM.yyyy HH:mm")</td>
-                                <td class="small">@m.ToEmail</td>
-                                <td class="small">@(m.Subject.Length > 40 ? m.Subject[..40] + "…" : m.Subject)</td>
-                                <td><code class="small text-muted">@m.TemplateKey</code></td>
-                                <td class="text-danger small">@m.ErrorMessage</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
-</div>
-
-@* ── Eksik Hatırlatıcı Şablonları ──────────────────────────────── *@
-@if (missingTemplates.Any())
-{
-    <div class="alert alert-warning border-0 rounded-4 mb-4" style="margin-top:1.5rem;">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        <strong>@Localizer["MissingMailTemplates"]</strong> @Localizer["MissingTemplatesDescription"]
-        <ul class="mb-0 mt-2 ps-3">
-            @foreach (var key in missingTemplates)
-            {
-                <li>
-                    <code>@key</code>
-                    <a href="/Admin/EmailTemplates/Create" class="btn btn-sm btn-outline-warning ms-2">@Localizer["CreateTemplate"]</a>
-                </li>
-            }
-        </ul>
-    </div>
-}
-
-@* ── Rate Limiting ───────────────────────────────────────────── *@
-<div class="admin-list-card" style="margin-top:1.5rem;">
-    <div class="admin-list-card-header">
-        <h5 class="admin-list-card-title">
-            <i class="fas fa-tachometer-alt me-2 text-warning"></i>@Localizer["RateLimitPolicies"]
-        </h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-sm mb-0 small">
-                <thead class="table-light">
-                    <tr><th class="px-3">@Localizer["Policy"]</th><th>Limit</th><th>@Localizer["Scope"]</th></tr>
-                </thead>
-                <tbody>
-                    @if (ratePolicies != null)
-                    {
-                        @foreach (dynamic p in ratePolicies)
-                        {
-                            <tr>
-                                <td class="px-3"><code>@p.Policy</code></td>
-                                <td>@p.Limit</td>
-                                <td class="text-muted">@p.Scope</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
         </div>
     </div>
-</div>
 
-@if (rateRejections.Any())
-{
-    <div class="admin-list-card" style="margin-top:1.5rem;">
-        <div class="admin-list-card-header">
-            <h5 class="admin-list-card-title">
-                <i class="fas fa-ban me-2 text-danger"></i>@Localizer["RecentRateLimitRejections"]
-                <span class="badge bg-danger ms-2">@rateRejections.Count</span>
+    @** Rate Limiting  *@
+    <div class="health-section">
+        <div class="health-section-header">
+            <h5 class="health-section-title">
+                <i class="fas fa-tachometer-alt text-warning"></i>@Localizer["RateLimitPolicies"]
             </h5>
         </div>
-        <div class="card-body p-0">
+        <div class="health-section-body">
             <div class="table-responsive">
-                <table class="table table-sm mb-0 small">
-                    <thead class="table-light">
-                        <tr><th class="px-3">@Localizer["Time"]</th><th>Path</th><th>IP</th></tr>
-                    </thead>
+                <table class="health-table">
+                    <thead><tr><th>@Localizer["Policy"]</th><th>Limit</th><th>@Localizer["Scope"]</th></tr></thead>
                     <tbody>
-                        @foreach (var r in rateRejections)
+                        @if (ratePolicies != null)
                         {
-                            <tr>
-                                <td class="px-3 text-nowrap">@r.At.ToString("dd.MM HH:mm:ss")</td>
-                                <td><code>@r.Path</code></td>
-                                <td class="text-muted">@(r.Ip ?? "—")</td>
-                            </tr>
+                            @foreach (dynamic p in ratePolicies)
+                            {
+                                <tr>
+                                    <td><code style="font-size:0.78rem">@p.Policy</code></td>
+                                    <td>@p.Limit</td>
+                                    <td style="color:#64748b">@p.Scope</td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-}
 
-@* ── Webhook İstatistikleri (24 saat) ─────────────────────────── *@
-@if (wStats.Duplicate > 0)
-{
-    <div class="alert alert-info border-0 rounded-4" style="margin-top:1.5rem;">
-        <i class="fas fa-copy me-2"></i>
-        @Html.Raw(string.Format(Localizer["DuplicateWebhookInfo"].Value, wStats.Duplicate))
-    </div>
-}
+    @** Rate Limit Redler  *@
+    @if (rateRejections.Any())
+    {
+        <div class="health-section">
+            <div class="health-section-header">
+                <h5 class="health-section-title">
+                    <i class="fas fa-ban text-danger"></i>@Localizer["RecentRateLimitRejections"]
+                    <span class="badge bg-danger" style="font-size:0.7rem;">@rateRejections.Count</span>
+                </h5>
+            </div>
+            <div class="health-section-body">
+                <div class="table-responsive">
+                    <table class="health-table">
+                        <thead><tr><th>@Localizer["Time"]</th><th>Path</th><th>IP</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in rateRejections)
+                            {
+                                <tr>
+                                    <td style="white-space:nowrap">@r.At.ToString("dd.MM HH:mm:ss")</td>
+                                    <td><code style="font-size:0.78rem">@r.Path</code></td>
+                                    <td style="color:#64748b">@(r.Ip ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    @** Duplikat Webhook  *@
+    @if (wStats.Duplicate > 0)
+    {
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:1rem 1.5rem;font-size:0.85rem;color:#1e40af;">
+            <i class="fas fa-copy me-2"></i>
+            @Html.Raw(string.Format(Localizer["DuplicateWebhookInfo"].Value, wStats.Duplicate))
+        </div>
+    }
+
+</div>

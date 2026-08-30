@@ -70,8 +70,8 @@
         : "ORCID ile devam ediyorsunuz. Ayrıca sistem hesabınız için bir şifre belirleyiniz.";
 
     var profileImageHintText = isEnglish
-        ? "Please upload a profile photo in JPG, JPEG, PNG or WEBP format. Maximum file size is 10 MB."
-        : "JPG, JPEG, PNG veya WEBP formatında profil resmi yükleyiniz. Maksimum dosya boyutu 10 MB olmalıdır.";
+        ? "Upload a profile photo in JPG, JPEG, PNG or WEBP format. Large photos are resized automatically."
+        : "JPG, JPEG, PNG veya WEBP formatında profil resmi yükleyiniz. Büyük fotoğraflar otomatik küçültülür.";
 }
 
 <!DOCTYPE html>
@@ -85,6 +85,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/mobile.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
     <style>
@@ -106,12 +107,14 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #fff;
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
             margin: 0;
         }
 
         .register-wrapper {
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             width: 100%;
         }
@@ -1026,7 +1029,8 @@
                             <input asp-for="Input.ProfileImage"
                                    type="file"
                                    class="form-control form-control-sm"
-                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                   data-downscale />
 
                             <small class="text-muted" style="font-size: 0.7rem;">
                                 @profileImageHintText
@@ -1245,5 +1249,6 @@
     </script>
 
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/image-downscale.js" asp-append-version="true"></script>
 </body>
 </html>

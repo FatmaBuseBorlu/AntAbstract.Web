@@ -1,4 +1,4 @@
-@using AntAbstract.Domain.Entities
+﻿@using AntAbstract.Domain.Entities
 @model List<Sponsor>
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
@@ -41,8 +41,6 @@
         </a>
     </div>
 
-    @if (TempData["SuccessMessage"] != null) { <div class="alert alert-success shadow-sm mb-4">@TempData["SuccessMessage"]</div> }
-    @if (TempData["ErrorMessage"]   != null) { <div class="alert alert-danger  shadow-sm mb-4">@TempData["ErrorMessage"]</div>   }
 
     @if (!Model.Any())
     {

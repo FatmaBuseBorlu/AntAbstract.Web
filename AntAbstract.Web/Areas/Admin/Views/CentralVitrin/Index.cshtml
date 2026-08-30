@@ -676,7 +676,7 @@
                 </h3>
 
                 <p class="admin-hero-lead">
-                    
+                    @Localizer["HeroDescription"]
                 </p>
             </div>
         </div>
@@ -686,6 +686,12 @@
                class="admin-hero-btn admin-hero-btn-light">
                 <i class="fas fa-calendar-days"></i>
                 @Localizer["GoToInstitutions"]
+            </a>
+
+            <a href="/Admin/CentralVitrin/InitSite"
+               class="admin-hero-btn admin-hero-btn-light">
+                <i class="fas fa-globe"></i>
+                Yeni Site Oluştur
             </a>
 
             <a href="/Admin/SystemReports"
@@ -874,7 +880,7 @@
                 </h5>
 
                 <p class="admin-list-card-subtitle">
-                    
+                    @Localizer["ListDescription"]
                 </p>
             </div>
 
@@ -892,11 +898,11 @@
                 </div>
 
                 <h6 class="site-empty-title">
-                    
+                    @Localizer["EmptyTitle"]
                 </h6>
 
                 <p class="site-empty-text">
-                    
+                    @Localizer["EmptyDescription"]
                 </p>
             </div>
         }
@@ -936,6 +942,7 @@
                         @foreach (var item in conferences)
                         {
                             var tenantName = item.Tenant?.Name ?? "-";
+                            // Siteye giden bağlantı kongrenin kendi slug'ını kullanır.
                             var confSlug = !string.IsNullOrWhiteSpace(item.Slug) ? item.Slug : item.Tenant?.Slug;
 
                             var statusText = GetStatusText(item);
@@ -943,12 +950,17 @@
 
                             var hasSlug = !string.IsNullOrWhiteSpace(confSlug);
 
+                            // Admin route'ları kurum slug'ına göre çözülüyor; kongre
+                            // slug'ı verilirse hedef kongre bulunamıyor.
+                            var adminSlug = item.Tenant?.Slug;
+                            var hasAdminSlug = !string.IsNullOrWhiteSpace(adminSlug);
+
                             var siteUrl = hasSlug
                                 ? $"/{confSlug}"
                                 : "#";
 
-                            var flowUrl = hasSlug
-                                ? $"/{confSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
+                            var flowUrl = hasAdminSlug
+                                ? $"/{adminSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
                                 : $"/Admin/ConferenceFlow?conferenceId={item.Id}";
 
                             var tenantUrl = item.TenantId != Guid.Empty

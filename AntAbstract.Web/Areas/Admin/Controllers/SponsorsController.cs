@@ -75,6 +75,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             var conference = await GetConferenceAsync(slug, model.ConferenceId != Guid.Empty ? model.ConferenceId : null);
             if (conference == null) return NotFound();
+            // Navigasyon alanı formdan gelmez; nullable açık olduğu için MVC
+            // bunu zorunlu sayıyor ve doğrulama hiçbir zaman geçmiyordu.
+            ModelState.Remove(nameof(Sponsor.Conference));
+
             if (!ModelState.IsValid) { SetViewBag(conference, slug); return View(model); }
 
             model.Id = Guid.NewGuid();
@@ -109,6 +113,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var existing = await _context.Sponsors.Include(s => s.Conference).ThenInclude(c => c.Tenant)
                 .FirstOrDefaultAsync(s => s.Id == id);
             if (existing == null) return NotFound();
+            // Navigasyon alanı formdan gelmez; nullable açık olduğu için MVC
+            // bunu zorunlu sayıyor ve doğrulama hiçbir zaman geçmiyordu.
+            ModelState.Remove(nameof(Sponsor.Conference));
+
             if (!ModelState.IsValid) { SetViewBag(existing.Conference, slug); return View(model); }
 
             existing.Name = model.Name.Trim();

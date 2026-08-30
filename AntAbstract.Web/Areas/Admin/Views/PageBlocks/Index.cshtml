@@ -575,31 +575,7 @@
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show page-blocks-alert mb-4" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            @TempData["SuccessMessage"]
 
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Kapat"></button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show page-blocks-alert mb-4" role="alert">
-            <i class="fas fa-times-circle me-2"></i>
-            @TempData["ErrorMessage"]
-
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Kapat"></button>
-        </div>
-    }
 
     <div class="admin-stat-grid">
         <div class="admin-stat-card">
@@ -655,11 +631,11 @@
         <div class="page-blocks-card-header">
             <div>
                 <h5 class="page-blocks-card-title">
-                    
+                    @Localizer["ListTitle"]
                 </h5>
 
                 <p class="page-blocks-card-subtitle">
-                    
+                    @Localizer["ListSubtitle"]
                 </p>
             </div>
 
@@ -677,11 +653,11 @@
                 </div>
 
                 <h6 class="page-blocks-empty-title">
-                    
+                    @Localizer["EmptyTitle"]
                 </h6>
 
                 <p class="page-blocks-empty-text">
-                    
+                    @Localizer["EmptyText"]
                 </p>
             </div>
         }

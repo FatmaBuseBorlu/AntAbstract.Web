@@ -18,6 +18,26 @@
         return string.Equals(text, key, StringComparison.OrdinalIgnoreCase) ? fallback : text;
     };
 
+    // Blok içeriğini çözer. Bozuk/eski JSON sayfayı çökertmemeli, o yüzden null döner.
+    T? ParseBlock<T>(string? json) where T : class
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     string ResolveAssetUrl(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -77,7 +97,18 @@
     var isRegisteredToThisConference = Model.Conference != null
         && registeredIds.Contains(Model.Conference.Id);
 
-    var mainActionUrl = isRegisteredToThisConference
+    // Sunucu bildiri gönderimini yalnızca "açık mı" ayarına göre değil son
+    // tarihlere göre de kapatıyor. Rozet yalnızca ayara baktığı için süre
+    // dolduğunda "Aktif" yazıyor, kullanıcı butona basınca kongre anasayfasına
+    // geri atılıyordu. Kural Conference.IsSubmissionAvailable içinde tek yerde
+    // duruyor ve SubmissionController'daki sunucu tarafı kontrolle birebir aynı:
+    // tam metin son tarihi girilmişse onu, girilmemişse özet son tarihini uygular.
+    var canSubmitAbstract = Model.Conference?.IsSubmissionAvailable == true;
+
+    // Kayıtlı kullanıcıyı bildiri gönderime yönlendiriyoruz; ancak süre
+    // dolmuşsa sunucu onu buraya geri atıyor. Bu durumda kayıt sayfasına
+    // yönlendirmek daha doğru.
+    var mainActionUrl = isRegisteredToThisConference && canSubmitAbstract
         ? submitAbstractUrl
         : registrationUrl;
 
@@ -86,7 +117,7 @@
     var canRegisterNow = Model.Conference?.IsRegistrationAvailable == true;
 
     var showMainAction = isRegisteredToThisConference
-        ? Model.Conference?.IsSubmissionAvailable == true
+        ? canSubmitAbstract
         : canRegisterNow;
 
     var heroCardActionText = L("HeroCardContinueButton", "Başvuruya Devam Et");
@@ -267,7 +298,7 @@
 
     .hero-title {
         color: #ffffff;
-        font-size: clamp(2.5rem, 5vw, 4.9rem);
+        font-size: var(--fs-hero);
         font-weight: 900;
         line-height: 1.05;
         letter-spacing: -0.075em;
@@ -927,7 +958,414 @@
             padding-right: 0.75rem;
         }
     }
+
+    /* ── Yapılandırılmış blok gösterimleri ── */
+
+    /* Konular */
+    .block-topic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .block-topic-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+        padding: 0.95rem 1.1rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    .block-topic-item i {
+        color: #16a34a;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    .block-topic-item strong {
+        display: block;
+        color: #0f172a;
+        font-size: 0.95rem;
+    }
+
+    .block-topic-item span {
+        display: block;
+        color: #64748b;
+        font-size: 0.85rem;
+        margin-top: 2px;
+    }
+
+    /* Önemli tarihler */
+    .block-timeline {
+        position: relative;
+        padding-left: 1.6rem;
+    }
+
+    .block-timeline::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        background: #e2e8f0;
+    }
+
+    .block-timeline-item {
+        position: relative;
+        padding-bottom: 1.35rem;
+    }
+
+    .block-timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .block-timeline-dot {
+        position: absolute;
+        left: -1.6rem;
+        top: 5px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #bae6fd;
+    }
+
+    .block-timeline-item.is-passed .block-timeline-dot {
+        background: #cbd5e1;
+        box-shadow: 0 0 0 2px #e2e8f0;
+    }
+
+    .block-timeline-item.is-passed .block-timeline-body {
+        opacity: 0.55;
+    }
+
+    .block-timeline-date {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #0ea5e9;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .block-timeline-label {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 2px;
+    }
+
+    .block-timeline-desc {
+        font-size: 0.86rem;
+        color: #64748b;
+        margin-top: 3px;
+    }
+
+    /* Ücret tablosu */
+    .block-fee-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.92rem;
+    }
+
+    .block-fee-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        text-align: left;
+    }
+
+    .block-fee-table tbody td {
+        padding: 0.95rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .block-fee-table tbody tr.is-highlighted td {
+        background: #eff6ff;
+    }
+
+    .block-fee-table tbody tr.is-highlighted td:first-child {
+        box-shadow: inset 3px 0 0 #0ea5e9;
+    }
+
+    .block-fee-desc {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    .block-fee-price {
+        font-weight: 800;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+
+    .block-fee-price span {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #94a3b8;
+        margin-left: 2px;
+    }
+
+    /* Kurullar */
+    .block-committee-group + .block-committee-group {
+        margin-top: 1.75rem;
+    }
+
+    .block-committee-title {
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: #0f172a;
+        padding-bottom: 0.6rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .block-committee-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.7rem;
+    }
+
+    .block-committee-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.8rem 0.95rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    .block-committee-avatar {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0ea5e9, #2563eb);
+        color: #fff;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .block-committee-name {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.9rem;
+    }
+
+    .block-committee-inst {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 1px;
+    }
+
+    /* İletişim */
+    .block-contact-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .block-contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 1rem 1.15rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        text-decoration: none;
+        color: inherit;
+        transition: all .15s ease;
+    }
+
+    a.block-contact-item:hover {
+        border-color: #0ea5e9;
+        background: #f0f9ff;
+    }
+
+    .block-contact-item i {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        background: #e0f2fe;
+        color: #0284c7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .block-contact-item span {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .block-contact-item strong {
+        display: block;
+        font-size: 0.9rem;
+        color: #0f172a;
+        margin-top: 2px;
+    }
+
+    .block-contact-map {
+        margin-top: 1.1rem;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+
+    .block-contact-map iframe {
+        width: 100%;
+        height: 300px;
+        border: 0;
+        display: block;
+    }
+
+    /* SSS */
+    .block-faq .accordion-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px !important;
+        margin-bottom: 0.6rem;
+        overflow: hidden;
+    }
+
+    .block-faq .accordion-button {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.94rem;
+        background: #fff;
+    }
+
+    .block-faq .accordion-button:not(.collapsed) {
+        background: #f0f9ff;
+        color: #0369a1;
+        box-shadow: none;
+    }
+
+    .block-faq .accordion-button:focus {
+        box-shadow: none;
+        border-color: #bae6fd;
+    }
+
+    .block-faq .accordion-body {
+        color: #475569;
+        font-size: 0.9rem;
+        line-height: 1.7;
+    }
+
+    /* Sponsorlar */
+    .block-sponsor-tier {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin: 1.4rem 0 0.8rem;
+    }
+
+    .block-sponsor-tier:first-child {
+        margin-top: 0;
+    }
+
+    .block-sponsor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .block-sponsor-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 88px;
+        padding: 1rem;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    .block-sponsor-card img {
+        max-width: 100%;
+        max-height: 56px;
+        object-fit: contain;
+    }
+
+    .block-sponsor-card span {
+        font-weight: 700;
+        color: #475569;
+        font-size: 0.88rem;
+        text-align: center;
+    }
+
+    /* Kongreye çağrı */
+    .block-call-deadline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-top: 1.1rem;
+        padding: 0.75rem 1.15rem;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 12px;
+    }
+
+    .block-call-deadline i {
+        color: #b45309;
+    }
+
+    .block-call-deadline span {
+        font-size: 0.74rem;
+        font-weight: 800;
+        color: #92400e;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .block-call-deadline strong {
+        color: #78350f;
+        font-size: 0.95rem;
+    }
+
+    .block-call-list {
+        margin: 1.1rem 0 0;
+        padding-left: 1.2rem;
+    }
+
+    .block-call-list li {
+        color: #475569;
+        font-size: 0.9rem;
+        line-height: 1.7;
+        margin-bottom: 0.4rem;
+    }
+
 </style>
+
+@* Bildiri gönderimi süresi dolduğunda kullanıcı buraya yönlendiriliyor ama
+   sebep hiçbir yerde gösterilmiyordu; sessizce atılmış gibi görünüyordu. *@
+@if (TempData["ErrorMessage"] != null || TempData["InfoMessage"] != null || TempData["SuccessMessage"] != null)
+{
+    <div class="container mt-3">
+    </div>
+}
 
 <div class="conference-top-strip py-2 d-none d-md-block">
     <div class="container d-flex justify-content-between align-items-center">
@@ -1097,7 +1535,7 @@
 
                         <div>
                             <small>@Localizer["AbstractSubmissionLabel"]</small>
-                            @if (Model.Conference.IsSubmissionAvailable)
+                            @if (canSubmitAbstract)
                             {
                                 <strong class="text-success"><i class="fas fa-circle me-1" style="font-size:.6rem;"></i>@Localizer["StatusActive"]</strong>
                             }
@@ -1235,6 +1673,318 @@
                                 }
                             }
                         }
+                        else if (b.BlockType == ConferencePageBlockType.Topics)
+                        {
+                            var topics = ParseBlock<TopicsBlockContent>(b.ContentJson);
+
+                            if (!string.IsNullOrWhiteSpace(topics?.Description))
+                            {
+                                <div class="content-text mb-4">
+                                    @Html.Raw(HtmlSanitizer.Sanitize(topics.Description.Replace("\n", "<br/>")))
+                                </div>
+                            }
+
+                            if (topics?.Items?.Any() == true)
+                            {
+                                <div class="block-topic-grid">
+                                    @foreach (var t in topics.Items)
+                                    {
+                                        <div class="block-topic-item">
+                                            <i class="fas fa-circle-check"></i>
+                                            <div>
+                                                <strong>@t.Name</strong>
+                                                @if (!string.IsNullOrWhiteSpace(t.Description))
+                                                {
+                                                    <span>@t.Description</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.ImportantDates)
+                        {
+                            var dates = ParseBlock<ImportantDatesBlockContent>(b.ContentJson);
+
+                            if (dates?.Items?.Any() == true)
+                            {
+                                <div class="block-timeline">
+                                    @foreach (var d in dates.Items)
+                                    {
+                                        <div class="block-timeline-item @(d.IsPassed ? "is-passed" : "")">
+                                            <div class="block-timeline-dot"></div>
+                                            <div class="block-timeline-body">
+                                                <div class="block-timeline-date">@d.Date</div>
+                                                <div class="block-timeline-label">@d.Label</div>
+                                                @if (!string.IsNullOrWhiteSpace(d.Description))
+                                                {
+                                                    <div class="block-timeline-desc">@d.Description</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.Fees)
+                        {
+                            var fees = ParseBlock<FeesBlockContent>(b.ContentJson);
+
+                            if (!string.IsNullOrWhiteSpace(fees?.Description))
+                            {
+                                <div class="content-text mb-4">
+                                    @Html.Raw(HtmlSanitizer.Sanitize(fees.Description.Replace("\n", "<br/>")))
+                                </div>
+                            }
+
+                            if (fees?.Items?.Any() == true)
+                            {
+                                <div class="table-responsive">
+                                    <table class="block-fee-table">
+                                        <thead>
+                                            <tr>
+                                                <th>@L("FeeTypeHeader", "Kayıt Türü")</th>
+                                                <th>@L("FeePriceHeader", "Ücret")</th>
+                                                <th>@L("FeeDeadlineHeader", "Son Tarih")</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var f in fees.Items)
+                                            {
+                                                <tr class="@(f.IsHighlighted ? "is-highlighted" : "")">
+                                                    <td>
+                                                        <strong>@f.Name</strong>
+                                                        @if (!string.IsNullOrWhiteSpace(f.Description))
+                                                        {
+                                                            <div class="block-fee-desc">@f.Description</div>
+                                                        }
+                                                    </td>
+                                                    <td class="block-fee-price">
+                                                        @f.Price
+                                                        <span>@fees.Currency</span>
+                                                    </td>
+                                                    <td>@(string.IsNullOrWhiteSpace(f.Deadline) ? "—" : f.Deadline)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.Committees)
+                        {
+                            var committees = ParseBlock<CommitteesBlockContent>(b.ContentJson);
+
+                            if (committees?.Groups?.Any() == true)
+                            {
+                                foreach (var g in committees.Groups)
+                                {
+                                    <div class="block-committee-group">
+                                        @if (!string.IsNullOrWhiteSpace(g.Name))
+                                        {
+                                            <h4 class="block-committee-title">@g.Name</h4>
+                                        }
+
+                                        @if (g.Members?.Any() == true)
+                                        {
+                                            <div class="block-committee-grid">
+                                                @foreach (var m in g.Members)
+                                                {
+                                                    <div class="block-committee-card">
+                                                        <div class="block-committee-avatar">
+                                                            @(string.IsNullOrWhiteSpace(m.FullName) ? "?" : m.FullName.Trim()[0].ToString().ToUpperInvariant())
+                                                        </div>
+                                                        <div>
+                                                            <div class="block-committee-name">
+                                                                @(string.IsNullOrWhiteSpace(m.Title) ? "" : m.Title + " ")@m.FullName
+                                                            </div>
+                                                            @if (!string.IsNullOrWhiteSpace(m.Institution))
+                                                            {
+                                                                <div class="block-committee-inst">@m.Institution</div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.Contact)
+                        {
+                            var contact = ParseBlock<ContactBlockContent>(b.ContentJson);
+
+                            if (!string.IsNullOrWhiteSpace(contact?.Description))
+                            {
+                                <div class="content-text mb-4">
+                                    @Html.Raw(HtmlSanitizer.Sanitize(contact.Description.Replace("\n", "<br/>")))
+                                </div>
+                            }
+
+                            if (contact != null)
+                            {
+                                <div class="block-contact-grid">
+                                    @if (!string.IsNullOrWhiteSpace(contact.Email))
+                                    {
+                                        <a class="block-contact-item" href="mailto:@contact.Email">
+                                            <i class="fas fa-envelope"></i>
+                                            <div>
+                                                <span>@L("ContactEmailLabel", "E-posta")</span>
+                                                <strong>@contact.Email</strong>
+                                            </div>
+                                        </a>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(contact.Phone))
+                                    {
+                                        <a class="block-contact-item" href="tel:@contact.Phone.Replace(" ", "")">
+                                            <i class="fas fa-phone"></i>
+                                            <div>
+                                                <span>@L("ContactPhoneLabel", "Telefon")</span>
+                                                <strong>@contact.Phone</strong>
+                                            </div>
+                                        </a>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(contact.Address))
+                                    {
+                                        <div class="block-contact-item">
+                                            <i class="fas fa-location-dot"></i>
+                                            <div>
+                                                <span>@L("ContactAddressLabel", "Adres")</span>
+                                                <strong>@contact.Address</strong>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(contact.MapEmbedUrl) &&
+                                     contact.MapEmbedUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <div class="block-contact-map">
+                                        <iframe src="@contact.MapEmbedUrl"
+                                                loading="lazy"
+                                                referrerpolicy="no-referrer-when-downgrade"
+                                                allowfullscreen></iframe>
+                                    </div>
+                                }
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.FAQ)
+                        {
+                            var faq = ParseBlock<FaqBlockContent>(b.ContentJson);
+
+                            if (faq?.Questions?.Any() == true)
+                            {
+                                <div class="accordion block-faq" id="faq-@b.Id">
+                                    @foreach (var (q, qi) in faq.Questions.Select((x, i) => (x, i)))
+                                    {
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button"
+                                                        data-bs-toggle="collapse"
+                                                        data-bs-target="#faq-@b.Id-@qi">
+                                                    @q.Question
+                                                </button>
+                                            </h2>
+                                            <div id="faq-@b.Id-@qi" class="accordion-collapse collapse"
+                                                 data-bs-parent="#faq-@b.Id">
+                                                <div class="accordion-body">
+                                                    @Html.Raw(HtmlSanitizer.Sanitize((q.Answer ?? "").Replace("\n", "<br/>")))
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.Sponsors)
+                        {
+                            var sponsors = ParseBlock<SponsorBlockContent>(b.ContentJson);
+
+                            if (sponsors?.Sponsors?.Any() == true)
+                            {
+                                foreach (var tier in new[] { "Platinum", "Gold", "Silver", "Bronze" })
+                                {
+                                    var inTier = sponsors.Sponsors
+                                        .Where(s => string.Equals(s.Tier, tier, StringComparison.OrdinalIgnoreCase))
+                                        .ToList();
+
+                                    if (inTier.Count == 0)
+                                    {
+                                        continue;
+                                    }
+
+                                    <h4 class="block-sponsor-tier">@tier</h4>
+                                    <div class="block-sponsor-grid">
+                                        @foreach (var s in inTier)
+                                        {
+                                            var logo = ResolveAssetUrl(s.LogoUrl);
+                                            var safeSite = !string.IsNullOrWhiteSpace(s.WebsiteUrl) &&
+                                                           s.WebsiteUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                                                ? s.WebsiteUrl
+                                                : null;
+
+                                            <div class="block-sponsor-card">
+                                                @if (safeSite != null)
+                                                {
+                                                    <a href="@safeSite" target="_blank" rel="noopener noreferrer">
+                                                        @if (!string.IsNullOrWhiteSpace(logo))
+                                                        {
+                                                            <img src="@logo" alt="@s.Name" loading="lazy" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>@s.Name</span>
+                                                        }
+                                                    </a>
+                                                }
+                                                else if (!string.IsNullOrWhiteSpace(logo))
+                                                {
+                                                    <img src="@logo" alt="@s.Name" loading="lazy" />
+                                                }
+                                                else
+                                                {
+                                                    <span>@s.Name</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        }
+                        else if (b.BlockType == ConferencePageBlockType.CallForPapers)
+                        {
+                            var call = ParseBlock<CallForPapersBlockContent>(b.ContentJson);
+
+                            if (!string.IsNullOrWhiteSpace(call?.Description))
+                            {
+                                <div class="content-text">
+                                    @Html.Raw(HtmlSanitizer.Sanitize(call.Description.Replace("\n", "<br/>")))
+                                </div>
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(call?.Deadline))
+                            {
+                                <div class="block-call-deadline">
+                                    <i class="fas fa-hourglass-half"></i>
+                                    <span>@L("CallDeadlineLabel", "Son Gönderim")</span>
+                                    <strong>@call.Deadline</strong>
+                                </div>
+                            }
+
+                            if (call?.Guidelines?.Any() == true)
+                            {
+                                <ul class="block-call-list">
+                                    @foreach (var g in call.Guidelines)
+                                    {
+                                        <li>@g</li>
+                                    }
+                                </ul>
+                            }
+                        }
                         else
                         {
                             <div class="content-text">
@@ -1252,7 +2002,7 @@
                 <div class="sticky-sidebar">
 
                     <div class="action-card">
-                        @if (canRegisterNow || Model.Conference.IsSubmissionAvailable)
+                        @if (canRegisterNow || canSubmitAbstract)
                         {
                             <div class="action-card-badge">
                                 <i class="fas fa-circle"></i>
@@ -1291,7 +2041,7 @@
                             </div>
                             <div class="action-info-item">
                                 <span>@Localizer["AbstractLabel"]</span>
-                                @if (Model.Conference.IsSubmissionAvailable)
+                                @if (canSubmitAbstract)
                                 {
                                     <strong class="text-success">@Localizer["StatusActive"]</strong>
                                 }
@@ -1319,13 +2069,13 @@
                             </a>
                         }
 
-                        @if (Model.Conference.IsSubmissionAvailable && isRegisteredToThisConference)
+                        @if (canSubmitAbstract && isRegisteredToThisConference)
                         {
                             <a href="@submitAbstractUrl" class="action-secondary-btn">
                                 <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]
                             </a>
                         }
-                        else if (!isRegisteredToThisConference && Model.Conference.IsSubmissionAvailable)
+                        else if (!isRegisteredToThisConference && canSubmitAbstract)
                         {
                             <div class="action-secondary-btn" style="cursor:default;opacity:.65;">
                                 <i class="fas fa-info-circle me-1"></i> @Localizer["RegisterFirstForAbstract"]
@@ -1422,7 +2172,7 @@
                     @(isRegisteredToThisConference ? Localizer["ViewYourRegistration"].Value : Localizer["RegisterNowButton"].Value)
                 </a>
             }
-            @if (Model.Conference.IsSubmissionAvailable && isRegisteredToThisConference)
+            @if (canSubmitAbstract && isRegisteredToThisConference)
             {
                 <a href="@submitAbstractUrl" class="hero-secondary-btn">
                     <i class="fas fa-file-arrow-up"></i> @Localizer["SubmitAbstractButton"]

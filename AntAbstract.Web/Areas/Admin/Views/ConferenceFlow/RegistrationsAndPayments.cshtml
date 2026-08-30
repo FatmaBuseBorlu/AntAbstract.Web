@@ -69,29 +69,8 @@
 
 <div class="container-fluid registration-payment-page">
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert operation-alert operation-alert-success mb-4">
-            <i class="fas fa-circle-check"></i>
-            <span>@TempData["SuccessMessage"]</span>
-        </div>
-    }
 
-    @if (TempData["InfoMessage"] != null)
-    {
-        <div class="alert operation-alert operation-alert-info mb-4">
-            <i class="fas fa-circle-info"></i>
-            <span>@TempData["InfoMessage"]</span>
-        </div>
-    }
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert operation-alert operation-alert-error mb-4">
-            <i class="fas fa-triangle-exclamation"></i>
-            <span>@TempData["ErrorMessage"]</span>
-        </div>
-    }
 
     <div class="operation-header-card mb-4">
         <div class="operation-header-left">
@@ -464,7 +443,7 @@
                                         {
                                             <form method="post"
                                                   action="@approvePaymentUrl"
-                                                  onsubmit="return confirm('');">
+                                                  onsubmit="return confirm('Bu kaydın ödemesini onaylamak istediğinize emin misiniz?');">
 
                                                 @Html.AntiForgeryToken()
 
@@ -474,7 +453,7 @@
 
                                                 <button type="submit" class="approve-payment-btn">
                                                     <i class="fas fa-circle-check"></i>
-                                                    
+                                                    Ödemeyi Onayla
                                                 </button>
                                             </form>
                                         }
@@ -483,11 +462,11 @@
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="payment-approved-pill">
                                                     <i class="fas fa-check"></i>
-                                                    
+                                                    Ödendi
                                                 </span>
                                                 <form method="post"
                                                       action="@revokePaymentUrl"
-                                                      onsubmit="return confirm('');">
+                                                      onsubmit="return confirm('Bu kaydın ödeme onayını geri almak istediğinize emin misiniz?');">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="registrationId" value="@item.RegistrationId" />
                                                     <input type="hidden" name="conferenceId" value="@conferenceId" />
@@ -517,7 +496,7 @@
                                     else
                                     {
                                         <span class="muted-pill">
-                                            
+                                            @Localizer["NotPaid"]
                                         </span>
                                     }
                                 </td>

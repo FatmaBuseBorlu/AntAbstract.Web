@@ -208,12 +208,12 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 case "accepted":
                     emailQuery = _context.Submissions
                         .AsNoTracking()
-                        .Include(s => s.User)
+                        .Include(s => s.Author)
                         .Where(s => s.ConferenceId == conferenceId &&
                             (s.Status == SubmissionStatus.Accepted ||
                              s.Status == SubmissionStatus.Presented) &&
-                            s.User != null)
-                        .Select(s => s.User!.Email);
+                            s.Author != null)
+                        .Select(s => s.Author!.Email);
                     break;
 
                 // Hakemler
@@ -252,11 +252,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 case "revision":
                     emailQuery = _context.Submissions
                         .AsNoTracking()
-                        .Include(s => s.User)
+                        .Include(s => s.Author)
                         .Where(s => s.ConferenceId == conferenceId &&
                             s.Status == SubmissionStatus.RevisionRequired &&
-                            s.User != null)
-                        .Select(s => s.User!.Email);
+                            s.Author != null)
+                        .Select(s => s.Author!.Email);
                     break;
 
                 // Kayıt yaptırıp ödeme yapmamışlar
@@ -275,9 +275,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 default:
                     emailQuery = _context.Submissions
                         .AsNoTracking()
-                        .Include(s => s.User)
-                        .Where(s => s.ConferenceId == conferenceId && s.User != null)
-                        .Select(s => s.User!.Email);
+                        .Include(s => s.Author)
+                        .Where(s => s.ConferenceId == conferenceId && s.Author != null)
+                        .Select(s => s.Author!.Email);
                     break;
             }
 

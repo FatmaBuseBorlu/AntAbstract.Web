@@ -1,4 +1,4 @@
-@using System.Dynamic
+﻿@using System.Dynamic
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -97,10 +97,6 @@
         </a>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger mb-4 rounded-3">@TempData["ErrorMessage"]</div>
-    }
 
     @* Stat row *@
     <div class="row g-3 mb-4">
@@ -144,7 +140,7 @@
                 </div>
                 <div>
                     <div class="wl-stat-value">@unassigned</div>
-                    <div class="wl-stat-label">Atanmamış Bildiri</div>
+                    <div class="wl-stat-label">@Localizer["UnassignedSubmissions"]</div>
                 </div>
             </div>
         </div>
@@ -156,7 +152,7 @@
             <table class="table table-hover mb-0 wl-table">
                 <thead>
                     <tr>
-                        <th style="min-width:200px;">Hakem</th>
+                        <th style="min-width:200px;">@Localizer["Referee"]</th>
                         <th style="min-width:180px;">@Localizer["Load"]</th>
                         <th class="text-center" style="min-width:80px;">@Localizer["Assigned"]</th>
                         <th class="text-center" style="min-width:90px;">@Localizer["Completed"]</th>
@@ -193,7 +189,7 @@
                                           : total >= maxLoad * 0.7 ? "wl-badge-warn"
                                           : "wl-badge-ok";
 
-                        string badgeText = total >= maxLoad ? "Dolu"
+                        string badgeText = total >= maxLoad ? Localizer.GetString("Full").Value
                                          : total == 0       ? Localizer.GetString("Idle").Value
                                          : total >= maxLoad * 0.7 ? Localizer.GetString("High").Value
                                          : "Normal";

@@ -338,29 +338,8 @@
 <div class="payment-page">
     <div class="container">
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert payment-alert payment-alert-success mb-4">
-                <i class="fas fa-check-circle"></i>
-                <span>@TempData["SuccessMessage"]</span>
-            </div>
-        }
 
-        @if (TempData["InfoMessage"] != null)
-        {
-            <div class="alert payment-alert payment-alert-info mb-4">
-                <i class="fas fa-circle-info"></i>
-                <span>@TempData["InfoMessage"]</span>
-            </div>
-        }
 
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert payment-alert payment-alert-error mb-4">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>@TempData["ErrorMessage"]</span>
-            </div>
-        }
 
         <div class="payment-header">
             <div class="payment-kicker">
@@ -683,6 +662,12 @@
 </div>
 
 <script>
+    var paymentButtonLabels = {
+        'StripeCheckout': @Json.Serialize(Localizer["PayWithStripe"].Value),
+        'PayTR': @Json.Serialize(Localizer["PayWithPayTR"].Value),
+        'BankTransfer': @Json.Serialize(Localizer["SelectBankTransfer"].Value)
+    };
+
     (function () {
         var radios = document.querySelectorAll('input[name="PaymentMethod"]');
         var bankDetails = document.getElementById('bank-details');
@@ -697,11 +682,12 @@
             }
 
             if (payBtn) {
-                var labels = {
-                    'StripeCheckout': Localizer.GetString('PayWithStripe').Value,
-                    'PayTR': Localizer.GetString('PayWithPayTR').Value,
-                    'BankTransfer': Localizer.GetString('SelectBankTransfer').Value
-                };
+                // Metinler sunucuda çözülüp yukarıda JS sabitine gömülüyor.
+                // Eskiden burada doğrudan C# çağrısı vardı; tarayıcıda
+                // "Localizer is not defined" fırlatıyor ve fonksiyon bu
+                // satırda kesildiği için buton yazısı da, altındaki kart
+                // vurgulama da hiç çalışmıyordu.
+                var labels = paymentButtonLabels;
                 var icon = selected.value === 'BankTransfer' ? 'fa-university' : 'fa-lock';
                 payBtn.innerHTML = '<i class="fas ' + icon + ' me-2"></i>' + (labels[selected.value] || 'Ödemeye Devam Et');
             }

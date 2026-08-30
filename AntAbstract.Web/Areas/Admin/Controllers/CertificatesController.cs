@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = AdminPolicies.TenantAdminOnly)]
+    [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class CertificatesController : Controller
     {
         private readonly AppDbContext _context;
@@ -53,22 +53,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return await _tenantAccess.GetAdminTenantIdAsync(User);
         }
 
+        private bool IsSuperAdmin()
+        {
+            return User.IsInRole("SuperAdmin");
+        }
+
+        private async Task<IQueryable<Conference>> GetAccessibleConferenceQueryAsync()
+        {
+            var query = await _tenantAccess.GetAccessibleConferenceQueryAsync(User);
+
+            return query.AsNoTracking();
+        }
+
+        /// <summary>
+        /// SuperAdmin hiçbir kuruma bağlı değil (TenantId = null), bu yüzden
+        /// kurum kimliğine göre filtre onu tümüyle dışarıda bırakıyordu.
+        /// Kapsam artık erişilebilir kongre sorgusundan geliyor: kurum admini
+        /// yalnızca kendi kongrelerini, SuperAdmin hepsini görüyor.
+        /// </summary>
         private async Task<bool> CanAccessCertificateAsync(Guid certificateId)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
-            {
-                return false;
-            }
+            var accessible = await GetAccessibleConferenceQueryAsync();
 
             return await _context.Certificates
                 .AsNoTracking()
-                .Include(c => c.Conference)
                 .AnyAsync(c =>
                     c.Id == certificateId &&
-                    c.Conference != null &&
-                    c.Conference.TenantId == tenantId.Value);
+                    accessible.Any(conference => conference.Id == c.ConferenceId));
         }
 
         public async Task<IActionResult> Index(
@@ -78,33 +89,35 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             bool onlyMissingFile = false,
             bool onlyEmailNotSent = false)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
+            // Kurum zorunluluğu yalnızca kurum adminleri için geçerli;
+            // SuperAdmin'in kurumu yok ama tüm kongrelere erişiyor.
+            if (!IsSuperAdmin())
             {
-                TempData["ErrorMessage"] = T(
-                    "Error_AdminTenantNotFound",
-                    "Admin hesabınıza bağlı kurum bulunamadı.");
+                var tenantId = await GetCurrentAdminTenantIdAsync();
 
-                return View(Enumerable.Empty<Certificate>().ToList());
+                if (!tenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "Error_AdminTenantNotFound",
+                        "Admin hesabınıza bağlı kurum bulunamadı.");
+
+                    return View(Enumerable.Empty<Certificate>().ToList());
+                }
             }
+
+            var accessible = await GetAccessibleConferenceQueryAsync();
 
             var query = _context.Certificates
                 .AsNoTracking()
                 .Include(x => x.Conference)
                 .Include(x => x.User)
-                .Where(x =>
-                    x.Conference != null &&
-                    x.Conference.TenantId == tenantId.Value)
+                .Where(x => accessible.Any(conference => conference.Id == x.ConferenceId))
                 .AsQueryable();
 
             if (conferenceId.HasValue && conferenceId.Value != Guid.Empty)
             {
-                var canAccessConference = await _context.Conferences
-                    .AsNoTracking()
-                    .AnyAsync(x =>
-                        x.Id == conferenceId.Value &&
-                        x.TenantId == tenantId.Value);
+                var canAccessConference = await accessible
+                    .AnyAsync(x => x.Id == conferenceId.Value);
 
                 if (!canAccessConference)
                 {
@@ -229,18 +242,23 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TriggerBulk(Guid conferenceId)
         {
-            var tenantId = await GetCurrentAdminTenantIdAsync();
-
-            if (!tenantId.HasValue)
+            if (!IsSuperAdmin())
             {
-                TempData["ErrorMessage"] = T("Error_AdminTenantNotFound", "Admin hesabınıza bağlı kurum bulunamadı.");
-                return RedirectToAction("Index", new { conferenceId });
+                var tenantId = await GetCurrentAdminTenantIdAsync();
+
+                if (!tenantId.HasValue)
+                {
+                    TempData["ErrorMessage"] = T("Error_AdminTenantNotFound", "Admin hesabınıza bağlı kurum bulunamadı.");
+                    return RedirectToAction("Index", new { conferenceId });
+                }
             }
 
-            // Verify conference belongs to admin's tenant
-            var conference = await _context.Conferences
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == conferenceId && c.TenantId == tenantId.Value);
+            // Erişim kısıtı erişilebilir kongre sorgusunda: kurum admini yalnızca
+            // kendi kongresini, SuperAdmin hepsini bulabilir.
+            var accessible = await GetAccessibleConferenceQueryAsync();
+
+            var conference = await accessible
+                .FirstOrDefaultAsync(c => c.Id == conferenceId);
 
             if (conference == null)
             {
@@ -252,13 +270,15 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             int errors = 0;
 
             // 1. Author certificates — all accepted/presented submissions
+            // User/UserId, Author/AuthorId'nin [NotMapped] kısayolları; sorguda
+            // kullanılamaz çünkü veritabanına çevrilemiyor.
             var authorSubmissions = await _context.Submissions
                 .AsNoTracking()
-                .Include(s => s.User)
+                .Include(s => s.Author)
                 .Where(s => s.ConferenceId == conferenceId &&
                     (s.Status == AntAbstract.Domain.Entities.SubmissionStatus.Accepted ||
                      s.Status == AntAbstract.Domain.Entities.SubmissionStatus.Presented) &&
-                    s.UserId != null)
+                    s.AuthorId != "")
                 .ToListAsync();
 
             foreach (var sub in authorSubmissions)

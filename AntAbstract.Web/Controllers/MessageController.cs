@@ -96,7 +96,7 @@ namespace AntAbstract.Web.Controllers
         {
             if (string.IsNullOrEmpty(receiverId) || string.IsNullOrEmpty(subject) || string.IsNullOrEmpty(content))
             {
-                TempData["ErrorMessage"] = _localizer["FillRequiredFields"];
+                TempData["ErrorMessage"] = _localizer["FillRequiredFields"].Value;
                 return RedirectToAction(nameof(Create));
             }
 
@@ -114,7 +114,7 @@ namespace AntAbstract.Web.Controllers
             _context.Messages.Add(newMessage);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = _localizer["MessageSentSuccessfully"];
+            TempData["SuccessMessage"] = _localizer["MessageSentSuccessfully"].Value;
             return RedirectToAction(nameof(Index));
         }
 

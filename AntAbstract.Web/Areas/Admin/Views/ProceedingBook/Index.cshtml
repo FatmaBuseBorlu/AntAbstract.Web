@@ -1257,29 +1257,8 @@
 
 <div class="proceeding-page">
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert admin-alert admin-alert-success mb-4">
-            <i class="fas fa-check-circle"></i>
-            <span>@TempData["SuccessMessage"]</span>
-        </div>
-    }
 
-    @if (TempData["InfoMessage"] != null)
-    {
-        <div class="alert admin-alert admin-alert-info mb-4">
-            <i class="fas fa-info-circle"></i>
-            <span>@TempData["InfoMessage"]</span>
-        </div>
-    }
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert admin-alert admin-alert-error mb-4">
-            <i class="fas fa-triangle-exclamation"></i>
-            <span>@TempData["ErrorMessage"]</span>
-        </div>
-    }
 
     <div class="admin-hero">
         <div class="admin-hero-left">
@@ -1588,8 +1567,7 @@
                                    class="form-control form-control-modern" />
 
                             <div class="file-upload-help">
-                                
-                                
+                                @Localizer["FileUploadHelp"]
                             </div>
                         </div>
 
@@ -1603,7 +1581,7 @@
                             </div>
 
                             <div class="admin-switch-text">
-                                
+                                @Localizer["PublishToggleHelp"]
                             </div>
                         </div>
 
@@ -1668,7 +1646,7 @@
             </h5>
 
             <p class="side-text">
-                
+                @Localizer["PublishInfoLead"]
             </p>
 
             <ul class="info-list">
@@ -1721,7 +1699,7 @@
 
                 <div>
                     <h5 class="remove-modal-title" id="generateProceedingBookModalLabel">
-                        
+                        @Localizer["GenerateModalTitle"]
                     </h5>
 
                     <p class="remove-modal-subtitle">

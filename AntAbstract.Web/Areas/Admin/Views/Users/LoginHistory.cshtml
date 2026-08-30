@@ -1,0 +1,88 @@
+@{
+    ViewData["Title"] = "Giriş Geçmişi";
+    var logs = ViewBag.Logs as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var logList = logs.ToList();
+    int total = ViewBag.Total ?? 0;
+    int currentPage = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+}
+
+<div class="container-fluid py-4" style="max-width:1000px">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/Admin/Users" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h4 class="mb-0 fw-bold">Giriş Geçmişi</h4>
+            <small class="text-muted">Toplam @(total) kayıt</small>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (!logList.Any())
+            {
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-clock-rotate-left fa-3x mb-3 opacity-25"></i>
+                    <div>Henüz giriş kaydı yok.</div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size:0.85rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4" style="width:20%">Tarih & Saat</th>
+                                <th style="width:25%">Kullanıcı</th>
+                                <th style="width:18%">IP Adresi</th>
+                                <th class="pe-4">Açıklama</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in logList)
+                            {
+                                var localTime = ((DateTime)log.CreatedAt).AddHours(3);
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-semibold">@localTime.ToString("dd.MM.yyyy")</div>
+                                        <div class="text-muted">@localTime.ToString("HH:mm:ss")</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@(log.UserName ?? "—")</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">@log.UserId</div>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace((string?)log.IpAddress))
+                                        {
+                                            <code class="text-secondary">@log.IpAddress</code>
+                                        }
+                                        else { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td class="pe-4 text-muted">@(log.Description ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (totalPages > 1)
+                {
+                    int prevPage = currentPage - 1;
+                    int nextPage = currentPage + 1;
+                    <div class="d-flex justify-content-center py-3 gap-2">
+                        @if (currentPage > 1)
+                        {
+                            <a href="@Url.Action("LoginHistory", new { page = prevPage })" class="btn btn-outline-secondary btn-sm">← Önceki</a>
+                        }
+                        <span class="btn btn-light btn-sm disabled">@(currentPage) / @(totalPages)</span>
+                        @if (currentPage < totalPages)
+                        {
+                            <a href="@Url.Action("LoginHistory", new { page = nextPage })" class="btn btn-outline-secondary btn-sm">Sonraki →</a>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

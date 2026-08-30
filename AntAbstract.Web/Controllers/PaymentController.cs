@@ -665,7 +665,9 @@ namespace AntAbstract.Web.Controllers
             return View(paymentModel);
         }
 
-        [HttpPost("Process")]
+        // [HttpPost("Process")] kaldirildi: sinif rotasi {slug}/Payment ile
+        // birlesince asagidaki mutlak rotayla ayni adresi uretiyordu ve istek
+        // iki uca birden eslesip AmbiguousMatchException ile 500 veriyordu.
         [HttpPost("/{slug}/payment/process")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProcessPayment(Payment model)
@@ -922,7 +924,7 @@ namespace AntAbstract.Web.Controllers
             }
         }
 
-        [HttpGet("Success")]
+        // [HttpGet("Success")] kaldirildi: ayni cakisma.
         [HttpGet("/{slug}/payment/success")]
         public async Task<IActionResult> Success(string? session_id, Guid? id)
         {
@@ -1276,7 +1278,7 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(My));
         }
 
-        [HttpGet("Cancel")]
+        // [HttpGet("Cancel")] kaldirildi: ayni cakisma.
         [HttpGet("/{slug}/payment/cancel")]
         public async Task<IActionResult> Cancel(Guid? paymentId)
         {

@@ -351,7 +351,7 @@
                             <th>@Localizer["Author"]</th>
                             <th>@Localizer["Reviewers"]</th>
                             <th>@Localizer["Status"]</th>
-                            <th class="text-end">@Localizer["Actions"]</th>
+                            <th class="text-end actions-cell">@Localizer["Actions"]</th>
                         </tr>
                     </thead>
 
@@ -424,7 +424,7 @@
                                     </span>
                                 </td>
 
-                                <td class="text-end">
+                                <td class="text-end actions-cell">
                                     <div class="submission-actions">
                                         <a href="@detailsUrl" class="btn action-view-btn">
                                             <i class="fas fa-eye"></i>
@@ -844,6 +844,28 @@
 
     .submission-table-wrap {
         overflow-x: auto;
+    }
+
+    /* Tablo 900px'e kadar genisleyebiliyor; telefonda islem sutunu ekranin
+       ~800px sagina dusuyor ve ucnokta menusune hic ulasilamiyordu. Sutunu
+       saga yapistiriyoruz: yatay kaydirma yapilsa da islem butonlari hep
+       gorunur kaliyor. Tasma yoksa sticky zaten bir sey degistirmiyor. */
+    .submission-table th.actions-cell,
+    .submission-table td.actions-cell {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: var(--card-bg, #ffffff);
+        box-shadow: -8px 0 12px -8px rgba(15, 23, 42, 0.18);
+    }
+
+    .submission-table thead th.actions-cell {
+        z-index: 3;
+        background: #f8fbff;
+    }
+
+    [data-theme="dark"] .submission-table thead th.actions-cell {
+        background: #1e293b;
     }
 
     .submission-table {

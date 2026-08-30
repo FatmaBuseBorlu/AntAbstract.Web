@@ -287,14 +287,19 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             SetSelectedConferenceSession(conference);
 
-            var sessions = await _context.Sessions
+            // SQLite ORDER BY icinde TimeSpan cevirmiyor (SQL Server cevirebiliyor).
+            // Gun veritabaninda siralaniyor, gun ici sira bellekte tamamlaniyor:
+            // sonuc ayni, sorgu her iki saglayicida da calisiyor.
+            var sessions = (await _context.Sessions
                 .AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)
                 .Include(s => s.Submissions)
                 .OrderBy(s => s.SessionDate)
+                .ToListAsync())
+                .OrderBy(s => s.SessionDate)
                 .ThenBy(s => s.StartTime)
                 .ThenBy(s => s.SortOrder)
-                .ToListAsync();
+                .ToList();
 
             SetConferenceViewBag(conference, slug);
 

@@ -23,12 +23,15 @@ public sealed class UploadFileValidator : IUploadFileValidator
             [UploadFileProfile.ProceedingBookPdf] = new(
                 50 * 1024 * 1024,
                 new[] { ".pdf" }),
+            // Fotoğraf normalde tarayıcıda küçültülüyor; buradaki sınır yalnızca
+            // küçültme yapılamadığı durumlar için emniyet ağı. Kayıt olmayı bir
+            // fotoğraf yüzünden engellememek için tavana (52 MB) yakın tutuldu.
             [UploadFileProfile.RegistrationProfileImage] = new(
-                10 * 1024 * 1024,
+                45 * 1024 * 1024,
                 new[] { ".jpg", ".jpeg", ".png", ".webp" }),
             [UploadFileProfile.ProfileImage] = new(
-                2 * 1024 * 1024,
-                new[] { ".jpg", ".jpeg", ".png" }),
+                45 * 1024 * 1024,
+                new[] { ".jpg", ".jpeg", ".png", ".webp" }),
             [UploadFileProfile.ConferenceImage] = new(
                 5 * 1024 * 1024,
                 new[] { ".jpg", ".jpeg", ".png", ".webp" })

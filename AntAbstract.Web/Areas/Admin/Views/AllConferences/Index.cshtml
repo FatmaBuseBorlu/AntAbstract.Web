@@ -722,6 +722,12 @@
                 @Localizer["GoToTenants"]
             </a>
 
+            <a href="/Admin/AllConferences/Create"
+               class="admin-hero-btn admin-hero-btn-light">
+                <i class="fas fa-plus"></i>
+                Yeni Kongre Ekle
+            </a>
+
             <a href="/Admin/SystemReports"
                class="admin-hero-btn admin-hero-btn-primary">
                 <i class="fas fa-chart-line"></i>
@@ -944,19 +950,25 @@
                             var statusText = GetStatusText(item);
                             var statusClass = GetStatusClass(item);
 
+                            // Siteye giden bağlantı kongrenin kendi slug'ını kullanır.
                             var confSlug = !string.IsNullOrWhiteSpace(item.Slug) ? item.Slug : item.TenantSlug;
                             var hasSlug = !string.IsNullOrWhiteSpace(confSlug);
+
+                            // Admin route'ları kurum slug'ına göre çözülüyor; buraya
+                            // kongre slug'ı verilirse aksiyonlar yönlendirip geri atıyor.
+                            var adminSlug = item.TenantSlug;
+                            var hasAdminSlug = !string.IsNullOrWhiteSpace(adminSlug);
 
                             var siteUrl = hasSlug
                                 ? $"/{confSlug}"
                                 : "#";
 
-                            var flowUrl = hasSlug
-                                ? $"/{confSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
+                            var flowUrl = hasAdminSlug
+                                ? $"/{adminSlug}/Admin/ConferenceFlow?conferenceId={item.Id}"
                                 : $"/Admin/ConferenceFlow?conferenceId={item.Id}";
 
-                            var editUrl = hasSlug
-                                ? $"/{confSlug}/Admin/Conferences/Edit/{item.Id}"
+                            var editUrl = hasAdminSlug
+                                ? $"/{adminSlug}/Admin/Conferences/Edit/{item.Id}"
                                 : "#";
 
                             var tenantUrl = item.TenantId.HasValue
@@ -1046,7 +1058,10 @@
                                                title="@Localizer["ActionViewSite"]">
                                                 <i class="fas fa-arrow-up-right-from-square"></i>
                                             </a>
+                                        }
 
+                                        @if (hasAdminSlug)
+                                        {
                                             <a href="@editUrl"
                                                class="admin-action-btn admin-action-edit"
                                                title="@Localizer["ActionSettings"]">

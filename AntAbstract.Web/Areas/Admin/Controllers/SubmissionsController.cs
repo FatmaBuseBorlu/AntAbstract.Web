@@ -354,6 +354,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return $"/Admin/Submissions/Details/{submissionId}";
         }
 
+            // Bu ekranın görünümü hiç yazılmamış: Create.cshtml depoda yok ve
+            // panelde buraya giden bağlantı da bulunmuyor. Adres elle girilince
+            // "view not found" ile 500 dönüyordu. Görünüm eklenene kadar çökmek
+            // yerine bulunamadı demek doğrusu; eylem ve modeli olduğu gibi duruyor.
+        private IActionResult SubmissionCreateUnavailable() => NotFound(T(
+            "Error_SubmissionCreateUnavailable",
+            "Yönetici tarafından bildiri oluşturma ekranı henüz hazır değil."));
+
         [HttpGet("/Admin/Submissions/Create")]
         [HttpGet("/{slug}/Admin/Submissions/Create")]
         public async Task<IActionResult> Create(
@@ -383,7 +391,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 model.ConferenceId = conference.Id;
             }
 
-            return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
+            return SubmissionCreateUnavailable();
         }
 
         [HttpPost("/Admin/Submissions/Create")]
@@ -433,7 +441,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 await LoadAvailableConferencesAsync(model);
 
-                return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
+                return SubmissionCreateUnavailable();
             }
 
             var newSubmission = new Submission
@@ -475,7 +483,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                     await LoadAvailableConferencesAsync(model);
 
-                    return View("~/Areas/Admin/Views/Submissions/Create.cshtml", model);
+                    return SubmissionCreateUnavailable();
                 }
 
                 var uploadsFolder = PrivateStorage.EnsureFolder(_env, PrivateStorage.SubmissionsFolder);

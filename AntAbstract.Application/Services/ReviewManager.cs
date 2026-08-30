@@ -101,7 +101,11 @@ namespace AntAbstract.Application.Services
                 return new List<ReviewAssignmentDto>();
             }
 
+            // Hakem paneli slug taşımayan /Review adresinden de açılıyor.
+            // Orada tenant bağlamı boş kaldığı için kiracı filtresi listeyi
+            // sessizce boşaltıyordu. Kapsamı reviewerId zaten sağlıyor.
             var assignments = await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(ra => ra.Submission)
                     .ThenInclude(s => s.Conference)

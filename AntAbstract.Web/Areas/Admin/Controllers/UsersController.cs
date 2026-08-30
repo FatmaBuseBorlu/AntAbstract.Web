@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Web.Models.ViewModels.Admin.Users;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Infrastructure.Context;
@@ -99,10 +101,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
+            var userIds = users.Select(u => u.Id).ToList();
+
+            var loginStats = await _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.Category == "Login" && a.Action == "Login" && a.UserId != null && userIds.Contains(a.UserId))
+                .GroupBy(a => a.UserId!)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    LastLoginAt = g.Max(a => a.CreatedAt),
+                    LoginCount = g.Count(),
+                    LastLoginIp = g.OrderByDescending(a => a.CreatedAt).Select(a => a.IpAddress).FirstOrDefault()
+                })
+                .ToDictionaryAsync(x => x.UserId);
+
             var allUsersModel = users.Select(user =>
             {
                 var userRoles = userRoleMap.TryGetValue(user.Id, out var r) ? r : new List<string>();
                 var fullName = $"{user.FirstName} {user.LastName}".Trim();
+                loginStats.TryGetValue(user.Id, out var stats);
                 return new UserListItemViewModel
                 {
                     UserId = user.Id,
@@ -115,7 +133,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     IsLockedOut = user.LockoutEnabled &&
                                   user.LockoutEnd.HasValue &&
                                   user.LockoutEnd.Value > DateTimeOffset.UtcNow,
-                    EmailConfirmed = user.EmailConfirmed
+                    EmailConfirmed = user.EmailConfirmed,
+                    LastLoginAt = stats?.LastLoginAt,
+                    LastLoginIp = stats?.LastLoginIp,
+                    LoginCount = stats?.LoginCount ?? 0
                 };
             }).ToList();
 
@@ -404,9 +425,11 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
 
+            // Submission.UserId, AuthorId'nin [NotMapped] kısayolu; sorguda
+            // kullanılamaz çünkü veritabanına çevrilemiyor.
             var submissionCount = await _context.Submissions
                 .AsNoTracking()
-                .CountAsync(s => s.UserId == userId);
+                .CountAsync(s => s.AuthorId == userId);
 
             var paymentCount = await _context.Payments
                 .AsNoTracking()
@@ -424,6 +447,94 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.IsLockedOut = user.LockoutEnabled &&
                                    user.LockoutEnd.HasValue &&
                                    user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+
+            return View();
+        }
+
+        // ── Export Login History ──────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Users/ExportLoginHistory")]
+        [HttpGet("/{slug}/Admin/Users/ExportLoginHistory")]
+        public async Task<IActionResult> ExportLoginHistory(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return NotFound();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            var logs = await _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.UserId == userId && a.Category == "Login" && a.Action == "Login")
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new { a.CreatedAt, a.IpAddress, a.Description })
+                .ToListAsync();
+
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Giriş Geçmişi");
+
+            // Başlık satırı
+            ws.Cell(1, 1).Value = "Tarih";
+            ws.Cell(1, 2).Value = "Saat";
+            ws.Cell(1, 3).Value = "IP Adresi";
+            ws.Cell(1, 4).Value = "Açıklama";
+
+            var headerRow = ws.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#0f172a");
+            headerRow.Style.Font.FontColor = XLColor.White;
+
+            for (int i = 0; i < logs.Count; i++)
+            {
+                var localTime = logs[i].CreatedAt.AddHours(3);
+                ws.Cell(i + 2, 1).Value = localTime.ToString("dd.MM.yyyy");
+                ws.Cell(i + 2, 2).Value = localTime.ToString("HH:mm:ss");
+                ws.Cell(i + 2, 3).Value = logs[i].IpAddress ?? "";
+                ws.Cell(i + 2, 4).Value = logs[i].Description ?? "";
+            }
+
+            ws.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            var safeName = $"{user.FirstName}_{user.LastName}_giris_gecmisi_{DateTime.Now:yyyyMMdd}.xlsx"
+                .Replace(" ", "_");
+
+            return File(ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                safeName);
+        }
+
+        // ── Login History ─────────────────────────────────────────────────────────
+
+        [HttpGet("/Admin/Users/LoginHistory")]
+        public async Task<IActionResult> LoginHistory(string? userId, int page = 1)
+        {
+            const int pageSize = 50;
+
+            var query = _context.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.Category == "Login" && a.Action == "Login");
+
+            if (!string.IsNullOrWhiteSpace(userId))
+                query = query.Where(a => a.UserId == userId);
+
+            var total = await query.CountAsync();
+
+            var logs = await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(a => new { a.UserId, a.UserName, a.CreatedAt, a.IpAddress, a.Description })
+                .ToListAsync();
+
+            ViewBag.Logs = logs;
+            ViewBag.Total = total;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)total / pageSize);
+            ViewBag.FilterUserId = userId;
 
             return View();
         }

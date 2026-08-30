@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Localization;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -19,17 +20,20 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly IEmailSender _emailSender;
         private readonly IAuditService _audit;
         private readonly ILogger<ForgotPasswordModel> _logger;
+        private readonly IStringLocalizer<ForgotPasswordModel> _localizer;
 
         public ForgotPasswordModel(
             UserManager<AppUser> userManager,
             IEmailSender emailSender,
             IAuditService audit,
-            ILogger<ForgotPasswordModel> logger)
+            ILogger<ForgotPasswordModel> logger,
+            IStringLocalizer<ForgotPasswordModel> localizer)
         {
             _userManager = userManager;
             _emailSender = emailSender;
             _audit = audit;
             _logger = logger;
+            _localizer = localizer;
         }
 
         [BindProperty]
@@ -82,25 +86,27 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
             if (string.IsNullOrWhiteSpace(callbackUrl))
             {
-                ModelState.AddModelError(string.Empty, "Şifre sıfırlama bağlantısı oluşturulamadı.");
+                ModelState.AddModelError(string.Empty, _localizer["ResetLinkFailed"]);
                 return Page();
             }
 
+            // Konu ve gövde artık kaynak dosyasından: İngilizce seçili
+            // kullanıcıya Türkçe e-posta gidiyordu.
             await _emailSender.SendEmailAsync(
                 Input.Email,
-                "Şifrenizi sıfırlayın",
+                _localizer["ResetEmailSubject"],
                 $"""
                 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-                    <h2 style="margin:0 0 12px;color:#0f172a">Şifre sıfırlama isteği</h2>
-                    <p>AntAbstract hesabınız için şifre sıfırlama bağlantısı oluşturuldu.</p>
+                    <h2 style="margin:0 0 12px;color:#0f172a">{_localizer["ResetEmailHeading"].Value}</h2>
+                    <p>{_localizer["ResetEmailIntro"].Value}</p>
                     <p>
                         <a href="{HtmlEncoder.Default.Encode(callbackUrl)}"
                            style="display:inline-block;background:#0ea5e9;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">
-                            Yeni şifre oluştur
+                            {_localizer["ResetEmailButton"].Value}
                         </a>
                     </p>
                     <p style="color:#64748b;font-size:13px">
-                        Bu işlemi siz başlatmadıysanız bu e-postayı yok sayabilirsiniz.
+                        {_localizer["ResetEmailIgnore"].Value}
                     </p>
                 </div>
                 """);

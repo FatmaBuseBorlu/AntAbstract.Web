@@ -447,13 +447,16 @@
     overflow: hidden;
 }
 
+/* Boşluklar laptopta fazla yer kaplıyordu: 13-14 inç ekranda kartın
+   içeriğinden çok çerçevesi görünüyor, sayfa "zoomlu" duruyordu. Alt sınır
+   dar ekranda okunabilirliği koruyor, üst sınır bugünkü değer. */
 .aa-card-header {
-    padding: 1.25rem 1.5rem;
+    padding: clamp(0.85rem, 0.9vw, 1.25rem) clamp(1rem, 1.1vw, 1.5rem);
     border-bottom: 1px solid var(--aa-border);
 }
 
 .aa-card-body {
-    padding: 1.5rem;
+    padding: clamp(1rem, 1.1vw, 1.5rem);
 }
 
 /* ── Hero Card ────────────────────────────────────────────────────── */
@@ -462,7 +465,7 @@
                 linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid var(--aa-border);
     border-radius: 28px;
-    padding: 1.4rem 1.75rem;
+    padding: clamp(1rem, 1.05vw, 1.4rem) clamp(1.15rem, 1.3vw, 1.75rem);
     display: flex; align-items: center; justify-content: space-between;
     gap: 1.25rem; flex-wrap: wrap;
     box-shadow: var(--aa-shadow-md);

@@ -617,7 +617,7 @@
                                    class="btn btn-outline-success w-100 mb-2"
                                    target="_blank">
                                     <i class="fas fa-file-invoice me-2"></i>
-                                    
+                                    @L("DownloadInvoiceButton", "Fatura (PDF)", "Invoice (PDF)")
                                 </a>
                                 <a href="/@(Model.Conference.Tenant!.Slug)/Payment/DownloadVisaLetter/@Model.Id"
                                    class="btn btn-outline-primary w-100 mb-2"
@@ -639,19 +639,16 @@
                                 @L("PaymentWarningText", "Ödeme işlemine devam ettiğinizde güvenli ödeme sağlayıcısına yönlendirileceksiniz.", "When you continue, you will be redirected to the secure payment provider.")
                             </div>
 
-                            <form asp-controller="Payment"
-                                  asp-action="CreateCheckoutSession"
-                                  method="post">
+                            @* Ödeme, PaymentController.Index (checkout) sayfasından başlar;
+                               Stripe oturumu oradaki form ile oluşturuluyor. *@
+                            var checkoutUrl = !string.IsNullOrWhiteSpace(Model?.Conference?.Tenant?.Slug)
+                                ? $"/{Model.Conference.Tenant!.Slug}/payment/checkout/{Model.Id}"
+                                : $"/Payment/Index/{Model?.Id}";
 
-                                @Html.AntiForgeryToken()
-
-                                <input type="hidden" name="registrationId" value="@Model?.Id" />
-
-                                <button type="submit" class="btn pay-button w-100">
-                                    <i class="fas fa-lock me-2"></i>
-                                    @L("PayNowButton", "Güvenli Ödeme Yap", "Pay Securely")
-                                </button>
-                            </form>
+                            <a href="@checkoutUrl" class="btn pay-button w-100">
+                                <i class="fas fa-lock me-2"></i>
+                                @L("PayNowButton", "Güvenli Ödeme Yap", "Pay Securely")
+                            </a>
 
                             <div class="text-center mt-4">
                                 <div class="payment-icons mb-2">

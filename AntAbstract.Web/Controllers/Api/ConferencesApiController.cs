@@ -1,4 +1,4 @@
-using AntAbstract.Infrastructure.Context;
+﻿using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -95,10 +95,12 @@ namespace AntAbstract.Web.Controllers.Api
                 .AsNoTracking()
                 .Where(s => s.ConferenceId == id && s.IsActive)
                 .OrderBy(s => s.SessionDate)
-                .ThenBy(s => s.StartTime)
                 .ThenBy(s => s.SortOrder)
                 .Select(s => new
                 {
+                    sortDate = s.SessionDate,
+                    sortStart = s.StartTime,
+                    sortOrder = s.SortOrder,
                     s.Id,
                     s.Title,
                     s.TitleEn,
@@ -112,7 +114,27 @@ namespace AntAbstract.Web.Controllers.Api
                 })
                 .ToListAsync();
 
-            return Ok(new { conferenceId = id, count = sessions.Count, data = sessions });
+            // SQLite ORDER BY icinde TimeSpan cevirmiyor; gun ici sira bellekte.
+            var ordered = sessions
+                .OrderBy(s => s.sortDate)
+                .ThenBy(s => s.sortStart)
+                .ThenBy(s => s.sortOrder)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Title,
+                    s.TitleEn,
+                    s.date,
+                    s.startTime,
+                    s.endTime,
+                    s.Location,
+                    s.SpeakerName,
+                    s.PresentationTitle,
+                    s.submissionCount
+                })
+                .ToList();
+
+            return Ok(new { conferenceId = id, count = ordered.Count, data = ordered });
         }
 
         [HttpGet("{id:guid}/stats")]
