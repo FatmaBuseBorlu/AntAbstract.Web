@@ -39,25 +39,25 @@
     <!-- Stat Cards -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-primary">@total</div>
                 <div class="small text-muted mt-1">@Localizer["ToplamYanit"]</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-success">%@recommendPct</div>
                 <div class="small text-muted mt-1">Tavsiye Eder</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-info">@networkYes</div>
                 <div class="small text-muted mt-1">@Localizer["NetworkKatkisiVar"]</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-warning">@(total - recommendYes)</div>
                 <div class="small text-muted mt-1">Tavsiye Etmez</div>
             </div>
@@ -66,7 +66,7 @@
 
     @if (!Model.Any())
     {
-        <div class="card border-0 shadow-sm p-5 text-center" style="border-radius:16px;">
+        <div class="modern-card p-5 text-center" style="border-radius:16px;">
             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
             <h6 class="text-muted">@Localizer["HenuzAnketYanitiYok"]</h6>
             <p class="small text-muted mb-0">@Localizer["KatilimcilarBildiriGeriBildirimiGonderdikce"]</p>
@@ -83,7 +83,7 @@
                 if (string.IsNullOrWhiteSpace(userName)) userName = a.User?.Email ?? "Bilinmeyen";
                 var collapseId = $"collapse{i}";
                 var headingId = $"heading{i}";
-            <div class="card border-0 shadow-sm mb-2" style="border-radius:12px;overflow:hidden;">
+            <div class="modern-card mb-2" style="border-radius:12px;overflow:hidden;">
                 <div class="card-header bg-white border-0 p-0" id="@headingId">
                     <button class="btn w-100 text-start d-flex align-items-center gap-3 p-3 collapsed"
                             type="button"
