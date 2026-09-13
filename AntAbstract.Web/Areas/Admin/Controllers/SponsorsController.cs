@@ -59,6 +59,49 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         // ── Index ────────────────────────────────────────────────────────────
 
+        // Menü kongre seçilmemişken bu adrese bağlanıyordu ama denetleyicide
+        // yalnızca slug'lı rota tanımlıydı; bağlantı 404 veriyordu. Seçili
+        // kongre varsa kanonik adresine taşıyoruz, yoksa kongre seçimine
+        // gönderiyoruz — Kayıt Türleri'nde uygulanan yaklaşımın aynısı.
+        //
+        // Sorgu filtresi burada bilerek atlanıyor: slug yokken kiracı bağlamı
+        // boş kalıyor ve filtre kongreyi bulunamaz yapıyor. Kapsamı, altında
+        // açılan slug'lı ekranın kendi yetki kontrolü sağlıyor.
+        [HttpGet("/Admin/Sponsors")]
+        public async Task<IActionResult> IndexRoot(Guid? conferenceId)
+        {
+            var selectedId = conferenceId;
+
+            if (!selectedId.HasValue || selectedId.Value == Guid.Empty)
+            {
+                var stored = HttpContext.Session.GetString("SelectedConferenceId");
+
+                if (Guid.TryParse(stored, out var parsed))
+                {
+                    selectedId = parsed;
+                }
+            }
+
+            if (selectedId.HasValue && selectedId.Value != Guid.Empty)
+            {
+                var conference = await _context.Conferences
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.Id == selectedId.Value);
+
+                var conferenceSlug = conference?.Tenant?.Slug ?? conference?.Slug;
+
+                if (conference != null && !string.IsNullOrWhiteSpace(conferenceSlug))
+                {
+                    return Redirect($"/{conferenceSlug}/Admin/Sponsors?conferenceId={conference.Id}");
+                }
+            }
+
+            return Redirect("/Admin/SelectConference?returnUrl=" +
+                Uri.EscapeDataString("/Admin/Sponsors"));
+        }
+
         [HttpGet("/{slug}/Admin/Sponsors")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
