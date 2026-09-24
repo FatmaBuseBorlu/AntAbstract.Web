@@ -3,6 +3,7 @@
 #nullable disable
 
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Security;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -17,15 +18,18 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly AccountAnonymizer _anonymizer;
         private readonly ILogger<DeletePersonalDataModel> _logger;
 
         public DeletePersonalDataModel(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
+            AccountAnonymizer anonymizer,
             ILogger<DeletePersonalDataModel> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _anonymizer = anonymizer;
             _logger = logger;
         }
 
@@ -87,8 +91,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
                 }
             }
 
-            var result = await _userManager.DeleteAsync(user);
+            // Satır silinmez, anonimleştirilir: bkz. AccountAnonymizer.
             var userId = await _userManager.GetUserIdAsync(user);
+            var result = await _anonymizer.AnonymizeAsync(user);
             if (!result.Succeeded)
             {
                 throw new InvalidOperationException($"Unexpected error occurred deleting user.");

@@ -240,6 +240,7 @@ builder.Services.AddScoped<IPayTRService, PayTRService>();
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>();
+builder.Services.AddScoped<AccountAnonymizer>();
 builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
 builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 
