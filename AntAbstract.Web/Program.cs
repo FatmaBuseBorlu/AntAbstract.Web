@@ -542,6 +542,10 @@ else
     app.UseHsts();
 }
 
+// Boş gövdeli 404'lerde tarayıcının hata ekranı yerine sitenin kendi sayfası
+// (HomeController.StatusCodePage). API ve dosya istekleri olduğu gibi kalır.
+app.UseStatusCodePagesWithReExecute("/status/{0}");
+
 app.UseResponseCompression();
 
 app.UseHttpsRedirection();

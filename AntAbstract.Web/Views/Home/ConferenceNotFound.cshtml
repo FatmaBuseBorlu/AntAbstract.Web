@@ -1,12 +1,15 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"].Value;
+    // PageNotFound: kongre değil, genel bir adres bulunamadı (UseStatusCodePages).
+    var isPage = ViewBag.PageNotFound as bool? == true;
+
+    ViewData["Title"] = Localizer[isPage ? "PagePageTitle" : "PageTitle"].Value;
 
     var slug = ViewBag.Slug as string ?? "";
 
     var message = ViewBag.NotFoundMessage as string
-        ?? Localizer.GetString("DefaultMessage").Value;
+        ?? Localizer.GetString(isPage ? "PageMessage" : "DefaultMessage").Value;
 }
 
 <style>
@@ -121,7 +124,7 @@
             <div class="notfound-code">404</div>
 
             <h1 class="notfound-title">
-                @Localizer["Title"]
+                @Localizer[isPage ? "PageTitleText" : "Title"]
             </h1>
 
             @if (!string.IsNullOrWhiteSpace(slug))
@@ -134,7 +137,7 @@
             <p class="notfound-message">
                 @message
                 <br />
-                @Localizer["Hint"]
+                @Localizer[isPage ? "PageHint" : "Hint"]
             </p>
 
             <div class="notfound-actions">
