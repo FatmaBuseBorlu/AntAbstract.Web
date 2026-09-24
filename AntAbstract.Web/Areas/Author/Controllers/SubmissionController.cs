@@ -24,6 +24,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.RegularExpressions;
 namespace AntAbstract.Web.Areas.Author.Controllers
 {
     [Area("Author")]
@@ -840,7 +841,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                             LastName = authorVm.LastName,
                             Email = authorVm.Email,
                             Institution = authorVm.Institution,
-                            ORCID = authorVm.ORCID,
+                            ORCID = NormalizeOrcid(authorVm.ORCID),
                             IsCorrespondingAuthor = authorVm.IsCorrespondingAuthor,
                             Order = orderCounter++
                         });
@@ -876,7 +877,22 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(nameof(model.SubmissionFile), ex.Message);
+                // Eskiden yalnizca ex.Message basiliyordu. Kaydetme hatalarinda
+                // bu dis mesaj "An error occurred while saving the entity
+                // changes. See the inner exception for details." oluyor; sebebi
+                // ne kullaniciya ne loglara yansiyordu, dolayisiyla teshis
+                // edilemiyordu. Ic istisnayi logluyor, kullaniciya da anlasilir
+                // bir mesaj veriyoruz.
+                _logger.LogError(
+                    ex,
+                    "Bildiri kaydedilemedi. ConferenceId={ConferenceId} UserId={UserId} Baslik={Title}",
+                    conference.Id,
+                    user.Id,
+                    model.Title);
+
+                ModelState.AddModelError(
+                    nameof(model.SubmissionFile),
+                    DescribeSaveFailure(ex));
 
                 FillSingleConferenceList(model, conference);
 
@@ -1200,7 +1216,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                             LastName = a.LastName,
                             Email = a.Email,
                             Institution = a.Institution,
-                            ORCID = a.ORCID,
+                            ORCID = NormalizeOrcid(a.ORCID),
                             IsCorrespondingAuthor = a.IsCorrespondingAuthor,
                             Order = index + 1
                         }).ToList() ?? new List<SubmissionAuthorDto>()
@@ -1944,6 +1960,54 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             TempData["SuccessMessage"] = T("Msg_YanitinizBasariylaGonderildiEditorIncelemenizinArdindan", "Yanıtınız başarıyla gönderildi. Editör incelemenizin ardından nihai kararı bildirecektir.");
             var canonicalSlug = GetCanonicalSlug(submission.Conference!, slug);
             return Redirect(BuildUrl(canonicalSlug, $"/my-submissions/{id}"));
+        }
+
+        /// <summary>
+        /// Kaydetme hatalarinin dis mesaji kullaniciya hicbir sey anlatmiyor.
+        /// Bilinen ve kullanicinin duzeltebilecegi durumlari ayirip anlasilir
+        /// bir mesaj veriyoruz; geri kalanda genel mesaj donuyor (ayrintisi
+        /// loga yaziliyor, ekrana teknik metin dokulmuyor).
+        /// </summary>
+        private string DescribeSaveFailure(Exception ex)
+        {
+            for (var current = ex; current != null; current = current.InnerException)
+            {
+                var message = current.Message;
+
+                if (message.Contains("would be truncated", StringComparison.OrdinalIgnoreCase))
+                {
+                    return T(
+                        "SaveFailedTooLong",
+                        "Girdiğiniz bilgilerden biri izin verilen uzunluğu aşıyor. " +
+                        "Lütfen yazar adı, kurum ve ORCID alanlarını kısaltıp tekrar deneyin.");
+                }
+            }
+
+            return T(
+                "SaveFailedGeneric",
+                "Bildiri kaydedilirken bir hata oluştu. Lütfen tekrar deneyin; " +
+                "sorun sürerse kongre yönetimiyle iletişime geçin.");
+        }
+
+        /// <summary>
+        /// Yazarlar ORCID alanına genelde tam adresi yapıştırıyor
+        /// (https://orcid.org/0000-0002-1825-0097). Sütun 50 karakter olduğu
+        /// için fazlası kaydetme anında patlıyordu. Adresi reddetmek yerine
+        /// kimliği ayıklıyoruz; kullanıcı doğru şeyi yapıştırdığı hâlde hata
+        /// almasın.
+        /// </summary>
+        private static string? NormalizeOrcid(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var trimmed = value.Trim();
+
+            var match = Regex.Match(trimmed, @"\d{4}-\d{4}-\d{4}-\d{3}[\dXx]");
+
+            return match.Success ? match.Value.ToUpperInvariant() : trimmed;
         }
 
         private async Task<(string FilePathDb, string StoredFileName, string OriginalFileName)> UploadFileAsync(IFormFile file)
