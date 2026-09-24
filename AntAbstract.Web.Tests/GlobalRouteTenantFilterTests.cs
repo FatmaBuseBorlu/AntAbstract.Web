@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ namespace AntAbstract.Web.Tests;
 /// </summary>
 public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTestFactory>
 {
+    private readonly AuthenticatedTestFactory _factory;
     private readonly HttpClient _referee;
     private readonly ITestOutputHelper _output;
 
@@ -38,6 +40,7 @@ public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTe
 
     public GlobalRouteTenantFilterTests(AuthenticatedTestFactory factory, ITestOutputHelper output)
     {
+        _factory = factory;
         _output = output;
 
         _referee = factory.CreateClient(new() { AllowAutoRedirect = false });
@@ -217,6 +220,57 @@ public sealed class GlobalRouteTenantFilterTests : IClassFixture<AuthenticatedTe
         Assert.True(
             (int)withoutSlug.StatusCode < 500,
             $"{ad}: slug'sız adres {(int)withoutSlug.StatusCode} verdi.");
+    }
+
+    /// <summary>
+    /// Hakemin değerlendirme görevi, kiracı bağlamı boşken de bulunabilmeli.
+    ///
+    /// GetAssignmentByIdAsync kiracı filtresinden muaf değil. Slug taşımayan
+    /// /Review/Evaluate adresinde bağlam boş kaldığı için görev bulunamıyor
+    /// ve hakem "görev bulunamadı" ile geri gönderiliyor — değerlendirmesi
+    /// kayboluyor. Deney HTTP katmanını dışarıda tutuyor: tek değişken
+    /// kiracı bağlamı.
+    /// </summary>
+    [Fact]
+    public async Task HakemGorevi_KiraciBaglamiBoskenDeBulunuyor()
+    {
+        int assignmentId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            assignmentId = await db.ReviewAssignments.IgnoreQueryFilters()
+                .Where(ra => ra.ReviewerId == RefereeId)
+                .Select(ra => ra.Id)
+                .FirstAsync();
+        }
+
+        async Task<bool> BulunuyorMu(bool globalBaglam)
+        {
+            using var scope = _factory.Services.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<TenantContext>()
+                .IsGlobalContext = globalBaglam;
+
+            var service = scope.ServiceProvider
+                .GetRequiredService<AntAbstract.Application.Interfaces.IReviewService>();
+
+            return await service.GetAssignmentByIdAsync(assignmentId, RefereeId) != null;
+        }
+
+        var globalde = await BulunuyorMu(true);
+        var bosBaglamda = await BulunuyorMu(false);
+
+        _output.WriteLine($"global bağlamda bulundu: {globalde}");
+        _output.WriteLine($"boş bağlamda bulundu   : {bosBaglamda}");
+
+        Assert.True(globalde, "Görev global bağlamda da bulunamadı — kurulum hatalı.");
+
+        Assert.True(
+            bosBaglamda,
+            "Kiracı bağlamı boşken hakemin görevi bulunamıyor; slug taşımayan " +
+            "adresten gönderilen değerlendirme kaydedilemez.");
     }
 
     [Fact]
