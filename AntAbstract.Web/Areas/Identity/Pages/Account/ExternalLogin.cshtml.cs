@@ -10,6 +10,7 @@ using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -34,6 +35,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly ILogger<ExternalLoginModel> _logger;
         private readonly AppDbContext _context;
 
+        private readonly EmailConfirmationSender _confirmationSender;
+
         public ExternalLoginModel(
             SignInManager<AppUser> signInManager,
             UserManager<AppUser> userManager,
@@ -41,7 +44,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             IUserStore<AppUser> userStore,
             ILogger<ExternalLoginModel> logger,
             IEmailSender emailSender,
-            AppDbContext context)
+            AppDbContext context,
+            EmailConfirmationSender confirmationSender)
         {
             _signInManager = signInManager;
             _userManager = userManager;
@@ -51,6 +55,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             _logger = logger;
             _emailSender = emailSender;
             _context = context;
+            _confirmationSender = confirmationSender;
         }
 
         [BindProperty]
@@ -135,6 +140,12 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
             if (externalUser != null)
             {
+                var blocked = await BlockedSignInAsync(externalUser, returnUrl);
+                if (blocked != null)
+                {
+                    return blocked;
+                }
+
                 await UpdateOrcidProfileAsync(externalUser, info);
 
                 await _signInManager.SignInAsync(
@@ -165,6 +176,12 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
                 if (existingUserByEmail != null)
                 {
+                    var blocked = await BlockedSignInAsync(existingUserByEmail, returnUrl);
+                    if (blocked != null)
+                    {
+                        return blocked;
+                    }
+
                     var addLoginResult = await _userManager.AddLoginAsync(
                         existingUserByEmail,
                         info);
@@ -259,7 +276,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     Input.Email,
                     CancellationToken.None);
 
-                user.EmailConfirmed = true;
+                user.EmailConfirmed = false;
                 user.FirstName = GetExternalFirstName(info);
                 user.LastName = GetExternalLastName(info);
                 user.OrcidId = NormalizeOrcidId(GetExternalOrcidId(info));
@@ -278,52 +295,23 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
                         await EnsureAuthorRoleAsync(user);
 
-                        var userId = await _userManager.GetUserIdAsync(user);
-
-                        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-                        code = WebEncoders.Base64UrlEncode(
-                            Encoding.UTF8.GetBytes(code));
-
-                        var callbackUrl = Url.Page(
-                            "/Account/ConfirmEmail",
-                            pageHandler: null,
-                            values: new
-                            {
-                                area = "Identity",
-                                userId,
-                                code
-                            },
-                            protocol: Request.Scheme);
-
-                        await _emailSender.SendEmailAsync(
-                            Input.Email,
-                            "Confirm your email",
-                            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-                        if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                        {
-                            return RedirectToPage(
-                                "./RegisterConfirmation",
-                                new { Email = Input.Email });
-                        }
-
-                        await _signInManager.SignInAsync(
-                            user,
-                            isPersistent: false,
-                            authenticationMethod: info.LoginProvider);
-
+                        // Oturum açılmaz: kullanıcının yazdığı e-posta önce doğrulanmalı.
                         var redirectAfterRegistration =
                             await TryCreateConferencePreRegistrationFromReturnUrlAsync(
                                 user,
                                 returnUrl);
 
-                        if (!string.IsNullOrWhiteSpace(redirectAfterRegistration))
-                        {
-                            return LocalRedirect(redirectAfterRegistration);
-                        }
+                        var afterConfirmUrl = !string.IsNullOrWhiteSpace(redirectAfterRegistration)
+                            ? redirectAfterRegistration
+                            : GetSafeReturnUrl(returnUrl);
 
-                        return LocalRedirect(GetSafeReturnUrl(returnUrl));
+                        var sent = await _confirmationSender.SendAsync(
+                            user, Url, Request.Scheme, afterConfirmUrl);
+
+                        TempData["RegisteredEmail"] = user.Email;
+                        TempData["ConfirmationEmailFailed"] = !sent;
+
+                        return RedirectToPage("./RegisterConfirmation");
                     }
                 }
 
@@ -337,6 +325,28 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             ReturnUrl = returnUrl;
 
             return Page();
+        }
+
+        // SignInAsync doğrudan oturum açar; e-posta doğrulaması ve kilit
+        // kontrolünü (PasswordSignInAsync'in yaptığı) burada biz yaparız.
+        private async Task<IActionResult> BlockedSignInAsync(AppUser user, string returnUrl)
+        {
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return RedirectToPage("./Lockout");
+            }
+
+            if (!await _signInManager.CanSignInAsync(user))
+            {
+                TempData["ErrorMessage"] =
+                    System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"
+                        ? "Your email address is not confirmed yet. Please click the link in the email we sent you."
+                        : "E-posta adresiniz henüz doğrulanmadı. Size gönderdiğimiz e-postadaki bağlantıya tıklayın.";
+
+                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+            }
+
+            return null;
         }
 
         private async Task EnsureAuthorRoleAsync(AppUser user)

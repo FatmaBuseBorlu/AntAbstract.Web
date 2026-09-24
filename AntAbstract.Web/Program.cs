@@ -104,6 +104,10 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
     opt.Lockout.AllowedForNewUsers = true;
 
     opt.User.RequireUniqueEmail = true;
+
+    // Kayıtta e-posta doğrulanmadan giriş yapılamaz. Mevcut kullanıcılar
+    // migration ile doğrulanmış sayıldı (hepsi zaten öyle işaretleniyordu).
+    opt.SignIn.RequireConfirmedEmail = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
@@ -241,6 +245,7 @@ builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>();
 builder.Services.AddScoped<AccountAnonymizer>();
+builder.Services.AddScoped<EmailConfirmationSender>();
 builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
 builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 

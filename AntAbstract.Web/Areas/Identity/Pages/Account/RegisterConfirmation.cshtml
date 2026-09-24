@@ -204,25 +204,31 @@
 
             <h1 class="h3 fw-bold text-dark mb-3">@Localizer["PageTitle"]</h1>
 
-            @if (Model.DisplayConfirmAccountLink)
-            {
-                <p class="text-muted mb-3">
-                    @Localizer["DevModeDescription"]
-                </p>
+            <p class="text-muted mb-3">
+                @Localizer["CheckEmailDescription"]
+            </p>
 
-                <div class="doc-box mb-4">
-                    <div class="fw-bold text-dark mb-2">@Localizer["NormallyEmailedLabel"]</div>
-                    <a id="confirm-link" href="@Model.EmailConfirmationUrl" class="fw-bold text-decoration-none">
-                        @Localizer["ConfirmAccountLinkText"]
-                    </a>
+            @if (!string.IsNullOrWhiteSpace(Model.Email))
+            {
+                <div class="doc-box mb-3 text-center">
+                    <i class="fas fa-envelope me-1 text-primary"></i>
+                    <strong>@Model.Email</strong>
                 </div>
             }
-            else
+
+            @if (Model.EmailFailed)
             {
-                <p class="text-muted mb-4">
-                    @Localizer["CheckEmailDescription"]
-                </p>
+                <div class="alert alert-warning text-start small">
+                    @Localizer["EmailFailedNotice"]
+                </div>
             }
+
+            <p class="text-muted small mb-4">
+                @Localizer["NotReceivedHint"]
+                <a asp-page="./ResendEmailConfirmation" class="fw-bold text-decoration-none">
+                    @Localizer["ResendLink"]
+                </a>
+            </p>
 
             <div class="d-flex justify-content-center gap-2 flex-wrap">
                 <a asp-page="./Login" class="btn btn-primary">

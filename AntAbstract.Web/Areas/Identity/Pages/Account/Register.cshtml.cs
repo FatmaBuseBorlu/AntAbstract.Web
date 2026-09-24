@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Security;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Files;
 using Microsoft.AspNetCore.Authorization;
@@ -43,6 +44,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly IStringLocalizer<RegisterModel> _localizer;
         private readonly IWebHostEnvironment _environment;
         private readonly IUploadFileValidator _uploadFileValidator;
+        private readonly EmailConfirmationSender _confirmationSender;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
@@ -52,7 +54,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             AppDbContext context,
             IStringLocalizer<RegisterModel> localizer,
             IWebHostEnvironment environment,
-            IUploadFileValidator uploadFileValidator)
+            IUploadFileValidator uploadFileValidator,
+            EmailConfirmationSender confirmationSender)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -62,6 +65,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             _localizer = localizer;
             _environment = environment;
             _uploadFileValidator = uploadFileValidator;
+            _confirmationSender = confirmationSender;
         }
 
         [BindProperty]
@@ -263,7 +267,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 Department = selectedDepartment,
                 OrcidId = NormalizeOrcidId(externalLoginState?.OrcidId),
 
-                EmailConfirmed = true
+                // Doğrulama e-postasındaki bağlantıya tıklanınca true olur;
+                // o zamana kadar giriş yapılamaz (SignIn.RequireConfirmedEmail).
+                EmailConfirmed = false
             };
 
             if (Input.ProfileImage == null || Input.ProfileImage.Length == 0)
@@ -318,24 +324,18 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 var automaticRegistrationRedirectUrl =
                     await TryCreateConferencePreRegistrationFromReturnUrlAsync(user, returnUrl);
 
-                if (externalLoginState != null)
-                {
-                    await _signInManager.SignInAsync(
-                        user,
-                        isPersistent: false,
-                        authenticationMethod: externalLoginState.Provider);
-                }
-                else
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                }
+                // Oturum açılmaz: önce e-posta doğrulanmalı. Doğrulama bağlantısı
+                // kullanıcıyı kongre kaydına (varsa) ya da returnUrl'e götürür.
+                var afterConfirmUrl = !string.IsNullOrWhiteSpace(automaticRegistrationRedirectUrl)
+                    ? automaticRegistrationRedirectUrl
+                    : returnUrl;
 
-                if (!string.IsNullOrWhiteSpace(automaticRegistrationRedirectUrl))
-                {
-                    return LocalRedirect(automaticRegistrationRedirectUrl);
-                }
+                var sent = await _confirmationSender.SendAsync(user, Url, Request.Scheme, afterConfirmUrl);
 
-                return LocalRedirect(returnUrl);
+                TempData["RegisteredEmail"] = user.Email;
+                TempData["ConfirmationEmailFailed"] = !sent;
+
+                return RedirectToPage("./RegisterConfirmation");
             }
 
             foreach (var error in result.Errors)
