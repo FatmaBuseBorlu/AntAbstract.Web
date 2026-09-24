@@ -25,6 +25,17 @@ public sealed class SmokeTests(SmokeTestFactory factory) : IClassFixture<SmokeTe
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
+    // ── Sağlık kontrolü ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HealthEndpoint_IsAnonymousAndHealthy()
+    {
+        var response = await _client.GetAsync("/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+    }
+
     // ── Identity Razor Pages ─────────────────────────────────────────────────
 
     [Fact]

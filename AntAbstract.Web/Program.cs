@@ -279,6 +279,24 @@ builder.WebHost.ConfigureKestrel(kestrel =>
     kestrel.Limits.MaxRequestBodySize = 52 * 1024 * 1024; // 52 MB
 });
 
+// ── Hata izleme (Sentry) ─────────────────────────────────────────────────────
+// Sentry:Dsn girilmediyse hiç açılmaz; yerelde ve testte etkisizdir.
+var sentryDsn = builder.Configuration["Sentry:Dsn"];
+if (!string.IsNullOrWhiteSpace(sentryDsn) && !sentryDsn.Contains("#{"))
+{
+    builder.WebHost.UseSentry(o =>
+    {
+        o.Dsn = sentryDsn;
+        o.Environment = builder.Environment.EnvironmentName;
+        o.SendDefaultPii = false; // e-posta, IP, çerez gönderilmez
+        o.MinimumEventLevel = LogLevel.Error;
+        o.TracesSampleRate = 0;
+    });
+}
+
+builder.Services.AddHealthChecks()
+    .AddCheck<AntAbstract.Web.Security.DatabaseHealthCheck>("database");
+
 // ── Response Compression ─────────────────────────────────────────────────────
 builder.Services.AddResponseCompression(options =>
 {
@@ -645,6 +663,8 @@ else
 #region 7. Y�nlendirmeler
 
 app.MapRazorPages();
+// Uptime araçları için anahtarsız: sağlıklıysa 200 "Healthy", DB yoksa 503. Ayrıntı vermez.
+app.MapHealthChecks("/health").DisableRateLimiting();
 app.MapHub<AntAbstract.Web.Hubs.NotificationHub>("/hubs/notifications");
 
 app.MapControllerRoute(

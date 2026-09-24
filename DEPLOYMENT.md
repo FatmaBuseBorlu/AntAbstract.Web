@@ -43,7 +43,8 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com.tr) | ✅ |
 | `ORCID_CLIENT_ID` | ORCID OAuth client ID | ORCID kullanılıyorsa |
 | `ORCID_CLIENT_SECRET` | ORCID OAuth client secret | ORCID kullanılıyorsa |
-| `HEALTH_API_KEY` | Health endpoint API key | Opsiyonel |
+| `HEALTH_API_KEY` | Ayrıntılı durum adresi (`/Admin/Health/Status`) için API anahtarı. Anahtarsız `/health` bundan etkilenmez | Opsiyonel |
+| `SENTRY_DSN` | Sentry proje DSN'i. Boş bırakılırsa hata izleme kapalı kalır | Önerilir |
 | `JWT_SECRET_KEY` | JWT token imzalama anahtarı (min 32 karakter) | ✅ |
 | `BOOTSTRAP_ADMIN_EMAIL` | İlk kurulumda oluşturulacak SuperAdmin e-postası | SuperAdmin yoksa gerekli |
 | `BOOTSTRAP_ADMIN_PASSWORD` | İlk kurulum SuperAdmin şifresi (min 12 karakter) | SuperAdmin yoksa gerekli |
