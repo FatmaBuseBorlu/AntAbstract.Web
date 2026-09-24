@@ -39,32 +39,31 @@
             <h3 class="fw-bold mb-1 text-dark">
                 <i class="fas fa-satellite-dish me-2 text-primary"></i>Webhook & Callback Log
             </h3>
-            <p class="text-muted mb-0">Toplam <strong>@total</strong> @Localizer["Records"]</p>
+            <p class="text-muted mb-0">@Localizer["Toplam"]<strong>@total</strong> @Localizer["Records"]</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Ödemeler
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["Odemeler"]</a>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="modern-card h-100">
                 <div class="card-body text-center py-3">
                     <div class="fw-bold fs-4 text-success">@processed</div>
-                    <div class="text-muted small">Başarılı</div>
+                    <div class="text-muted small">@Localizer["Basarili"]</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="modern-card h-100">
                 <div class="card-body text-center py-3">
                     <div class="fw-bold fs-4 text-danger">@failed</div>
-                    <div class="text-muted small">Başarısız</div>
+                    <div class="text-muted small">@Localizer["Basarisiz"]</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="modern-card h-100">
                 <div class="card-body text-center py-3">
                     <div class="fw-bold fs-4 text-primary">@stripeCount</div>
                     <div class="text-muted small">Stripe</div>
@@ -72,7 +71,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="modern-card h-100">
                 <div class="card-body text-center py-3">
                     <div class="fw-bold fs-4 text-warning">@paytrCount</div>
                     <div class="text-muted small">PayTR</div>
@@ -82,7 +81,7 @@
     </div>
 
     @* Filtre *@
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="modern-card mb-4">
         <div class="card-body py-3">
             <form method="get" class="d-flex gap-2 align-items-end flex-wrap">
                 <div>
@@ -91,7 +90,7 @@
                            placeholder="checkout.session..." style="width:220px" />
                 </div>
                 <div>
-                    <label class="form-label small mb-1">Durum</label>
+                    <label class="form-label small mb-1">@Localizer["Durum"]</label>
                     <select name="status" class="form-select form-select-sm" style="width:140px">
                         <option value="">@Localizer["All"]</option>
                         @if (filterStatus == "processed") { <option value="processed" selected>processed</option> } else { <option value="processed">processed</option> }
@@ -109,7 +108,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="modern-card">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 small">
@@ -121,7 +120,7 @@
                             <th>Event ID</th>
                             <th>Object ID</th>
                             <th>Payment ID</th>
-                            <th>Durum</th>
+                            <th>@Localizer["Durum"]</th>
                             <th>Dup</th>
                             <th>Hata</th>
                         </tr>

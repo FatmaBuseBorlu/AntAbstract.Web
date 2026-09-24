@@ -3,6 +3,7 @@
 @using AntAbstract.Web.Models.ViewModels.Website
 @using Microsoft.AspNetCore.Http
 @inject AntAbstract.Infrastructure.Context.TenantContext Tc
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     HeroBlockContentDto content = new();
@@ -230,8 +231,8 @@
                 <div class="hero-info-card">
                     <div class="hero-info-card-header">
                         <div>
-                            <span>Kongre Bilgileri</span>
-                            <h3>Başvuru ve Katılım</h3>
+                            <span>@Localizer["KongreBilgileri"]</span>
+                            <h3>@Localizer["BasvuruVeKatilim"]</h3>
                         </div>
 
                         <div class="hero-info-icon">

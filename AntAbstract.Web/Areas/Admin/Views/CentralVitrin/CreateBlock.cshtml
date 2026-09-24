@@ -1,6 +1,7 @@
 ﻿@model AntAbstract.Domain.Entities.ConferencePageBlock
 
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -770,9 +771,7 @@
                         </div>
 
                         <div class="side-info-item">
-                            <div class="side-info-label">
-                                Durum
-                            </div>
+                            <div class="side-info-label">@Localizer["Durum"]</div>
 
                             <div class="side-info-value">
                                 @if (Model.IsActive)
@@ -793,9 +792,7 @@
                         </div>
 
                         <div class="side-info-item">
-                            <div class="side-info-label">
-                                Kongre
-                            </div>
+                            <div class="side-info-label">@Localizer["Kongre"]</div>
 
                             <div class="side-info-value">
                                 @conferenceName
@@ -805,8 +802,7 @@
                         <div class="info-note">
                             <i class="fas fa-circle-info me-2"></i>
                             
-                            <strong>@Localizer["Edit"]</strong> ekranından güncelleyebilirsiniz.
-                        </div>
+                            <strong>@Localizer["Edit"]</strong>@Localizer["EkranindanGuncelleyebilirsiniz"]</div>
 
                     </div>
                 </div>

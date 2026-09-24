@@ -20,7 +20,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb small">
-            <li class="breadcrumb-item"><a href="/@slug/Admin/Reports?conferenceId=@conferenceId">Raporlar</a></li>
+            <li class="breadcrumb-item"><a href="/@slug/Admin/Reports?conferenceId=@conferenceId">@Localizer["Raporlar"]</a></li>
             <li class="breadcrumb-item active">@Localizer["SurveyResults"]</li>
         </ol>
     </nav>
@@ -32,33 +32,32 @@
             <p class="text-muted mb-0 small">@title</p>
         </div>
         <a href="/@slug/Admin/Reports?conferenceId=@conferenceId" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Raporlara Dön
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["RaporlaraDon"]</a>
     </div>
 
 
     <!-- Stat Cards -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-primary">@total</div>
-                <div class="small text-muted mt-1">Toplam Yanıt</div>
+                <div class="small text-muted mt-1">@Localizer["ToplamYanit"]</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-success">%@recommendPct</div>
                 <div class="small text-muted mt-1">Tavsiye Eder</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-info">@networkYes</div>
-                <div class="small text-muted mt-1">Network Katkısı Var</div>
+                <div class="small text-muted mt-1">@Localizer["NetworkKatkisiVar"]</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:16px;">
+            <div class="modern-card text-center p-3 h-100" style="border-radius:16px;">
                 <div class="fs-2 fw-bold text-warning">@(total - recommendYes)</div>
                 <div class="small text-muted mt-1">Tavsiye Etmez</div>
             </div>
@@ -67,10 +66,10 @@
 
     @if (!Model.Any())
     {
-        <div class="card border-0 shadow-sm p-5 text-center" style="border-radius:16px;">
+        <div class="modern-card p-5 text-center" style="border-radius:16px;">
             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <h6 class="text-muted">Henüz anket yanıtı yok</h6>
-            <p class="small text-muted mb-0">Katılımcılar bildiri geri bildirimi gönderdikçe burada görünecek.</p>
+            <h6 class="text-muted">@Localizer["HenuzAnketYanitiYok"]</h6>
+            <p class="small text-muted mb-0">@Localizer["KatilimcilarBildiriGeriBildirimiGonderdikce"]</p>
         </div>
     }
     else
@@ -84,7 +83,7 @@
                 if (string.IsNullOrWhiteSpace(userName)) userName = a.User?.Email ?? "Bilinmeyen";
                 var collapseId = $"collapse{i}";
                 var headingId = $"heading{i}";
-            <div class="card border-0 shadow-sm mb-2" style="border-radius:12px;overflow:hidden;">
+            <div class="modern-card mb-2" style="border-radius:12px;overflow:hidden;">
                 <div class="card-header bg-white border-0 p-0" id="@headingId">
                     <button class="btn w-100 text-start d-flex align-items-center gap-3 p-3 collapsed"
                             type="button"
@@ -117,7 +116,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="p-3 rounded-3 bg-light h-100">
-                                    <div class="small fw-semibold text-muted mb-1">1. Beklentileri karşıladı mı?</div>
+                                    <div class="small fw-semibold text-muted mb-1">@Localizer["T1BeklentileriKarsiladiMi"]</div>
                                     <div class="fw-medium">@(a.Answer1 ?? "—")</div>
                                 </div>
                             </div>
@@ -129,19 +128,19 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="p-3 rounded-3 bg-light h-100">
-                                    <div class="small fw-semibold text-muted mb-1">3. Network katkısı oldu mu?</div>
+                                    <div class="small fw-semibold text-muted mb-1">@Localizer["T3NetworkKatkisiOlduMu"]</div>
                                     <div class="fw-medium">@(a.Answer3 ?? "—")</div>
                                 </div>
                             </div>
                             <div class="col-12">
                                 <div class="p-3 rounded-3 bg-light">
-                                    <div class="small fw-semibold text-muted mb-1">4. Ne öğrendiniz?</div>
+                                    <div class="small fw-semibold text-muted mb-1">@Localizer["T4NeOgrendiniz"]</div>
                                     <div class="text-dark" style="white-space:pre-wrap;">@(a.Answer4 ?? "—")</div>
                                 </div>
                             </div>
                             <div class="col-12">
                                 <div class="p-3 rounded-3 bg-light">
-                                    <div class="small fw-semibold text-muted mb-1">5. Uygulama planınız nedir?</div>
+                                    <div class="small fw-semibold text-muted mb-1">@Localizer["T5UygulamaPlaninizNedir"]</div>
                                     <div class="text-dark" style="white-space:pre-wrap;">@(a.Answer5 ?? "—")</div>
                                 </div>
                             </div>

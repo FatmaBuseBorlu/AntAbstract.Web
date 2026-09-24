@@ -1,6 +1,7 @@
 ﻿@using AntAbstract.Web.Models.ViewModels
 @using AntAbstract.Web.Models.ViewModels.Admin.Reports
 @model ReportsIndexViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -61,7 +62,7 @@
                 <i class="fas fa-chart-bar"></i>
             </div>
             <div>
-                <h1 class="reports-hero-title">Raporlar</h1>
+                <h1 class="reports-hero-title">@Localizer["Raporlar"]</h1>
                 <p class="reports-hero-sub">@Model.ConferenceTitle</p>
             </div>
         </div>
@@ -75,17 +76,11 @@
                 PDF
             </a>
             <a href="@refereeReportUrl" class="btn reports-btn-ref">
-                <i class="fas fa-user-graduate"></i>
-                Hakem Raporu
-            </a>
+                <i class="fas fa-user-graduate"></i>@Localizer["HakemRaporu"]</a>
             <a href="@unregisteredAuthorsUrl" class="btn btn-warning text-dark">
-                <i class="fas fa-user-times"></i>
-                Kayıtsız Yazarlar
-            </a>
+                <i class="fas fa-user-times"></i>@Localizer["KayitsizYazarlar"]</a>
             <a href="@surveyResultsUrl" class="btn btn-info text-white">
-                <i class="fas fa-poll-h"></i>
-                Anket Sonuçları
-            </a>
+                <i class="fas fa-poll-h"></i>@Localizer["AnketSonuclari"]</a>
         </div>
     </div>
 
@@ -97,7 +92,7 @@
             </div>
             <div class="reports-stat-body">
                 <div class="reports-stat-value">@Model.TotalSubmissions</div>
-                <div class="reports-stat-label">Toplam Bildiri</div>
+                <div class="reports-stat-label">@Localizer["ToplamBildiri"]</div>
             </div>
         </div>
         <div class="reports-stat-card">
@@ -124,7 +119,7 @@
             </div>
             <div class="reports-stat-body">
                 <div class="reports-stat-value">@Model.UnderReviewCount</div>
-                <div class="reports-stat-label">İncelemede</div>
+                <div class="reports-stat-label">@Localizer["Incelemede"]</div>
             </div>
         </div>
         <div class="reports-stat-card">
@@ -133,7 +128,7 @@
             </div>
             <div class="reports-stat-body">
                 <div class="reports-stat-value">@Model.AssignedSubmissions</div>
-                <div class="reports-stat-label">Hakem Atanmış</div>
+                <div class="reports-stat-label">@Localizer["HakemAtanmis"]</div>
             </div>
         </div>
         <div class="reports-stat-card">
@@ -142,7 +137,7 @@
             </div>
             <div class="reports-stat-body">
                 <div class="reports-stat-value">@Model.TotalRegistrations</div>
-                <div class="reports-stat-label">Kayıt</div>
+                <div class="reports-stat-label">@Localizer["Kayit"]</div>
             </div>
         </div>
         <div class="reports-stat-card">
@@ -151,7 +146,7 @@
             </div>
             <div class="reports-stat-body">
                 <div class="reports-stat-value">@Model.TotalRevenue.ToString("N0") ₺</div>
-                <div class="reports-stat-label">Toplam Gelir</div>
+                <div class="reports-stat-label">@Localizer["ToplamGelir"]</div>
             </div>
         </div>
     </div>
@@ -180,7 +175,7 @@
                 <div class="status-row">
                     <div class="status-row-left">
                         <span class="status-dot sd-gray"></span>
-                        <span class="status-name">Yeni</span>
+                        <span class="status-name">@Localizer["Yeni"]</span>
                     </div>
                     <div class="status-row-right">
                         <div class="status-bar-track">
@@ -192,7 +187,7 @@
                 <div class="status-row">
                     <div class="status-row-left">
                         <span class="status-dot sd-yellow"></span>
-                        <span class="status-name">İncelemede</span>
+                        <span class="status-name">@Localizer["Incelemede"]</span>
                     </div>
                     <div class="status-row-right">
                         <div class="status-bar-track">
@@ -249,7 +244,7 @@
             <div class="p-3">
                 <div class="d-flex gap-4 mb-3 flex-wrap">
                     <div>
-                        <div class="text-muted small">Toplam Gelir (Ödenen)</div>
+                        <div class="text-muted small">@Localizer["ToplamGelirOdenen"]</div>
                         <div class="fw-bold fs-5 text-success">@Model.TotalRevenue.ToString("N0") @Model.RevenueCurrency</div>
                     </div>
                     <div>
@@ -257,7 +252,7 @@
                         <div class="fw-bold fs-5 text-warning">@Model.UnpaidRevenue.ToString("N0") @Model.RevenueCurrency</div>
                     </div>
                     <div>
-                        <div class="text-muted small">Ödemiş / Bekleyen Kayıt</div>
+                        <div class="text-muted small">@Localizer["OdemisBekleyenKayit"]</div>
                         <div class="fw-bold fs-5">@Model.PaidRegistrations / @Model.UnpaidRegistrations</div>
                     </div>
                 </div>
@@ -269,7 +264,7 @@
                 }
                 else
                 {
-                    <p class="text-muted">Henüz kayıt verisi bulunmuyor.</p>
+                    <p class="text-muted">@Localizer["HenuzKayitVerisiBulunmuyor"]</p>
                 }
             </div>
         </div>
@@ -304,8 +299,7 @@
                         <form method="get" action="@participantsExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                             <button type="submit" class="export-action-btn">
-                                <i class="fas fa-users"></i> Katılımcılar
-                            </button>
+                                <i class="fas fa-users"></i>@Localizer["Katilimcilar"]</button>
                         </form>
                         <form method="get" action="@revenueExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
@@ -316,25 +310,20 @@
                         <form method="get" action="@submissionsExportUrl" class="d-inline">
                             <input type="hidden" name="conferenceId" value="@Model.ConferenceId" />
                             <button type="submit" class="export-action-btn">
-                                <i class="fas fa-file-alt"></i> Bildiriler
-                            </button>
+                                <i class="fas fa-file-alt"></i>@Localizer["Bildiriler"]</button>
                         </form>
                     </div>
                 </noscript>
 
                 <div class="export-btn-row js-export-buttons">
                     <button type="button" class="export-action-btn" onclick="triggerExport('@participantsExportUrl')">
-                        <i class="fas fa-users"></i>
-                        Katılımcılar
-                    </button>
+                        <i class="fas fa-users"></i>@Localizer["Katilimcilar"]</button>
                     <button type="button" class="export-action-btn" onclick="triggerExport('@revenueExportUrl')">
                         <i class="fas fa-coins"></i>
                         Gelir
                     </button>
                     <button type="button" class="export-action-btn" onclick="triggerExport('@submissionsExportUrl')">
-                        <i class="fas fa-file-alt"></i>
-                        Bildiriler
-                    </button>
+                        <i class="fas fa-file-alt"></i>@Localizer["Bildiriler"]</button>
                 </div>
             </div>
         </div>

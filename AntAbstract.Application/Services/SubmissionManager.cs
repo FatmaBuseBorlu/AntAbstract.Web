@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Application.Services
 {
+    // Yazar ekranlari slug tasimayan adreslerden de aciliyor. Orada kiraci
+    // baglami bos kaliyor ve sorgu filtresi bildiriyi eliyor; yazar kendi
+    // bildirisini goremez veya duzenleyemez hale geliyordu. Muafiyet yalnizca
+    // kimlikle kapsanan sorgularda: GetAllSubmissionsAsync'in kapsam
+    // parametresi yok, orada muafiyet kurumlar arasi sizinti olurdu.
     public class SubmissionManager : ISubmissionService
     {
         private readonly IApplicationDbContext _context;
@@ -92,6 +97,7 @@ namespace AntAbstract.Application.Services
         public async Task<SubmissionDto?> GetSubmissionByIdAsync(Guid id)
         {
             var submission = await _context.Submissions
+                .IgnoreQueryFilters()
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Author)
                 .Include(s => s.Files)
@@ -111,6 +117,7 @@ namespace AntAbstract.Application.Services
         {
             // Hem baş yazar (AuthorId) hem de ortak yazar (SubmissionAuthor.AppUserId) olduğu bildiriler
             var list = await _context.Submissions
+                .IgnoreQueryFilters()
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .Include(s => s.Conference)
@@ -179,6 +186,7 @@ namespace AntAbstract.Application.Services
         public async Task UpdateSubmissionAsync(Guid id, CreateSubmissionDto input)
         {
             var submission = await _context.Submissions
+                .IgnoreQueryFilters()
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .FirstOrDefaultAsync(s => s.Id == id);
@@ -251,6 +259,7 @@ namespace AntAbstract.Application.Services
         public async Task DeleteSubmissionAsync(Guid id)
         {
             var submission = await _context.Submissions
+                .IgnoreQueryFilters()
                 .Include(s => s.SubmissionAuthors)
                 .Include(s => s.Files)
                 .FirstOrDefaultAsync(s => s.Id == id);
@@ -265,6 +274,7 @@ namespace AntAbstract.Application.Services
         public async Task UpdateStatusAsync(Guid id, SubmissionStatus newStatus)
         {
             var submission = await _context.Submissions
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (submission != null)

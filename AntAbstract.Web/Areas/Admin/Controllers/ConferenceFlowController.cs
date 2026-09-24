@@ -14,6 +14,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -181,7 +182,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_SelectedConferenceNotFound",
-                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                    T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -222,7 +223,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_SelectedConferenceNotFound",
-                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                    T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -280,8 +281,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             if (!conferences.Any())
             {
                 TempData["ErrorMessage"] = IsSuperAdminUser()
-                    ? "Sistemde görüntülenebilecek kongre bulunamadı."
-                    : "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.";
+                    ? T("Msg_SistemdeGoruntulenebilecekKongreBulunamadi", "Sistemde görüntülenebilecek kongre bulunamadı.")
+                    : T("Msg_KurumunuzaBagliGoruntulenebilecekKongreBulunamadi", "Kurumunuza bağlı görüntülenebilecek kongre bulunamadı.");
             }
 
             var vm = new SelectConferenceViewModel
@@ -307,7 +308,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_SelectedConferenceNotFound",
-                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                    T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -321,7 +322,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             {
                 TempData["ErrorMessage"] = T(
                     "Error_SelectedConferenceNotFound",
-                    "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
+                    T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok."));
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -620,7 +621,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (registrationId == Guid.Empty || conferenceId == Guid.Empty)
             {
-                TempData["ErrorMessage"] = "Geçersiz kayıt veya kongre bilgisi.";
+                TempData["ErrorMessage"] = T("Msg_GecersizKayitVeyaKongreBilgisi", "Geçersiz kayıt veya kongre bilgisi.");
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -632,7 +633,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -647,14 +648,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Onaylanacak kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_OnaylanacakKayitBulunamadi", "Onaylanacak kayıt bulunamadı.");
 
                 return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
             }
 
             if (registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş olarak görünüyor.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmisOlarakGorunuyor", "Bu kayıt zaten ödenmiş olarak görünüyor.");
 
                 return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
             }
@@ -704,7 +705,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödeme başarıyla onaylandı.";
+            TempData["SuccessMessage"] = T("Msg_OdemeBasariylaOnaylandi", "Ödeme başarıyla onaylandı.");
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -725,7 +726,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (registrationId == Guid.Empty || conferenceId == Guid.Empty)
             {
-                TempData["ErrorMessage"] = "Geçersiz kayıt veya kongre bilgisi.";
+                TempData["ErrorMessage"] = T("Msg_GecersizKayitVeyaKongreBilgisi", "Geçersiz kayıt veya kongre bilgisi.");
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -734,7 +735,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null || conference.Tenant == null || string.IsNullOrWhiteSpace(conference.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
                 return RedirectToAction(nameof(SelectConference));
             }
 
@@ -745,13 +746,13 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
                 return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
             }
 
             if (!registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmemiş durumda.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmemisDurumda", "Bu kayıt zaten ödenmemiş durumda.");
                 return Redirect($"/{conference.Tenant.Slug}/Admin/ConferenceFlow/RegistrationsAndPayments?conferenceId={conference.Id}");
             }
 
@@ -760,7 +761,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödeme onayı başarıyla geri alındı.";
+            TempData["SuccessMessage"] = T("Msg_OdemeOnayiBasariylaGeriAlindi", "Ödeme onayı başarıyla geri alındı.");
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -975,7 +976,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadi", "Kongre bulunamadı.");
                 return Redirect($"/{slug}/Admin/ConferenceFlow");
             }
 
@@ -983,8 +984,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = conference.IsBiddingOpen
-                ? "Teklif fazı açıldı. Hakemler bildiri tercihlerini belirtebilir."
-                : "Teklif fazı kapatıldı.";
+                ? T("Msg_TeklifFaziAcildiHakemlerBildiriTercihlerini", "Teklif fazı açıldı. Hakemler bildiri tercihlerini belirtebilir.")
+                : T("Msg_TeklifFaziKapatildi", "Teklif fazı kapatıldı.");
 
             return Redirect($"/{slug}/Admin/ConferenceFlow");
         }
@@ -998,7 +999,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadi", "Kongre bulunamadı.");
                 return Redirect($"/{slug}/Admin/ConferenceFlow");
             }
 
@@ -1006,8 +1007,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = conference.IsFullTextOpen
-                ? "Tam metin yükleme açıldı. Yazarlar tam metin yükleyebilir."
-                : "Tam metin yükleme kapatıldı.";
+                ? T("Msg_TamMetinYuklemeAcildiYazarlarTam", "Tam metin yükleme açıldı. Yazarlar tam metin yükleyebilir.")
+                : T("Msg_TamMetinYuklemeKapatildi", "Tam metin yükleme kapatıldı.");
 
             return Redirect($"/{slug}/Admin/ConferenceFlow");
         }

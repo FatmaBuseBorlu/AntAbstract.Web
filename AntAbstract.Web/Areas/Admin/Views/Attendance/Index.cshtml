@@ -27,42 +27,40 @@
         <div class="d-flex gap-2">
             <a href="@(string.IsNullOrEmpty(slug) ? $"/Admin/Attendance/Badges?conferenceId={conference?.Id}" : $"/{slug}/Admin/Attendance/Badges?conferenceId={conference?.Id}")"
                class="btn btn-outline-primary">
-                <i class="fas fa-id-badge me-2"></i> Yaka Kartı Baskı
-            </a>
+                <i class="fas fa-id-badge me-2"></i>@Localizer["YakaKartiBaski"]</a>
             <a href="@scanUrl" class="btn btn-primary">
-                <i class="fas fa-qrcode me-2"></i> QR Tarayıcı Aç
-            </a>
+                <i class="fas fa-qrcode me-2"></i>@Localizer["QRTarayiciAc"]</a>
         </div>
     </div>
 
     @if (ViewBag.NoConference == true)
     {
-        <div class="alert alert-warning">Erişilebilir kongre bulunamadı.</div>
+        <div class="alert alert-warning">@Localizer["ErisilebilirKongreBulunamadi"]</div>
     }
     else
     {
         <div class="row g-3 mb-4">
             <div class="col-sm-4">
-                <div class="card border-0 shadow-sm text-center p-3">
+                <div class="modern-card text-center p-3">
                     <div class="fs-1 fw-bold text-primary">@total</div>
-                    <div class="text-muted small">Toplam Kayıtlı (Ödenen)</div>
+                    <div class="text-muted small">@Localizer["ToplamKayitliOdenen"]</div>
                 </div>
             </div>
             <div class="col-sm-4">
-                <div class="card border-0 shadow-sm text-center p-3">
+                <div class="modern-card text-center p-3">
                     <div class="fs-1 fw-bold text-success">@totalIn</div>
-                    <div class="text-muted small">Check-In Yapıldı</div>
+                    <div class="text-muted small">@Localizer["CheckInYapildi"]</div>
                 </div>
             </div>
             <div class="col-sm-4">
-                <div class="card border-0 shadow-sm text-center p-3">
+                <div class="modern-card text-center p-3">
                     <div class="fs-1 fw-bold text-warning">@(total - totalIn)</div>
-                    <div class="text-muted small">Henüz Gelmedi</div>
+                    <div class="text-muted small">@Localizer["HenuzGelmedi"]</div>
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm">
+        <div class="modern-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -71,7 +69,7 @@
                                 <th>@Localizer["FullName"]</th>
                                 <th>@Localizer["Email"]</th>
                                 <th>@Localizer["RegistrationType"]</th>
-                                <th class="text-center">Durum</th>
+                                <th class="text-center">@Localizer["Durum"]</th>
                                 <th>@Localizer["CheckInTime"]</th>
                             </tr>
                         </thead>
@@ -87,7 +85,7 @@
                                     <td class="text-center">
                                         @if (reg.CheckedInAt.HasValue)
                                         {
-                                            <span class="badge bg-success">✓ Giriş Yapıldı</span>
+                                            <span class="badge bg-success">@Localizer["GirisYapildi"]</span>
                                         }
                                         else
                                         {

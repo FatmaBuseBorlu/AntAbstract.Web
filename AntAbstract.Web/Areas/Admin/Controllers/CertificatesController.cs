@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -262,12 +263,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadi", "Kongre bulunamadı.");
                 return RedirectToAction("Index");
             }
 
-            int generated = 0;
+            int attempted = 0;
             int errors = 0;
+
+            // Sayac eskiden denemeleri sayiyordu; uygunluk kosulu saglanmadiginda
+            // servis sessizce donduğu icin ekran "7 sertifika islendi" diyor,
+            // veritabaninda hic kayit olmuyordu. Artik oncesi/sonrasi
+            // karsilastirilarak gercekten olusanlar sayiliyor.
+            var oncekiSertifikalar = await _context.Certificates
+                .AsNoTracking()
+                .Where(c => c.ConferenceId == conferenceId)
+                .Select(c => c.UserId + "|" + (int)c.Type)
+                .ToListAsync();
+
+            var oncekiKume = oncekiSertifikalar.ToHashSet();
 
             // 1. Author certificates — all accepted/presented submissions
             // User/UserId, Author/AuthorId'nin [NotMapped] kısayolları; sorguda
@@ -286,7 +299,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 try
                 {
                     await _certificateService.EnsureAuthorCertificateAsync(conferenceId, sub.UserId!);
-                    generated++;
+                    attempted++;
                 }
                 catch (Exception ex)
                 {
@@ -312,7 +325,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 try
                 {
                     await _certificateService.EnsureReviewerCertificateAsync(conferenceId, reviewerId);
-                    generated++;
+                    attempted++;
                 }
                 catch (Exception ex)
                 {
@@ -336,7 +349,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 try
                 {
                     await _certificateService.EnsureAttendeeCertificateAsync(conferenceId, attendeeId!);
-                    generated++;
+                    attempted++;
                 }
                 catch (Exception ex)
                 {
@@ -345,13 +358,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 }
             }
 
-            var allUserIds = authorSubmissions.Select(s => s.UserId!)
-                .Union(reviewerIds)
-                .Union(attendeeIds.Where(id => id != null).Select(id => id!))
+            // Gercekten olusan sertifikalar
+            var sonrakiSertifikalar = await _context.Certificates
+                .AsNoTracking()
+                .Where(c => c.ConferenceId == conferenceId)
+                .Select(c => new { c.UserId, c.Type })
+                .ToListAsync();
+
+            var yeniSertifikaSahipleri = sonrakiSertifikalar
+                .Where(c => !oncekiKume.Contains(c.UserId + "|" + (int)c.Type))
+                .Select(c => c.UserId)
                 .Distinct()
                 .ToList();
 
-            foreach (var uid in allUserIds)
+            var olusan = yeniSertifikaSahipleri.Count;
+
+            // Bildirim yalnizca sertifikasi gercekten olusana gitmeli. Eskiden
+            // aday olan herkese "Sertifikaniz Hazir" yaziliyordu; uygun olmayan
+            // kullanicilar var olmayan bir belge icin bildirim aliyor, baglantiya
+            // basinca bos ekran goruyordu.
+            foreach (var uid in yeniSertifikaSahipleri)
             {
                 try
                 {
@@ -366,10 +392,34 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 catch { }
             }
 
-            if (errors == 0)
-                TempData["SuccessMessage"] = $"Toplu sertifika oluşturma tamamlandı. {generated} sertifika işlendi, {allUserIds.Count} kullanıcıya bildirim gönderildi.";
+            if (errors > 0)
+            {
+                TempData["ErrorMessage"] = T(
+                    "BulkPartialError",
+                    $"{olusan} sertifika oluşturuldu, {errors} işlem hata verdi. Ayrıntılar kayıtlarda.");
+            }
+            else if (olusan > 0)
+            {
+                TempData["SuccessMessage"] = T(
+                    "BulkSuccess",
+                    $"{olusan} sertifika oluşturuldu ve sahiplerine bildirim gönderildi.");
+            }
             else
-                TempData["SuccessMessage"] = $"{generated} sertifika işlendi, {errors} hata oluştu.";
+            {
+                // En sik rastlanan durum: aday var ama katilim kaydi yok.
+                // Sessiz "basarili" mesaji yerine sebebini soyluyoruz.
+                var adaySayisi = authorSubmissions.Count + reviewerIds.Count + attendeeIds.Count;
+
+                TempData["ErrorMessage"] = adaySayisi == 0
+                    ? T("BulkNoCandidate",
+                        "Sertifika verilebilecek kimse bulunamadı. Kabul edilmiş bildiri, " +
+                        "tamamlanmış değerlendirme veya katılım kaydı gerekiyor.")
+                    : T("BulkNotEligible",
+                        $"{adaySayisi} aday incelendi ama hiçbiri sertifika koşullarını " +
+                        "karşılamıyor. Yazar ve katılımcı sertifikaları için kongre " +
+                        "katılımının tamamlanmış olması gerekiyor; bu kongrede henüz " +
+                        "katılım kaydı yok.");
+            }
 
             return RedirectToAction("Index", new { conferenceId });
         }

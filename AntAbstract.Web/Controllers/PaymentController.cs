@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
@@ -1196,7 +1197,7 @@ namespace AntAbstract.Web.Controllers
             if (registration == null) return NotFound();
             if (registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş olarak işaretlenmiş.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmisOlarakIsaretlenmis", "Bu kayıt zaten ödenmiş olarak işaretlenmiş.");
                 return RedirectToAction(nameof(My));
             }
 
@@ -1274,7 +1275,7 @@ namespace AntAbstract.Web.Controllers
             registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.";
+            TempData["SuccessMessage"] = T("Msg_MakbuzunuzBasariylaYuklendiYoneticiOnayindanSonra", "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.");
             return RedirectToAction(nameof(My));
         }
 
@@ -1317,7 +1318,7 @@ namespace AntAbstract.Web.Controllers
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                TempData["ErrorMessage"] = "PayTR oturumu geçersiz. Lütfen tekrar deneyin.";
+                TempData["ErrorMessage"] = T("Msg_PayTROturumuGecersizLutfenTekrarDeneyin", "PayTR oturumu geçersiz. Lütfen tekrar deneyin.");
                 return Redirect(BuildUrl(slug ?? GetSlug(), "/my-submissions"));
             }
 
@@ -1333,7 +1334,7 @@ namespace AntAbstract.Web.Controllers
         public IActionResult PayTRSuccess(Guid paymentId, string? slug = null)
         {
             var canonicalSlug = slug ?? GetSlug();
-            TempData["InfoMessage"] = "Ödemeniz işleniyor. Onay geldiğinde bildirim alacaksınız.";
+            TempData["InfoMessage"] = T("Msg_OdemenizIsleniyorOnayGeldigindeBildirimAlacaksiniz", "Ödemeniz işleniyor. Onay geldiğinde bildirim alacaksınız.");
             return Redirect(BuildUrl(canonicalSlug, $"/payment/success?id={paymentId}"));
         }
 
@@ -1342,7 +1343,7 @@ namespace AntAbstract.Web.Controllers
         [Authorize]
         public IActionResult PayTRFail(Guid paymentId, string? slug = null)
         {
-            TempData["ErrorMessage"] = "PayTR ödeme işlemi başarısız oldu veya iptal edildi.";
+            TempData["ErrorMessage"] = T("Msg_PayTROdemeIslemiBasarisizOlduVeya", "PayTR ödeme işlemi başarısız oldu veya iptal edildi.");
             return Redirect(BuildUrl(slug ?? GetSlug(), "/my-submissions"));
         }
 
