@@ -355,10 +355,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return $"/Admin/Submissions/Details/{submissionId}";
         }
 
-            // Bu ekranın görünümü hiç yazılmamış: Create.cshtml depoda yok ve
-            // panelde buraya giden bağlantı da bulunmuyor. Adres elle girilince
-            // "view not found" ile 500 dönüyordu. Görünüm eklenene kadar çökmek
-            // yerine bulunamadı demek doğrusu; eylem ve modeli olduğu gibi duruyor.
+        // Bu ekranın görünümü hiç yazılmamış: Create.cshtml depoda yok ve
+        // panelde buraya giden bağlantı da bulunmuyor. Adres elle girilince
+        // "view not found" ile 500 dönüyordu. Görünüm eklenene kadar çökmek
+        // yerine bulunamadı demek doğrusu; eylem ve modeli olduğu gibi duruyor.
         private IActionResult SubmissionCreateUnavailable() => NotFound(T(
             "Error_SubmissionCreateUnavailable",
             "Yönetici tarafından bildiri oluşturma ekranı henüz hazır değil."));
