@@ -246,6 +246,7 @@ builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>();
 builder.Services.AddScoped<AccountAnonymizer>();
 builder.Services.AddScoped<EmailConfirmationSender>();
+builder.Services.AddScoped<AntAbstract.Web.Infrastructure.ParticipantNotifier>();
 builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
 builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 
@@ -510,6 +511,11 @@ if (!app.Environment.IsEnvironment("Testing"))
             );
 
             await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
+
+            // Eksik e-posta şablonları (hatırlatmalar, kayıt/özet onayı vb.).
+            var addedTemplates = await AntAbstract.Infrastructure.Services.Email.EmailTemplateDefaults.EnsureAsync(context);
+            if (addedTemplates > 0)
+                startupLogger.LogInformation("{Count} eksik e-posta şablonu eklendi.", addedTemplates);
 
             if (app.Environment.IsDevelopment())
             {

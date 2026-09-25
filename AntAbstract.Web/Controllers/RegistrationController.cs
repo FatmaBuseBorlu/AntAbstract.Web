@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Infrastructure;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -26,6 +27,7 @@ namespace AntAbstract.Web.Controllers
         private readonly SignInManager<AppUser> _signInManager;
         private readonly TenantContext _tenantContext;
         private readonly IStringLocalizer<RegistrationController> _localizer;
+        private readonly ParticipantNotifier _participantNotifier;
 
         public RegistrationController(
             AppDbContext context,
@@ -33,8 +35,10 @@ namespace AntAbstract.Web.Controllers
             RoleManager<IdentityRole> roleManager,
             SignInManager<AppUser> signInManager,
             TenantContext tenantContext,
-            IStringLocalizer<RegistrationController> localizer)
+            IStringLocalizer<RegistrationController> localizer,
+            ParticipantNotifier participantNotifier)
         {
+            _participantNotifier = participantNotifier;
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
@@ -684,6 +688,9 @@ namespace AntAbstract.Web.Controllers
 
             // Kayıt türüne göre doğru rolü ata (Yazar veya Dinleyici)
             await EnsureRoleFromRegistrationTypeAsync(user, ticketType.Id);
+
+            // Ön kayıt onayı: e-posta + sistem içi bildirim (hata fırlatmaz).
+            await _participantNotifier.RegistrationReceivedAsync(newRegistration.Id, sendEmail: user.EmailConfirmed);
 
             TempData["SuccessMessage"] = T(
                 "RegistrationSuccessSubmitAbstract",

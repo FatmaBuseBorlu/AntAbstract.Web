@@ -1,4 +1,5 @@
 ﻿using AntAbstract.Application.DTOs.Submission;
+using AntAbstract.Web.Infrastructure;
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
@@ -41,6 +42,7 @@ namespace AntAbstract.Web.Areas.Author.Controllers
         private readonly INotificationService _notificationService;
         private readonly IUploadFileValidator _uploadFileValidator;
         private readonly ILogger<SubmissionController> _logger;
+        private readonly ParticipantNotifier _participantNotifier;
 
         public SubmissionController(
             ISubmissionService submissionService,
@@ -52,8 +54,10 @@ namespace AntAbstract.Web.Areas.Author.Controllers
             IStringLocalizer<SubmissionController> localizer,
             INotificationService notificationService,
             IUploadFileValidator uploadFileValidator,
-            ILogger<SubmissionController> logger)
+            ILogger<SubmissionController> logger,
+            ParticipantNotifier participantNotifier)
         {
+            _participantNotifier = participantNotifier;
             _submissionService = submissionService;
             _userManager = userManager;
             _env = env;
@@ -867,7 +871,11 @@ namespace AntAbstract.Web.Areas.Author.Controllers
                     SubmissionAuthors = allAuthors
                 };
 
-                await _submissionService.CreateSubmissionAsync(createDto, user.Id);
+                var created = await _submissionService.CreateSubmissionAsync(createDto, user.Id);
+
+                // Yazara "özetiniz alındı", kongre yöneticilerine "yeni bildiri"
+                // (e-posta + sistem içi; hata fırlatmaz).
+                await _participantNotifier.SubmissionReceivedAsync(created.Id);
 
                 TempData["SuccessMessage"] = T(
                     "SubmissionCreateSuccess",

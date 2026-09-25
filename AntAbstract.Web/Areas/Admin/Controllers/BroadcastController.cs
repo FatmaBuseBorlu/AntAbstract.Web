@@ -35,13 +35,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IEmailQueue _emailQueue;
         private readonly UserManager<AppUser> _userManager;
+        private readonly INotificationService _notificationService;
 
         public BroadcastController(
             AppDbContext context,
             IAdminTenantAccessService tenantAccess,
             IEmailQueue emailQueue,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            INotificationService notificationService)
         {
+            _notificationService = notificationService;
             _context = context;
             _tenantAccess = tenantAccess;
             _emailQueue = emailQueue;
@@ -171,6 +174,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     TenantId = tenantId.Value,
                 });
                 await _context.SaveChangesAsync();
+
+                try
+                {
+                    await AntAbstract.Infrastructure.Services.BroadcastInAppNotifier.NotifyAsync(
+                        _context, _notificationService, conferenceId, emails, subject, body);
+                }
+                catch (Exception)
+                {
+                    // E-postalar kuyruğa girdi; bildirim hatası duyuruyu geri almaz.
+                }
 
                 TempData["SuccessMessage"] = $"{emails.Count} kişi için e-posta kuyruğa alındı. Arka planda gönderilecek.";
             }

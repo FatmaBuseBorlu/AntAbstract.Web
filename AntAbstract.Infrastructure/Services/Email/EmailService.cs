@@ -13,11 +13,39 @@ namespace AntAbstract.Infrastructure.Services.Email
     {
         private readonly EmailOptions _emailSettings;
         private readonly AppDbContext _context;
+        private readonly AntAbstract.Application.Interfaces.IEmailQueue _queue;
 
-        public EmailService(IOptions<EmailOptions> emailSettings, AppDbContext context)
+        public EmailService(
+            IOptions<EmailOptions> emailSettings,
+            AppDbContext context,
+            AntAbstract.Application.Interfaces.IEmailQueue queue)
         {
             _emailSettings = emailSettings.Value;
             _context = context;
+            _queue = queue;
+        }
+
+        public async Task<bool> EnqueueTemplatedAsync(
+            string toEmail,
+            string templateKey,
+            Dictionary<string, string> placeholders)
+        {
+            if (string.IsNullOrWhiteSpace(toEmail))
+                return false;
+
+            var template = await _context.EmailTemplates
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Key == templateKey && t.IsActive);
+
+            if (template == null)
+                return false;
+
+            _queue.Enqueue(new AntAbstract.Application.Interfaces.EmailQueueItem(
+                toEmail,
+                ApplyPlaceholders(template.Subject, placeholders),
+                ApplyPlaceholders(template.HtmlBody, placeholders)));
+
+            return true;
         }
 
         public Task SendAsync(string toEmail, string subject, string htmlMessage)

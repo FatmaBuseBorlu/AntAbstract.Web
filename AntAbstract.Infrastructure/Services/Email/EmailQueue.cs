@@ -15,9 +15,12 @@ namespace AntAbstract.Infrastructure.Services.Email
 
         public EmailQueue()
         {
-            _channel = Channel.CreateBounded<EmailQueueItem>(new BoundedChannelOptions(500)
+            // Sınırsız: 500'lük sınırda TryWrite fazlasını sessizce düşürüyordu —
+            // 500'den çok alıcılı duyuruda/kongre güncellemesinde e-postaların bir
+            // kısmı hiç gitmiyordu. Kuyruk öğesi birkaç KB; binlercesi sorun değil.
+            // Uygulama yeniden başlarsa bekleyenler yine kaybolur (kalıcı kuyruk ayrı iş).
+            _channel = Channel.CreateUnbounded<EmailQueueItem>(new UnboundedChannelOptions
             {
-                FullMode = BoundedChannelFullMode.Wait,
                 SingleReader = true,
                 SingleWriter = false
             });
@@ -25,8 +28,7 @@ namespace AntAbstract.Infrastructure.Services.Email
 
         public void Enqueue(EmailQueueItem item)
         {
-            // TryWrite başarısız olursa (kanal dolu) kaydı sessizce düşürürüz.
-            // Üretim ortamında bu yerine kalıcı kuyruk (DB/Redis) tercih edilmeli.
+            // Sınırsız kanalda TryWrite yalnızca kanal kapatıldıysa false döner.
             _channel.Writer.TryWrite(item);
         }
 

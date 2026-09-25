@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Infrastructure;
 using AntAbstract.Web.Security;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Web.Files;
@@ -45,6 +46,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly IWebHostEnvironment _environment;
         private readonly IUploadFileValidator _uploadFileValidator;
         private readonly EmailConfirmationSender _confirmationSender;
+        private readonly ParticipantNotifier _participantNotifier;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
@@ -55,8 +57,10 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             IStringLocalizer<RegisterModel> localizer,
             IWebHostEnvironment environment,
             IUploadFileValidator uploadFileValidator,
-            EmailConfirmationSender confirmationSender)
+            EmailConfirmationSender confirmationSender,
+            ParticipantNotifier participantNotifier)
         {
+            _participantNotifier = participantNotifier;
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
@@ -696,6 +700,10 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
                 _context.Registrations.Add(newRegistration);
                 await _context.SaveChangesAsync();
+
+                // Doğrulanmamış adrese e-posta atılmaz (o anda doğrulama
+                // e-postası gidiyor); sistem içi bildirim her durumda düşer.
+                await _participantNotifier.RegistrationReceivedAsync(newRegistration.Id, sendEmail: user.EmailConfirmed);
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;

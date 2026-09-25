@@ -45,6 +45,8 @@ namespace AntAbstract.Infrastructure.Services
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var emailQueue = scope.ServiceProvider.GetRequiredService<IEmailQueue>();
+            // Bildirim servisi yoksa (ör. yalın test kurulumu) yalnızca e-posta gider.
+            var notifications = scope.ServiceProvider.GetService<INotificationService>();
 
             var due = await context.ScheduledBroadcasts
                 .Where(b => b.Status == BroadcastStatus.Pending && b.ScheduledAt <= DateTime.UtcNow)
@@ -65,6 +67,19 @@ namespace AntAbstract.Infrastructure.Services
                     broadcast.Status = BroadcastStatus.Sent;
                     broadcast.SentAt = DateTime.UtcNow;
                     broadcast.RecipientCount = emails.Count;
+
+                    if (notifications != null)
+                        try
+                        {
+                            await BroadcastInAppNotifier.NotifyAsync(
+                                context, notifications, broadcast.ConferenceId, emails,
+                                broadcast.Subject, broadcast.HtmlBody, ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            // E-postalar kuyruğa girdi; bildirim hatası duyuruyu başarısız saymaz.
+                            _logger.LogWarning(ex, "Broadcast Id={Id} sistem içi bildirimleri oluşturulamadı.", broadcast.Id);
+                        }
 
                     _logger.LogInformation(
                         "Zamanlanmış broadcast gönderildi: Id={Id}, Alıcı={Count}",

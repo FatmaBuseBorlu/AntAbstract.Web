@@ -1,6 +1,7 @@
 ﻿#nullable disable
 
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Infrastructure;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         private readonly AppDbContext _context;
 
         private readonly EmailConfirmationSender _confirmationSender;
+        private readonly ParticipantNotifier _participantNotifier;
 
         public ExternalLoginModel(
             SignInManager<AppUser> signInManager,
@@ -45,8 +47,10 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             ILogger<ExternalLoginModel> logger,
             IEmailSender emailSender,
             AppDbContext context,
-            EmailConfirmationSender confirmationSender)
+            EmailConfirmationSender confirmationSender,
+            ParticipantNotifier participantNotifier)
         {
+            _participantNotifier = participantNotifier;
             _signInManager = signInManager;
             _userManager = userManager;
             _roleManager = roleManager;
@@ -458,6 +462,10 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
                 _context.Registrations.Add(newRegistration);
                 await _context.SaveChangesAsync();
+
+                // Doğrulanmamış adrese e-posta atılmaz (o anda doğrulama
+                // e-postası gidiyor); sistem içi bildirim her durumda düşer.
+                await _participantNotifier.RegistrationReceivedAsync(newRegistration.Id, sendEmail: user.EmailConfirmed);
             }
 
             var canonicalSlug = conference.Tenant?.Slug ?? conference.Slug ?? slug;

@@ -151,6 +151,8 @@ public sealed class PaymentReceiptTests : IClassFixture<AuthenticatedTestFactory
 
         Assert.Contains("IsPayTREnabled", html);
         Assert.DoesNotContain("IsStripeEnabled", html);
+        // Kongre değişikliğini katılımcılara bildirme seçeneği.
+        Assert.Contains("name=\"notifyParticipants\"", html);
     }
 
     [Fact]
