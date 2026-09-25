@@ -104,8 +104,11 @@
     var title = Model.Title ?? "";
     var subtitle = Model.Subtitle ?? "";
 
+    // Kongre adresi önce (bkz. ConferenceHome): kurum adresi belirsiz.
     var slug =
-        ViewContext.RouteData.Values["slug"]?.ToString()
+        ViewData["ConferenceSlug"] as string
+        ?? Tc.CurrentConference?.Slug
+        ?? ViewContext.RouteData.Values["slug"]?.ToString()
         ?? Tc.Current?.Slug
         ?? Context.Session.GetString("SelectedConferenceSlug")
         ?? "";
