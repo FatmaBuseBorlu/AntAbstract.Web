@@ -1,5 +1,6 @@
 @model AntAbstract.Domain.Entities.Conference
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -25,12 +26,15 @@
                 <div class="mb-4">
                     <label class="form-label fw-semibold mb-3">@Localizer["AktifOdemeYontemleri"]</label>
                     <div class="d-flex flex-column gap-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="isStripeEnabled"
-                                   id="stripeCheck" value="true" @(Model.IsStripeEnabled ? "checked" : "") />
-                            <label class="form-check-label fw-semibold" for="stripeCheck">
-                                <i class="fab fa-stripe text-primary me-1"></i>@Localizer["StripeKrediKarti"]</label>
-                        </div>
+                        @if (AntAbstract.Web.Infrastructure.StripeAvailability.IsConfigured(Configuration))
+                        {
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="isStripeEnabled"
+                                       id="stripeCheck" value="true" @(Model.IsStripeEnabled ? "checked" : "") />
+                                <label class="form-check-label fw-semibold" for="stripeCheck">
+                                    <i class="fab fa-stripe text-primary me-1"></i>@Localizer["StripeKrediKarti"]</label>
+                            </div>
+                        }
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="isPayTREnabled"
                                    id="paytrCheck" value="true" @(Model.IsPayTREnabled ? "checked" : "") />

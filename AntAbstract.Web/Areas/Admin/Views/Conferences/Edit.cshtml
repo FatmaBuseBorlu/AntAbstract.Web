@@ -1,5 +1,6 @@
 @model AntAbstract.Domain.Entities.Conference
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -359,13 +360,16 @@
                     <div class="card-body p-4">
                         <div class="row g-3 mb-4">
                             <div class="col-12">
-                                <div class="form-check form-switch mb-2">
-                                    <input asp-for="IsStripeEnabled" class="form-check-input" type="checkbox" role="switch" />
-                                    <label class="form-check-label fw-medium" asp-for="IsStripeEnabled">
-                                        
-                                        <small class="text-muted d-block">@Localizer["StripeAPIAnahtarlariSunucudaYapilandirilmis"]</small>
-                                    </label>
-                                </div>
+                                @if (AntAbstract.Web.Infrastructure.StripeAvailability.IsConfigured(Configuration))
+                                {
+                                    <div class="form-check form-switch mb-2">
+                                        <input asp-for="IsStripeEnabled" class="form-check-input" type="checkbox" role="switch" />
+                                        <label class="form-check-label fw-medium" asp-for="IsStripeEnabled">
+                                            
+                                            <small class="text-muted d-block">@Localizer["StripeAPIAnahtarlariSunucudaYapilandirilmis"]</small>
+                                        </label>
+                                    </div>
+                                }
                                 <div class="form-check form-switch mb-2">
                                     <input asp-for="IsPayTREnabled" class="form-check-input" type="checkbox" role="switch" />
                                     <label class="form-check-label fw-medium" asp-for="IsPayTREnabled">

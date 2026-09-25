@@ -830,17 +830,31 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     x.PaymentDate,
                     x.PaymentTransactionId,
                     x.BillingName,
-                    x.TaxNumber
+                    x.TaxNumber,
+                    x.TaxOffice,
+                    x.BillingAddress
                 })
                 .ToListAsync();
 
+            // Muhasebe e-Arşiv/e-Fatura'yı bu dökümden keser: platform makbuz
+            // verir, yasal faturayı düzenleyen kurum düzenler. Vergi dairesi ve
+            // adres bu yüzden eklendi.
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Ad Soyad,E-posta,Kayıt Türü,Tutar,Para Birimi,Ödeme Durumu,Kayıt Tarihi,Ödeme Tarihi,İşlem ID,Fatura Adı,Vergi No");
+            sb.AppendLine("Ad Soyad,E-posta,Kayıt Türü,Tutar,Para Birimi,Ödeme Durumu,Kayıt Tarihi,Ödeme Tarihi,İşlem ID,Fatura Adı,Vergi No / TCKN,Vergi Dairesi,Fatura Adresi");
 
             foreach (var r in rows)
             {
-                string Esc(string? v) => $"\"{(v ?? "").Replace("\"", "\"\"")}\"";
-                sb.AppendLine($"{Esc(r.FullName)},{Esc(r.Email)},{Esc(r.RegistrationType)},{r.Amount:F2},{r.Currency},{(r.IsPaid ? "Ödendi" : "Bekliyor")},{r.RegistrationDate:yyyy-MM-dd HH:mm},{r.PaymentDate?.ToString("yyyy-MM-dd HH:mm") ?? ""},{Esc(r.PaymentTransactionId)},{Esc(r.BillingName)},{Esc(r.TaxNumber)}");
+                // Excel'de = + - @ ile başlayan hücre formül olarak çalışır
+                // (kullanıcının yazdığı fatura adı/adres); başına ' eklenir.
+                string Esc(string? v)
+                {
+                    v ??= "";
+                    if (v.Length > 0 && "=+-@\t\r".Contains(v[0]))
+                        v = "'" + v;
+                    return $"\"{v.Replace("\"", "\"\"")}\"";
+                }
+
+                sb.AppendLine($"{Esc(r.FullName)},{Esc(r.Email)},{Esc(r.RegistrationType)},{r.Amount:F2},{r.Currency},{(r.IsPaid ? "Ödendi" : "Bekliyor")},{r.RegistrationDate:yyyy-MM-dd HH:mm},{r.PaymentDate?.ToString("yyyy-MM-dd HH:mm") ?? ""},{Esc(r.PaymentTransactionId)},{Esc(r.BillingName)},{Esc(r.TaxNumber)},{Esc(r.TaxOffice)},{Esc(r.BillingAddress)}");
             }
 
             var bytes = System.Text.Encoding.UTF8.GetPreamble()

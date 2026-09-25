@@ -146,9 +146,11 @@ namespace AntAbstract.Domain.Entities
 
         // ── Ödeme Yöntemi Yapılandırması ────────────────────────────────────
         /// <summary>Stripe Checkout etkin mi?</summary>
-        public bool IsStripeEnabled { get; set; } = true;
+        // Stripe Türkiye'deki şirketlere hesap açmıyor; yeni kongrede kartla
+        // ödeme PayTR üzerinden gelir (bkz. StripeAvailability).
+        public bool IsStripeEnabled { get; set; } = false;
         /// <summary>PayTR etkin mi?</summary>
-        public bool IsPayTREnabled { get; set; } = false;
+        public bool IsPayTREnabled { get; set; } = true;
         /// <summary>Banka havalesi etkin mi?</summary>
         public bool IsBankTransferEnabled { get; set; } = false;
 

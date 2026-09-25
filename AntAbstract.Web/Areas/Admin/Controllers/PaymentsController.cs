@@ -801,12 +801,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return View();
         }
 
-        // Admin: Fatura PDF indirme
+        // Admin: ödeme makbuzu PDF (fatura değil — bkz. InvoicePdfService)
         [HttpGet("/{slug}/Admin/Payments/DownloadInvoice/{registrationId:guid}")]
         [HttpGet("/Admin/Payments/DownloadInvoice/{registrationId:guid}")]
         public async Task<IActionResult> DownloadInvoice(string? slug, Guid registrationId)
         {
-            var registration = await _context.Registrations
+            // Diğer işlemler gibi erişilebilir kayıtlar üzerinden: eskiden
+            // doğrudan _context.Registrations sorgulanıyordu ve kurum
+            // yetkisi yalnızca adresteki slug'ın sorgu filtresine kalıyordu.
+            var accessibleRegistrations = await _tenantAccess
+                .GetAccessibleRegistrationQueryAsync(User);
+
+            var registration = await accessibleRegistrations
                 .Include(r => r.Conference)
                     .ThenInclude(c => c.Tenant)
                 .Include(r => r.RegistrationType)
@@ -817,10 +823,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return NotFound();
 
             if (!registration.IsPaid)
-                return BadRequest("Ödeme tamamlanmamış kayıtlar için fatura oluşturulamaz.");
+                return BadRequest("Ödeme tamamlanmamış kayıtlar için makbuz oluşturulamaz.");
 
-            var pdfBytes = _invoicePdfService.GenerateRegistrationInvoice(registration);
-            var fileName = $"Fatura-{registration.Id.ToString("N").Substring(0, 8).ToUpper()}.pdf";
+            // Makbuzdaki ödeme yöntemi: bu kayda ait son tamamlanan ödeme.
+            var paymentMethod = await _context.Payments
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(p => p.AppUserId == registration.AppUserId &&
+                            p.ConferenceId == registration.ConferenceId &&
+                            p.Status == PaymentStatus.Completed)
+                .OrderByDescending(p => p.PaymentDate)
+                .Select(p => p.PaymentMethod)
+                .FirstOrDefaultAsync();
+
+            var pdfBytes = _invoicePdfService.GenerateRegistrationInvoice(registration, paymentMethod);
+            var fileName = $"Makbuz-{registration.Id.ToString("N").Substring(0, 8).ToUpper()}.pdf";
 
             return File(pdfBytes, "application/pdf", fileName);
         }
