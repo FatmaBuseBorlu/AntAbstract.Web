@@ -53,6 +53,7 @@ namespace AntAbstract.Infrastructure.Context
         public DbSet<SystemParameter> SystemParameters { get; set; }
 
         public DbSet<EmailTemplate> EmailTemplates { get; set; }
+        public DbSet<EmailOutboxMessage> EmailOutbox { get; set; }
         public DbSet<EmailLog> EmailLogs { get; set; }
         public DbSet<ScheduledBroadcast> ScheduledBroadcasts { get; set; }
 
@@ -111,6 +112,10 @@ namespace AntAbstract.Infrastructure.Context
                 entity.Property(s => s.DoiErrorMessage)
                     .HasMaxLength(1000);
             });
+
+            // Gönderici "bekleyen ve zamanı gelmiş" satırları bu sırayla arar.
+            builder.Entity<EmailOutboxMessage>()
+                .HasIndex(x => new { x.Status, x.NextAttemptAt });
 
             builder.Entity<SiteSectionTemplate>()
                 .HasIndex(x => x.BlockType)

@@ -47,6 +47,11 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
         [BindProperty]
         public InputModel Input { get; set; } = new InputModel();
 
+        // Sinirlar veritabanindaki sutun genisligiyle birebir ayni olmali.
+        // Once form daha genisti (orn. ad 100, sutun 50); arada kalan bir deger
+        // dogrulamadan geciyor, kaydetme aninda patliyor ve kullaniciya
+        // "An error occurred while saving the entity changes" gibi hicbir sey
+        // anlatmayan bir mesaj donuyordu.
         public class InputModel
         {
             [Phone(ErrorMessage = "Lütfen geçerli bir telefon numarası giriniz.")]
@@ -54,15 +59,15 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             public string? PhoneNumber { get; set; }
 
             [Display(Name = "Ad")]
-            [StringLength(100, ErrorMessage = "Ad alanı en fazla 100 karakter olabilir.")]
+            [StringLength(50, ErrorMessage = "Ad alanı en fazla 50 karakter olabilir.")]
             public string? FirstName { get; set; }
 
             [Display(Name = "Soyad")]
-            [StringLength(100, ErrorMessage = "Soyad alanı en fazla 100 karakter olabilir.")]
+            [StringLength(50, ErrorMessage = "Soyad alanı en fazla 50 karakter olabilir.")]
             public string? LastName { get; set; }
 
             [Display(Name = "Ünvan")]
-            [StringLength(150, ErrorMessage = "Ünvan alanı en fazla 150 karakter olabilir.")]
+            [StringLength(100, ErrorMessage = "Ünvan alanı en fazla 100 karakter olabilir.")]
             public string? Title { get; set; }
 
             [Display(Name = "Üniversite / Kurum")]
@@ -70,7 +75,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             public string? University { get; set; }
 
             [Display(Name = "Uzmanlık Alanları")]
-            [StringLength(1000, ErrorMessage = "Uzmanlık alanları en fazla 1000 karakter olabilir.")]
+            [StringLength(500, ErrorMessage = "Uzmanlık alanları en fazla 500 karakter olabilir.")]
             public string? ExpertiseAreas { get; set; }
 
             [Display(Name = "Fakülte")]
@@ -82,7 +87,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account.Manage
             public string? Department { get; set; }
 
             [Display(Name = "ORCID ID")]
-            [StringLength(100)]
+            [StringLength(50)]
             public string? OrcidId { get; set; }
 
             [Display(Name = "ResearcherID")]

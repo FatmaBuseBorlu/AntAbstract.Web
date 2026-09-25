@@ -2,6 +2,7 @@
 
 @using System
 @using System.Linq
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -968,9 +969,7 @@
                                 @Localizer["Status"]
                             </th>
 
-                            <th style="width: 130px; min-width: 130px;">
-                                Son Giriş
-                            </th>
+                            <th style="width: 130px; min-width: 130px;">@Localizer["SonGiris"]</th>
 
                             <th class="pe-4 text-end" style="min-width: 400px;">
                                 @Localizer["Actions"]

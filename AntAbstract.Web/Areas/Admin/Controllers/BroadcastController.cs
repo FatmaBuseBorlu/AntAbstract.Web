@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -17,17 +19,32 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class BroadcastController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<BroadcastController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly IAdminTenantAccessService _tenantAccess;
         private readonly IEmailQueue _emailQueue;
         private readonly UserManager<AppUser> _userManager;
+        private readonly INotificationService _notificationService;
 
         public BroadcastController(
             AppDbContext context,
             IAdminTenantAccessService tenantAccess,
             IEmailQueue emailQueue,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            INotificationService notificationService)
         {
+            _notificationService = notificationService;
             _context = context;
             _tenantAccess = tenantAccess;
             _emailQueue = emailQueue;
@@ -108,7 +125,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(body))
             {
-                TempData["ErrorMessage"] = "Konu ve içerik boş olamaz.";
+                TempData["ErrorMessage"] = T("Msg_KonuVeIcerikBosOlamaz", "Konu ve içerik boş olamaz.");
                 return RedirectToAction(nameof(Index), new { slug });
             }
 
@@ -138,10 +155,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                foreach (var email in emails)
-                {
-                    _emailQueue.Enqueue(new EmailQueueItem(email, subject, body));
-                }
+                _emailQueue.EnqueueRange(emails.Select(email => new EmailQueueItem(email, subject, body)));
 
                 _context.ScheduledBroadcasts.Add(new ScheduledBroadcast
                 {
@@ -157,6 +171,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                     TenantId = tenantId.Value,
                 });
                 await _context.SaveChangesAsync();
+
+                try
+                {
+                    await AntAbstract.Infrastructure.Services.BroadcastInAppNotifier.NotifyAsync(
+                        _context, _notificationService, conferenceId, emails, subject, body);
+                }
+                catch (Exception)
+                {
+                    // E-postalar kuyruğa girdi; bildirim hatası duyuruyu geri almaz.
+                }
 
                 TempData["SuccessMessage"] = $"{emails.Count} kişi için e-posta kuyruğa alındı. Arka planda gönderilecek.";
             }
@@ -177,14 +201,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (broadcast == null || broadcast.Status != BroadcastStatus.Pending)
             {
-                TempData["ErrorMessage"] = "Zamanlanmış gönderim bulunamadı veya zaten gönderilmiş.";
+                TempData["ErrorMessage"] = T("Msg_ZamanlanmisGonderimBulunamadiVeyaZatenGonderilmis", "Zamanlanmış gönderim bulunamadı veya zaten gönderilmiş.");
                 return RedirectToAction(nameof(Index), new { slug });
             }
 
             broadcast.Status = BroadcastStatus.Cancelled;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Zamanlanmış gönderim iptal edildi.";
+            TempData["SuccessMessage"] = T("Msg_ZamanlanmisGonderimIptalEdildi", "Zamanlanmış gönderim iptal edildi.");
             return RedirectToAction(nameof(Index), new { slug });
         }
 

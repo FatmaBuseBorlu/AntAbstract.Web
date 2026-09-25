@@ -146,6 +146,21 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.RecentMailErrors = recentMailErrors;
             ViewBag.WebhookStats = webhookStats;
             ViewBag.MailStats = mailStats;
+
+            // Giden kutusu: bekleyen / başarısız / son 24 saatte gönderilen.
+            var oldestPending = await _context.EmailOutbox
+                .Where(m => m.Status == EmailOutboxStatus.Pending)
+                .OrderBy(m => m.CreatedAt)
+                .Select(m => (DateTime?)m.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            ViewBag.OutboxStats = new OutboxStats(
+                Pending: await _context.EmailOutbox.CountAsync(m => m.Status == EmailOutboxStatus.Pending),
+                Failed: await _context.EmailOutbox.CountAsync(m => m.Status == EmailOutboxStatus.Failed),
+                SentLast24h: await _context.EmailOutbox.CountAsync(m => m.Status == EmailOutboxStatus.Sent && m.SentAt >= since24h),
+                OldestPendingMinutes: oldestPending.HasValue
+                    ? (int)(DateTime.UtcNow - oldestPending.Value).TotalMinutes
+                    : null);
             ViewBag.MissingReminderTemplates = missingReminderTemplates;
             ViewBag.RateLimitPolicies = rateLimitPolicies;
             ViewBag.RateLimitRejections = rateLimitRejections;
@@ -153,6 +168,26 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             ViewBag.GeneratedAt = DateTime.UtcNow;
 
             return View();
+        }
+
+        // Başarısız (5 denemede gidemeyen) e-postaları yeniden kuyruğa alır —
+        // ör. SMTP şifresi düzeltildikten sonra.
+        [HttpPost("/Admin/Health/RetryFailedEmails")]
+        [HttpPost("/{slug}/Admin/Health/RetryFailedEmails")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RetryFailedEmails(string? slug = null)
+        {
+            var count = await _context.EmailOutbox
+                .Where(m => m.Status == EmailOutboxStatus.Failed)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(m => m.Status, EmailOutboxStatus.Pending)
+                    .SetProperty(m => m.Attempts, 0)
+                    .SetProperty(m => m.NextAttemptAt, DateTime.UtcNow)
+                    .SetProperty(m => m.LockedUntil, (DateTime?)null));
+
+            TempData["SuccessMessage"] = $"{count} e-posta yeniden gönderim kuyruğuna alındı.";
+
+            return Redirect(string.IsNullOrWhiteSpace(slug) ? "/Admin/Health" : $"/{slug}/Admin/Health");
         }
 
         // ── JSON endpoint: uptime monitoring araçları için ───────────────────
@@ -231,4 +266,5 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     public record MailErrorRow(DateTime SentAt, string ToEmail, string Subject, string? ErrorMessage, string? TemplateKey);
     public record WebhookStats(int Total, int Failed, int Duplicate);
     public record MailStats(int Total, int Failed);
+    public record OutboxStats(int Pending, int Failed, int SentLast24h, int? OldestPendingMinutes);
 }

@@ -104,6 +104,10 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
     opt.Lockout.AllowedForNewUsers = true;
 
     opt.User.RequireUniqueEmail = true;
+
+    // Kayıtta e-posta doğrulanmadan giriş yapılamaz. Mevcut kullanıcılar
+    // migration ile doğrulanmış sayıldı (hepsi zaten öyle işaretleniyordu).
+    opt.SignIn.RequireConfirmedEmail = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
@@ -240,6 +244,9 @@ builder.Services.AddScoped<IPayTRService, PayTRService>();
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantResolver, SlugTenantResolver>();
 builder.Services.AddScoped<IAdminTenantAccessService, AdminTenantAccessService>();
+builder.Services.AddScoped<AccountAnonymizer>();
+builder.Services.AddScoped<EmailConfirmationSender>();
+builder.Services.AddScoped<AntAbstract.Web.Infrastructure.ParticipantNotifier>();
 builder.Services.AddScoped<IAuthorizationHandler, TenantAdminAuthorizationHandler>();
 builder.Services.AddSingleton<IUploadFileValidator, UploadFileValidator>();
 
@@ -278,6 +285,24 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 {
     kestrel.Limits.MaxRequestBodySize = 52 * 1024 * 1024; // 52 MB
 });
+
+// ── Hata izleme (Sentry) ─────────────────────────────────────────────────────
+// Sentry:Dsn girilmediyse hiç açılmaz; yerelde ve testte etkisizdir.
+var sentryDsn = builder.Configuration["Sentry:Dsn"];
+if (!string.IsNullOrWhiteSpace(sentryDsn) && !sentryDsn.Contains("#{"))
+{
+    builder.WebHost.UseSentry(o =>
+    {
+        o.Dsn = sentryDsn;
+        o.Environment = builder.Environment.EnvironmentName;
+        o.SendDefaultPii = false; // e-posta, IP, çerez gönderilmez
+        o.MinimumEventLevel = LogLevel.Error;
+        o.TracesSampleRate = 0;
+    });
+}
+
+builder.Services.AddHealthChecks()
+    .AddCheck<AntAbstract.Web.Security.DatabaseHealthCheck>("database");
 
 // ── Response Compression ─────────────────────────────────────────────────────
 builder.Services.AddResponseCompression(options =>
@@ -487,6 +512,11 @@ if (!app.Environment.IsEnvironment("Testing"))
 
             await AntAbstract.Infrastructure.Data.DbSeeder.SeedRolesAndUsers(services);
 
+            // Eksik e-posta şablonları (hatırlatmalar, kayıt/özet onayı vb.).
+            var addedTemplates = await AntAbstract.Infrastructure.Services.Email.EmailTemplateDefaults.EnsureAsync(context);
+            if (addedTemplates > 0)
+                startupLogger.LogInformation("{Count} eksik e-posta şablonu eklendi.", addedTemplates);
+
             if (app.Environment.IsDevelopment())
             {
                 await AntAbstract.Infrastructure.Data.TestDataSeeder.SeedAsync(userManager, context);
@@ -523,6 +553,10 @@ else
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
+// Boş gövdeli 404'lerde tarayıcının hata ekranı yerine sitenin kendi sayfası
+// (HomeController.StatusCodePage). API ve dosya istekleri olduğu gibi kalır.
+app.UseStatusCodePagesWithReExecute("/status/{0}");
 
 app.UseResponseCompression();
 
@@ -645,6 +679,8 @@ else
 #region 7. Y�nlendirmeler
 
 app.MapRazorPages();
+// Uptime araçları için anahtarsız: sağlıklıysa 200 "Healthy", DB yoksa 503. Ayrıntı vermez.
+app.MapHealthChecks("/health").DisableRateLimiting();
 app.MapHub<AntAbstract.Web.Hubs.NotificationHub>("/hubs/notifications");
 
 app.MapControllerRoute(

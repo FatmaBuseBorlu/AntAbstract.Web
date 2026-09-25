@@ -1,6 +1,7 @@
 @using AntAbstract.Domain.Entities
 @using System
 @using System.Collections.Generic
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -261,7 +262,7 @@
                 <h6 class="sa-section-title mb-3">@Localizer["RecentRegistrations"]</h6>
                 @if (!recentRegistrations.Any())
                 {
-                    <p class="text-muted small">Henüz kayıt yok.</p>
+                    <p class="text-muted small">@Localizer["HenuzKayitYok"]</p>
                 }
                 @foreach (var reg in recentRegistrations)
                 {
@@ -288,7 +289,7 @@
     <div class="admin-list-card mb-4" style="padding:1.2rem;">
         @if (!recentConferences.Any())
         {
-            <p class="text-muted small mb-0">Henüz kongre eklenmemiş.</p>
+            <p class="text-muted small mb-0">@Localizer["HenuzKongreEklenmemis"]</p>
         }
         else
         {

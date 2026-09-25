@@ -15,7 +15,11 @@ namespace AntAbstract.Infrastructure.Services.Invoice
         private const string TextMid = "#555577";
         private const string Border = "#dee2e6";
 
-        public byte[] GenerateRegistrationInvoice(Registration reg)
+        // Bu belge bir ödeme makbuzudur, fatura değil. Platform GİB'e bağlı
+        // e-Arşiv/e-Fatura kesmiyor; satıcı kongreyi düzenleyen kurum olduğu
+        // için yasal faturayı da o kurum (muhasebesi) düzenler. "FATURA"
+        // başlıklı, KDV'siz bir belge vermek vergi açısından sorun yaratıyordu.
+        public byte[] GenerateRegistrationInvoice(Registration reg, string? paymentMethod = null)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
@@ -39,8 +43,8 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                         {
                             row.RelativeItem().Column(left =>
                             {
-                                left.Item().Text("FATURA / INVOICE")
-                                    .FontSize(22).Bold().FontColor(Navy);
+                                left.Item().Text("ÖDEME MAKBUZU / PAYMENT RECEIPT")
+                                    .FontSize(17).Bold().FontColor(Navy);
                                 left.Item().Text($"No: {invoiceNo}")
                                     .FontSize(10).FontColor(TextMid);
                             });
@@ -72,12 +76,12 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                             // Fatura Tarihi / İşlem No
                             row.RelativeItem().Background(LightBg).Padding(12).Column(left =>
                             {
-                                left.Item().Text("FATURA TARİHİ").FontSize(8).Bold().FontColor(TextMid);
+                                left.Item().Text("ÖDEME TARİHİ / PAYMENT DATE").FontSize(8).Bold().FontColor(TextMid);
                                 left.Item().Text((reg.PaymentDate ?? reg.RegistrationDate).ToString("dd.MM.yyyy HH:mm"))
                                     .FontSize(11).Bold();
                                 left.Item().Height(8);
-                                left.Item().Text("ÖDEME YÖNTEMİ").FontSize(8).Bold().FontColor(TextMid);
-                                left.Item().Text("Kredi Kartı / Online Ödeme").FontSize(10);
+                                left.Item().Text("ÖDEME YÖNTEMİ / PAYMENT METHOD").FontSize(8).Bold().FontColor(TextMid);
+                                left.Item().Text(DescribeMethod(paymentMethod)).FontSize(10);
                             });
 
                             row.ConstantItem(16);
@@ -85,7 +89,7 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                             // Faturalanan kişi
                             row.RelativeItem().Background(LightBg).Padding(12).Column(right =>
                             {
-                                right.Item().Text("FATURALANAN").FontSize(8).Bold().FontColor(TextMid);
+                                right.Item().Text("ÖDEYEN / PAYER").FontSize(8).Bold().FontColor(TextMid);
                                 right.Item().Text(
                                     !string.IsNullOrWhiteSpace(reg.BillingName)
                                         ? reg.BillingName
@@ -128,11 +132,11 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                             table.Header(header =>
                             {
                                 header.Cell().Background(Navy).Padding(8)
-                                    .Text("AÇIKLAMA").FontColor(Colors.White).Bold().FontSize(9);
+                                    .Text("AÇIKLAMA / DESCRIPTION").FontColor(Colors.White).Bold().FontSize(9);
                                 header.Cell().Background(Navy).Padding(8).AlignCenter()
-                                    .Text("PARA BİRİMİ").FontColor(Colors.White).Bold().FontSize(9);
+                                    .Text("PARA BİRİMİ / CURRENCY").FontColor(Colors.White).Bold().FontSize(9);
                                 header.Cell().Background(Navy).Padding(8).AlignRight()
-                                    .Text("TUTAR").FontColor(Colors.White).Bold().FontSize(9);
+                                    .Text("TUTAR / AMOUNT").FontColor(Colors.White).Bold().FontSize(9);
                             });
 
                             // Kayıt satırı
@@ -151,7 +155,7 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 
                             // Toplam satırı
                             table.Cell().PaddingHorizontal(8).PaddingVertical(6).AlignRight()
-                                .Text("TOPLAM").FontSize(11).Bold();
+                                .Text("TOPLAM / TOTAL").FontSize(11).Bold();
                             table.Cell().PaddingHorizontal(8).PaddingVertical(6).AlignCenter()
                                 .Text(reg.RegistrationType?.Currency ?? "TRY").FontSize(11).Bold();
                             table.Cell().Background(LightBg).PaddingHorizontal(8).PaddingVertical(6).AlignRight()
@@ -162,7 +166,7 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 
                         // Ödeme durumu
                         var statusColor = reg.IsPaid ? "#198754" : "#dc3545";
-                        var statusText = reg.IsPaid ? "ÖDEME ALINDI" : "ÖDEME BEKLENİYOR";
+                        var statusText = reg.IsPaid ? "ÖDEME ALINDI / PAID" : "ÖDEME BEKLENİYOR / PENDING";
                         col.Item().AlignRight().Text(statusText)
                             .FontSize(13).Bold().FontColor(statusColor);
 
@@ -180,6 +184,20 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                                 .Text($"İşlem No: {reg.PaymentTransactionId}")
                                 .FontSize(9).FontColor(TextMid);
                         }
+
+                        col.Item().Height(28);
+                        col.Item().Border(1).BorderColor(Border).Background(LightBg).Padding(10).Column(note =>
+                        {
+                            note.Item().Text("Bu belge ödemenin alındığını gösterir; fatura yerine geçmez. " +
+                                             "Yasal faturanız (e-Arşiv / e-Fatura) kongre düzenleyicisi tarafından, " +
+                                             "kayıtta verdiğiniz fatura bilgileriyle ayrıca düzenlenir.")
+                                .FontSize(8.5f).FontColor(TextDark);
+                            note.Item().Height(4);
+                            note.Item().Text("This document confirms that payment was received; it is not a tax invoice. " +
+                                             "Your official invoice is issued separately by the congress organizer " +
+                                             "using the billing details you provided.")
+                                .FontSize(8).Italic().FontColor(TextMid);
+                        });
                     });
 
                     page.Footer().Column(col =>
@@ -187,7 +205,7 @@ namespace AntAbstract.Infrastructure.Services.Invoice
                         col.Item().BorderTop(1).BorderColor(Border).PaddingTop(8);
                         col.Item().Row(row =>
                         {
-                            row.RelativeItem().Text($"Bu fatura {DateTime.UtcNow:dd.MM.yyyy} tarihinde elektronik olarak oluşturulmuştur.")
+                            row.RelativeItem().Text($"Bu makbuz {DateTime.UtcNow:dd.MM.yyyy} tarihinde elektronik olarak oluşturulmuştur.")
                                 .FontSize(8).FontColor(TextMid);
                             row.ConstantItem(60).AlignRight()
                                 .Text(x =>
@@ -213,10 +231,21 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 
         private static string BuildInvoiceNumber(Registration reg)
         {
-            // INV-YYYYMMDD-XXXXXXXX (son 8 hane of Guid)
+            // MKB-YYYYMMDD-XXXXXXXX (Guid'in ilk 8 hanesi). "INV" fatura
+            // numarası izlenimi veriyordu; resmi fatura numarasını GİB verir.
             var date = (reg.PaymentDate ?? reg.RegistrationDate).ToString("yyyyMMdd");
             var suffix = reg.Id.ToString("N").Substring(0, 8).ToUpper();
-            return $"INV-{date}-{suffix}";
+            return $"MKB-{date}-{suffix}";
         }
+
+        // Eskiden her makbuzda "Kredi Kartı" yazıyordu; havaleyle ödeyen de
+        // kredi kartıyla ödemiş görünüyordu.
+        private static string DescribeMethod(string? method) => method switch
+        {
+            "CreditCard" or "StripeCheckout" or "Stripe" or "PayTR" => "Kredi Kartı / Credit Card",
+            "BankTransfer" => "Banka Havalesi / Bank Transfer",
+            "Manual" => "Düzenleyici Onayı / Approved by Organizer",
+            _ => "—"
+        };
     }
 }

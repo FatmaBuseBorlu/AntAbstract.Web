@@ -4,6 +4,7 @@
 @using System.Collections.Generic
 @using System.Linq
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -588,9 +589,7 @@
                     @totalBlockCount
                 </div>
 
-                <div class="admin-stat-label">
-                    Toplam Blok
-                </div>
+                <div class="admin-stat-label">@Localizer["ToplamBlok"]</div>
             </div>
         </div>
 
@@ -679,9 +678,7 @@
                                 @Localizer["Title"]
                             </th>
 
-                            <th class="text-center" style="width: 14%;">
-                                Durum
-                            </th>
+                            <th class="text-center" style="width: 14%;">@Localizer["Durum"]</th>
 
                             <th class="pe-4 text-end" style="width: 16%;">
                                 @Localizer["Action"]

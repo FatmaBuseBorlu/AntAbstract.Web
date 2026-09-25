@@ -3,6 +3,8 @@
 #nullable disable
 
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Security;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -18,15 +20,16 @@ using System.Threading.Tasks;
 namespace AntAbstract.Web.Areas.Identity.Pages.Account
 {
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public class ResendEmailConfirmationModel : PageModel
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly IEmailSender _emailSender;
+        private readonly EmailConfirmationSender _confirmationSender;
 
-        public ResendEmailConfirmationModel(UserManager<AppUser> userManager, IEmailSender emailSender)
+        public ResendEmailConfirmationModel(UserManager<AppUser> userManager, EmailConfirmationSender confirmationSender)
         {
             _userManager = userManager;
-            _emailSender = emailSender;
+            _confirmationSender = confirmationSender;
         }
 
         /// <summary>
@@ -62,27 +65,18 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 return Page();
             }
 
+            // Adresin kayıtlı olup olmadığı dışarıya belli edilmez: her durumda aynı mesaj.
             var user = await _userManager.FindByEmailAsync(Input.Email);
-            if (user == null)
+            if (user != null && !await _userManager.IsEmailConfirmedAsync(user) &&
+                !AccountAnonymizer.IsAnonymized(user))
             {
-                ModelState.AddModelError(string.Empty, "Verification email sent. Please check your email.");
-                return Page();
+                await _confirmationSender.SendAsync(user, Url, Request.Scheme, returnUrl: null);
             }
 
-            var userId = await _userManager.GetUserIdAsync(user);
-            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            var callbackUrl = Url.Page(
-                "/Account/ConfirmEmail",
-                pageHandler: null,
-                values: new { userId = userId, code = code },
-                protocol: Request.Scheme);
-            await _emailSender.SendEmailAsync(
-                Input.Email,
-                "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-            ModelState.AddModelError(string.Empty, "Verification email sent. Please check your email.");
+            ModelState.AddModelError(string.Empty,
+                System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"
+                    ? "If this address has an unconfirmed account, a new confirmation email has been sent. Please check your inbox."
+                    : "Bu adrese ait doğrulanmamış bir hesap varsa yeni bir doğrulama e-postası gönderildi. Lütfen gelen kutunuzu kontrol edin.");
             return Page();
         }
     }

@@ -1,0 +1,62 @@
+@model AntAbstract.Web.Models.ViewModels.Shared.PagerViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+
+@{
+    // Mevcut filtreleri koruyarak yalnızca "page"i değiştiren bağlantı.
+    string PageUrl(int p)
+    {
+        var query = Context.Request.Query
+            .Where(q => !string.Equals(q.Key, "page", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(q => q.Value.Select(v => new KeyValuePair<string, string?>(q.Key, v)))
+            .Append(new KeyValuePair<string, string?>("page", p.ToString()));
+
+        return Context.Request.Path + Microsoft.AspNetCore.Http.QueryString.Create(query);
+    }
+}
+
+@if (Model.TotalCount > 0)
+{
+    <nav aria-label="@Localizer["Label"]" class="admin-pager mt-3">
+        @if (Model.TotalPages > 1)
+        {
+            <ul class="pagination pagination-sm justify-content-center flex-wrap mb-1">
+                <li class="page-item @(Model.Page > 1 ? "" : "disabled")">
+                    <a class="page-link" href="@PageUrl(Model.Page - 1)" aria-label="@Localizer["Previous"]">‹</a>
+                </li>
+
+                @if (Model.Page > 3)
+                {
+                    <li class="page-item"><a class="page-link" href="@PageUrl(1)">1</a></li>
+                    @if (Model.Page > 4)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                }
+
+                @for (var p = Math.Max(1, Model.Page - 2); p <= Math.Min(Model.TotalPages, Model.Page + 2); p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" href="@PageUrl(p)" aria-current="@(p == Model.Page ? "page" : null)">@p</a>
+                    </li>
+                }
+
+                @if (Model.Page < Model.TotalPages - 2)
+                {
+                    @if (Model.Page < Model.TotalPages - 3)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                    <li class="page-item"><a class="page-link" href="@PageUrl(Model.TotalPages)">@Model.TotalPages</a></li>
+                }
+
+                <li class="page-item @(Model.Page < Model.TotalPages ? "" : "disabled")">
+                    <a class="page-link" href="@PageUrl(Model.Page + 1)" aria-label="@Localizer["Next"]">›</a>
+                </li>
+            </ul>
+        }
+
+        <p class="text-center text-muted small mb-0">
+            @string.Format(Localizer["Range"].Value, Model.TotalCount, Model.From, Model.To)
+        </p>
+    </nav>
+}

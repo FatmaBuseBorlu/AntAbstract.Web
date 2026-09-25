@@ -1,4 +1,5 @@
-﻿@{
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
     Layout = null;
     var token = (string?)ViewBag.Token ?? "";
     var slug = (string?)ViewBag.Slug ?? "";
@@ -20,7 +21,7 @@ min-height:100dvh;">
                 <i class="fas fa-times-circle fa-3x text-danger"></i>
             </div>
             <h3 class="fw-bold">Daveti Reddet</h3>
-            <p class="text-muted">İsterseniz bir neden belirtebilirsiniz (isteğe bağlı).</p>
+            <p class="text-muted">@Localizer["IstersenizBirNedenBelirtebilirsinizIstege"]</p>
         </div>
 
         <form method="post" action="/@slug/Referee/DeclineInvitation">
@@ -28,7 +29,7 @@ min-height:100dvh;">
             <input type="hidden" name="token" value="@token" />
 
             <div class="mb-3">
-                <label class="form-label">Reddetme Nedeni (isteğe bağlı)</label>
+                <label class="form-label">@Localizer["ReddetmeNedeniIstegeBagli"]</label>
                 <textarea name="reason" class="form-control" rows="3" placeholder="@Localizer["DeclineReasonPlaceholder"]"></textarea>
             </div>
 

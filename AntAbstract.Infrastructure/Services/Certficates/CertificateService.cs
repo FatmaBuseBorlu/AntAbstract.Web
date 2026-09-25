@@ -15,6 +15,11 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Infrastructure.Services.Certficates
 {
+    // Sertifika islemleri slug tasimayan yonetici adreslerinden cagriliyor.
+    // Orada kiraci baglami bos kalabiliyor ve sorgu filtresi kongreyi
+    // bulunamaz yapiyor; metot sessizce donuyor, sertifika olusmuyor ve
+    // hicbir hata gorunmuyordu. Kapsami her sorgunun kendi conferenceId ve
+    // userId kosulu sagliyor.
     public class CertificateService : ICertificateService
     {
         private readonly AppDbContext _context;
@@ -76,6 +81,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var certificate = await _context.Certificates
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
                     x.Id == certificateId &&
@@ -104,6 +110,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var certificate = await _context.Certificates
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == certificateId);
 
@@ -174,6 +181,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var certificate = await _context.Certificates
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.Id == certificateId);
 
             if (certificate == null)
@@ -282,6 +290,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var conference = await _context.Conferences
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(x => x.Tenant)
                 .FirstOrDefaultAsync(x => x.Id == conferenceId);
@@ -305,6 +314,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var certificate = await _context.Certificates
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x =>
                     x.ConferenceId == conferenceId &&
                     x.UserId == userId &&
@@ -364,6 +374,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             string userId)
         {
             var attendanceCompleted = await _context.ConferenceAttendances
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(x =>
                     x.ConferenceId == conferenceId &&
@@ -379,6 +390,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var isMainAuthor = await _context.Submissions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(s =>
                     s.ConferenceId == conferenceId &&
@@ -394,6 +406,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             }
 
             var isCoAuthor = await _context.SubmissionAuthors
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(a =>
                     a.Submission != null &&
@@ -412,6 +425,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             string userId)
         {
             return await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(ra =>
                     ra.ReviewerId == userId &&
@@ -425,6 +439,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
             string userId)
         {
             var attendanceCompleted = await _context.ConferenceAttendances
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(x =>
                     x.ConferenceId == conferenceId &&
@@ -511,6 +526,7 @@ namespace AntAbstract.Infrastructure.Services.Certficates
                 if (conference == null)
                 {
                     conference = await _context.Conferences
+                        .IgnoreQueryFilters()
                         .AsNoTracking()
                         .Include(x => x.Tenant)
                         .FirstOrDefaultAsync(x => x.Id == certificate.ConferenceId);

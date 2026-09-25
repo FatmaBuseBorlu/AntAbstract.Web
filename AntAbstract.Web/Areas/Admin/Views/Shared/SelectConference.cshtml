@@ -5,6 +5,7 @@
 @using System.Linq
 
 @model SelectConferenceViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Model.Title;
@@ -1071,9 +1072,7 @@
                                 }
                                 else
                                 {
-                                    <span class="conference-no-site">
-                                        Site yok
-                                    </span>
+                                    <span class="conference-no-site">@Localizer["SiteYok"]</span>
                                 }
                             </div>
 

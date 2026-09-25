@@ -1,4 +1,5 @@
 @model IEnumerable<AntAbstract.Domain.Entities.EmailTemplate>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -94,14 +95,14 @@
                         </td>
                         <td class="text-end">
                             <a asp-action="Preview" asp-route-id="@t.Id"
-                               target="_blank" class="btn btn-sm btn-outline-info me-1" title="Önizle">
+                               target="_blank" class="btn btn-sm btn-outline-info me-1" title="@Localizer["Onizle"]">
                                 <i class="fas fa-eye"></i>
                             </a>
                             @{ var confirmTest = Localizer["ConfirmTestEmail"].Value; }
                             <form asp-action="TestSend" asp-route-id="@t.Id" method="post" class="d-inline me-1"
                                   onsubmit="return confirm('@confirmTest')">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Test Gönder">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="@Localizer["TestGonder"]">
                                     <i class="fas fa-paper-plane"></i>
                                 </button>
                             </form>

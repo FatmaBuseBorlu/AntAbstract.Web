@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Infrastructure;
 using AntAbstract.Infrastructure.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -26,6 +27,7 @@ namespace AntAbstract.Web.Controllers
         private readonly SignInManager<AppUser> _signInManager;
         private readonly TenantContext _tenantContext;
         private readonly IStringLocalizer<RegistrationController> _localizer;
+        private readonly ParticipantNotifier _participantNotifier;
 
         public RegistrationController(
             AppDbContext context,
@@ -33,8 +35,10 @@ namespace AntAbstract.Web.Controllers
             RoleManager<IdentityRole> roleManager,
             SignInManager<AppUser> signInManager,
             TenantContext tenantContext,
-            IStringLocalizer<RegistrationController> localizer)
+            IStringLocalizer<RegistrationController> localizer,
+            ParticipantNotifier participantNotifier)
         {
+            _participantNotifier = participantNotifier;
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
@@ -70,13 +74,20 @@ namespace AntAbstract.Web.Controllers
             return $"/{slug}{path}";
         }
 
+        // Kongre adresi önce: kurum adresi (/ubbk) kurumun birden çok kongresi
+        // varsa belirsiz; oturumda son bakılan kongre açılıyordu. Katılımcı
+        // UBBK'ya gelip başka kongrenin kapalı türlerini ("Aktif başvuru türü
+        // bulunamadı") görüyordu.
         private static string GetCanonicalSlug(Conference conference, string? fallbackSlug = null)
         {
-            return conference.Tenant?.Slug
-                   ?? conference.Slug
+            return NonEmpty(conference.Slug)
+                   ?? NonEmpty(conference.Tenant?.Slug)
                    ?? fallbackSlug
                    ?? "";
         }
+
+        private static string? NonEmpty(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value;
 
         private static bool SlugMatches(Conference? conference, string? slug)
         {
@@ -307,6 +318,44 @@ namespace AntAbstract.Web.Controllers
             return await GetConferenceBySlugAsync(slug);
         }
 
+        /// <summary>
+        /// Kurum adresiyle (/ubbk/registration) gelindiğinde hangi kongrenin
+        /// kastedildiği oturumdaki son seçime kalıyordu. O kongre kayda kapalıysa
+        /// (türü yok/süresi dolmuş) ve kurumun kayda açık başka bir kongresi
+        /// varsa, açık olan gösterilir. Kongre adresiyle gelindiğinde çağrılmaz.
+        /// </summary>
+        private async Task<Conference> PreferOpenConferenceOfTenantAsync(Conference resolved)
+        {
+            var today = DateTime.UtcNow.Date;
+
+            var openConferenceIds = await _context.RegistrationTypes
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(rt =>
+                    rt.Conference.TenantId == resolved.TenantId &&
+                    rt.IsActive &&
+                    (!rt.Deadline.HasValue || rt.Deadline.Value.Date >= today) &&
+                    rt.Conference.IsRegistrationOpen &&
+                    rt.Conference.EndDate.Date >= today)
+                .Select(rt => rt.ConferenceId)
+                .Distinct()
+                .ToListAsync();
+
+            if (openConferenceIds.Count == 0 || openConferenceIds.Contains(resolved.Id))
+            {
+                return resolved;
+            }
+
+            return await _context.Conferences
+                       .IgnoreQueryFilters()
+                       .AsNoTracking()
+                       .Include(c => c.Tenant)
+                       .Where(c => openConferenceIds.Contains(c.Id))
+                       .OrderBy(c => c.StartDate)
+                       .FirstOrDefaultAsync()
+                   ?? resolved;
+        }
+
         private async Task<RegistrationType?> GetValidRegistrationTypeAsync(Guid typeId)
         {
             return await _context.RegistrationTypes
@@ -333,6 +382,12 @@ namespace AntAbstract.Web.Controllers
             var slug = GetSlug();
 
             var conference = await ResolveConferenceAsync(slug);
+
+            if (conference != null &&
+                !string.Equals(conference.Slug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                conference = await PreferOpenConferenceOfTenantAsync(conference);
+            }
 
             if (conference == null)
             {
@@ -633,6 +688,9 @@ namespace AntAbstract.Web.Controllers
 
             // Kayıt türüne göre doğru rolü ata (Yazar veya Dinleyici)
             await EnsureRoleFromRegistrationTypeAsync(user, ticketType.Id);
+
+            // Ön kayıt onayı: e-posta + sistem içi bildirim (hata fırlatmaz).
+            await _participantNotifier.RegistrationReceivedAsync(newRegistration.Id, sendEmail: user.EmailConfirmed);
 
             TempData["SuccessMessage"] = T(
                 "RegistrationSuccessSubmitAbstract",

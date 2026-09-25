@@ -104,6 +104,15 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 {
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
                 }
+                if (result.IsNotAllowed)
+                {
+                    // Şifre doğru ama e-posta doğrulanmamış (SignIn.RequireConfirmedEmail).
+                    ModelState.AddModelError(string.Empty,
+                        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"
+                            ? "Your email address is not confirmed yet. Please click the link in the email we sent you, or request a new one below."
+                            : "E-posta adresiniz henüz doğrulanmadı. Size gönderdiğimiz e-postadaki bağlantıya tıklayın ya da aşağıdan yeniden isteyin.");
+                    return Page();
+                }
                 if (result.IsLockedOut)
                 {
                     _logger.LogWarning("Kullanıcı hesabı kilitlendi.");

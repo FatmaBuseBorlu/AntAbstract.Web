@@ -25,6 +25,66 @@ public sealed class SmokeTests(SmokeTestFactory factory) : IClassFixture<SmokeTe
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
+    // ── Sağlık kontrolü ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HealthEndpoint_IsAnonymousAndHealthy()
+    {
+        var response = await _client.GetAsync("/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+    }
+
+    // ── SEO ve hata sayfası ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task RobotsTxt_PointsToSitemapAndHidesPanels()
+    {
+        var body = await _client.GetStringAsync("/robots.txt");
+
+        Assert.Contains("Sitemap: ", body);
+        Assert.Contains("Disallow: /Admin/", body);
+    }
+
+    [Fact]
+    public async Task SitemapXml_ListsPublicPages()
+    {
+        var response = await _client.GetAsync("/sitemap.xml");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("<urlset", body);
+        Assert.Contains("/congresses</loc>", body);
+    }
+
+    [Fact]
+    public async Task UnknownPage_ShowsDesigned404ForBrowsers()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/olmayan/bir/sayfa/adresi/burada");
+        request.Headers.Accept.ParseAdd("text/html");
+
+        var response = await _client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Contains("notfound-card", body);
+    }
+
+    [Fact]
+    public async Task UnknownApiPath_Stays404WithoutHtml()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/olmayan/adres/burada/x");
+        request.Headers.Accept.ParseAdd("text/html");
+
+        var response = await _client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.DoesNotContain("notfound-card", body);
+    }
+
     // ── Identity Razor Pages ─────────────────────────────────────────────────
 
     [Fact]

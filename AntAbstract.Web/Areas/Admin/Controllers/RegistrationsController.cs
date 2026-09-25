@@ -14,12 +14,26 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class RegistrationsController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<RegistrationsController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
         private readonly ISelectedConferenceService _selectedConferenceService;
@@ -186,7 +200,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
                 if (!tenantId.HasValue)
                 {
-                    TempData["ErrorMessage"] = "Admin hesabınıza bağlı kurum bulunamadı.";
+                    TempData["ErrorMessage"] = T("Msg_AdminHesabinizaBagliKurumBulunamadi", "Admin hesabınıza bağlı kurum bulunamadı.");
 
                     return Redirect("/Dashboard/MyConferences");
                 }
@@ -225,8 +239,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             var vm = new SelectConferenceViewModel
             {
-                Title = "Kayıtlar ve Ödemeler",
-                Lead = "Kayıtları ve ödemeleri yönetmek için önce kongre seçin.",
+                Title = T("Msg_KayitlarVeOdemeler", "Kayıtlar ve Ödemeler"),
+                Lead = T("Msg_KayitlariVeOdemeleriYonetmekIcinOnce", "Kayıtları ve ödemeleri yönetmek için önce kongre seçin."),
                 PostUrl = "/Admin/Registrations/Select",
                 SubmitText = "Devam Et",
                 Conferences = conferences,
@@ -244,7 +258,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (conferenceId == Guid.Empty)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -258,7 +272,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 conference.Tenant == null ||
                 string.IsNullOrWhiteSpace(conference.Tenant.Slug))
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadiVeyaBuKongreyeErisim", "Kongre bulunamadı veya bu kongreye erişim yetkiniz yok.");
 
                 return RedirectToAction(nameof(SelectConference));
             }
@@ -288,7 +302,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Kongre bulunamadı veya bu kongrenin kayıtlarını görüntüleme yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_KongreBulunamadiVeyaBuKongreninKayitlarini", "Kongre bulunamadı veya bu kongrenin kayıtlarını görüntüleme yetkiniz yok.");
 
                 return RedirectToAction(
                     nameof(SelectConference),
@@ -425,7 +439,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Bu kongrenin kayıtlarını güncelleme yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_BuKongreninKayitlariniGuncellemeYetkinizYok", "Bu kongrenin kayıtlarını güncelleme yetkiniz yok.");
 
                 return RedirectToAction(
                     nameof(SelectConference),
@@ -441,14 +455,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
 
                 return Redirect(BuildRegistrationsUrl(slug, conference.Id));
             }
 
             if (registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş görünüyor.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmisGorunuyor", "Bu kayıt zaten ödenmiş görünüyor.");
 
                 return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
             }
@@ -458,7 +472,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödeme durumu ödendi olarak güncellendi.";
+            TempData["SuccessMessage"] = T("Msg_OdemeDurumuOdendiOlarakGuncellendi", "Ödeme durumu ödendi olarak güncellendi.");
 
             return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
         }
@@ -475,7 +489,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (conference == null)
             {
-                TempData["ErrorMessage"] = "Bu kongrenin kayıtlarını güncelleme yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_BuKongreninKayitlariniGuncellemeYetkinizYok", "Bu kongrenin kayıtlarını güncelleme yetkiniz yok.");
 
                 return RedirectToAction(
                     nameof(SelectConference),
@@ -491,14 +505,14 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (registration == null)
             {
-                TempData["ErrorMessage"] = "Kayıt bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_KayitBulunamadi", "Kayıt bulunamadı.");
 
                 return Redirect(BuildRegistrationsUrl(slug, conference.Id));
             }
 
             if (!registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmemiş görünüyor.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmemisGorunuyor", "Bu kayıt zaten ödenmemiş görünüyor.");
 
                 return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
             }
@@ -509,7 +523,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Ödeme durumu ödenmedi olarak güncellendi.";
+            TempData["SuccessMessage"] = T("Msg_OdemeDurumuOdenmediOlarakGuncellendi", "Ödeme durumu ödenmedi olarak güncellendi.");
 
             return Redirect(GetSafeBackUrl(returnUrl, slug, conference.Id));
         }

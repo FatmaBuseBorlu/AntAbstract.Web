@@ -16,14 +16,14 @@
         <h4 class="fw-bold mb-0"><i class="fas fa-user-plus text-primary me-2"></i>@Localizer["PageHeading"]</h4>
     </div>
 
-    <div class="card border-0 shadow-sm p-4">
+    <div class="modern-card p-4">
         <form method="post" action="/@slug/Admin/Speakers/Create">
             @Html.AntiForgeryToken()
             <input type="hidden" name="ConferenceId" value="@confId" />
 
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label fw-semibold">Ad Soyad <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@Localizer["AdSoyad"]<span class="text-danger">*</span></label>
                     <input type="text" name="FullName" value="@Model.FullName" class="form-control" required maxlength="150" placeholder="Prof. Dr. ..." />
                 </div>
                 <div class="col-md-4">
@@ -70,8 +70,7 @@
 
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save me-1"></i>Kaydet
-                </button>
+                    <i class="fas fa-save me-1"></i>@Localizer["Kaydet"]</button>
                 <a href="/@slug/Admin/Speakers?conferenceId=@confId" class="btn btn-outline-secondary">@Localizer["Cancel"]</a>
             </div>
         </form>
