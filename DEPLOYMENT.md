@@ -149,6 +149,20 @@ işaret ediyor — user-secrets dışında hiçbir yere gerçek credential yazma
 - [ ] `Email:BaseUrl` production domain'e ayarlı (https://antabstract.com.tr)
 - [ ] wkhtmltopdf Linux'ta kurulu: `sudo apt-get install wkhtmltopdf` (kabul/ret mektubu PDF için)
 
+## E-posta Giden Kutusu ve Uygulamanın Uyumaması
+
+E-postalar önce veritabanındaki `EmailOutbox` tablosuna yazılır, arka plandaki
+gönderici oradan gönderir. Uygulama yeniden başlasa da e-posta kaybolmaz;
+SMTP hatasında 1 dk / 5 dk / 30 dk / 2 sa arayla 5 kez denenir. Durum:
+**Yönetim → Sistem Durumu → Giden kutusu** (başarısızları yeniden dene butonu orada).
+
+- [ ] **UptimeRobot (ücretsiz) → `https://antabstract.com.tr/health`, 5 dakikada bir.**
+  Turhost IIS boşta kalan uygulamayı kapatıyor; kapalıyken e-postalar tabloda
+  bekler, hatırlatmalar ve zamanlanmış duyurular çalışmaz. Düzenli ziyaret
+  uygulamayı uyanık tutar ve site düşerse haber verir.
+- İsteğe bağlı: `Email:MaxPerMinute` (varsayılan 30) — SMTP sağlayıcısının
+  dakika sınırına göre. Toplu duyuru bu hızla sırayla gider.
+
 ## Dikkat — Upload Dosyaları
 
 `private-uploads/` ve `wwwroot/uploads/` klasörleri sunucudaki kullanıcı

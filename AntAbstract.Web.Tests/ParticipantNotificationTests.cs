@@ -21,11 +21,6 @@ public sealed class CapturingEmailQueue : IEmailQueue
 
     public void Enqueue(EmailQueueItem item) => Items.Add(item);
 
-    public async Task<EmailQueueItem> DequeueAsync(CancellationToken cancellationToken)
-    {
-        await Task.Delay(Timeout.Infinite, cancellationToken);
-        throw new OperationCanceledException();
-    }
 }
 
 /// <summary>

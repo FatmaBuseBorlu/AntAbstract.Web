@@ -155,10 +155,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             }
             else
             {
-                foreach (var email in emails)
-                {
-                    _emailQueue.Enqueue(new EmailQueueItem(email, subject, body));
-                }
+                _emailQueue.EnqueueRange(emails.Select(email => new EmailQueueItem(email, subject, body)));
 
                 _context.ScheduledBroadcasts.Add(new ScheduledBroadcast
                 {

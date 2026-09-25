@@ -213,7 +213,5 @@ public sealed class BroadcastWorkerTests
 
         public void Enqueue(EmailQueueItem item) => _items.Add(item);
 
-        public Task<EmailQueueItem> DequeueAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(_items.First());
     }
 }

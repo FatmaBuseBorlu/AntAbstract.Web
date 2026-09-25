@@ -40,9 +40,14 @@ namespace AntAbstract.Infrastructure.Services.DependencyInjection
             services.AddSingleton<IAuditService, AuditService>();
             services.AddHostedService<AuditWorker>();
 
-            // E-posta kuyruğu
-            services.AddSingleton<IEmailQueue, EmailQueue>();
-            services.AddHostedService<EmailQueueWorker>();
+            // E-posta giden kutusu (veritabanı) + gönderici: yeniden başlatmada
+            // kaybolmaz, hata olursa tekrar dener, dakika başına sınırlı gönderir.
+            services.AddSingleton<IEmailQueue, OutboxEmailQueue>();
+
+            // Testte gönderici elle çalıştırılır: 5 sn'de bir veritabanına bakan
+            // arka plan kopyası paylaşılan test bağlantısıyla yarışırdı.
+            if (!env.IsEnvironment("Testing"))
+                services.AddHostedService<OutboxEmailWorker>();
 
             // Zamanlanmış mail hatırlatıcıları (deadline, ödeme bekleyen)
             services.AddHostedService<MailReminderWorker>();

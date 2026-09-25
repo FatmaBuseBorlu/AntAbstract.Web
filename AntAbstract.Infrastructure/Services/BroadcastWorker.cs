@@ -59,10 +59,8 @@ namespace AntAbstract.Infrastructure.Services
                 {
                     var emails = await GetEmailsAsync(context, broadcast);
 
-                    foreach (var email in emails)
-                    {
-                        emailQueue.Enqueue(new EmailQueueItem(email, broadcast.Subject, broadcast.HtmlBody));
-                    }
+                    emailQueue.EnqueueRange(emails.Select(email =>
+                        new EmailQueueItem(email, broadcast.Subject, broadcast.HtmlBody)));
 
                     broadcast.Status = BroadcastStatus.Sent;
                     broadcast.SentAt = DateTime.UtcNow;
