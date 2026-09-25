@@ -3,6 +3,7 @@ using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Infrastructure.Services.Email;
 using AntAbstract.Web.Models.ViewModels.Admin.Referee;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -280,6 +281,16 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return "/Admin/Referee/Create";
         }
 
+        // Liste rol üzerinden bellekte kuruluyor; sayfalama da bellekte.
+        // Toplam hakem sayısı ViewBag.Pager.TotalCount'ta kalır.
+        private List<AppUser> Paginate(List<AppUser> referees, int? page)
+        {
+            var pager = PagerViewModel.For(page, referees.Count);
+            ViewBag.Pager = pager;
+
+            return referees.Skip(pager.Skip).Take(pager.PageSize).ToList();
+        }
+
         private async Task<List<AppUser>> GetRefereeListAsync(Guid? targetTenantId)
         {
             var referees = await GetUsersInReviewerRolesAsync();
@@ -309,7 +320,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         }
 
         [HttpGet("/Admin/Referee")]
-        public async Task<IActionResult> Index(Guid? conferenceId = null)
+        public async Task<IActionResult> Index(Guid? conferenceId = null, int? page = null)
         {
             var conference = await GetAccessibleConferenceAsync(null, conferenceId);
 
@@ -343,7 +354,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 ViewBag.TargetTenantId = null;
             }
 
-            var filteredReferees = await GetRefereeListAsync(targetTenantId);
+            var filteredReferees = Paginate(await GetRefereeListAsync(targetTenantId), page);
 
             return View(filteredReferees);
         }
@@ -351,7 +362,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         [HttpGet("/{slug}/Admin/Referee")]
         public async Task<IActionResult> TenantIndex(
             string slug,
-            Guid? conferenceId = null)
+            Guid? conferenceId = null,
+            int? page = null)
         {
             var targetTenantId = await GetTargetTenantIdAsync(slug, conferenceId);
 
@@ -364,7 +376,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return Redirect("/Admin/ConferenceFlow");
             }
 
-            var filteredReferees = await GetRefereeListAsync(targetTenantId);
+            var filteredReferees = Paginate(await GetRefereeListAsync(targetTenantId), page);
 
             return View("Index", filteredReferees);
         }

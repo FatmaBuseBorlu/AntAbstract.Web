@@ -8,6 +8,8 @@
     var slug        = ViewBag.Slug as string;
     var totalIn     = (int)(ViewBag.TotalCheckedIn ?? 0);
     var total       = (int)(ViewBag.TotalRegistrations ?? 0);
+    var search      = ViewBag.Search as string;
+    var pager       = ViewBag.Pager as AntAbstract.Web.Models.ViewModels.Shared.PagerViewModel;
     var scanUrl     = string.IsNullOrEmpty(slug)
         ? $"/Admin/Attendance/Scan?conferenceId={conference?.Id}"
         : $"/{slug}/Admin/Attendance/Scan?conferenceId={conference?.Id}";
@@ -60,6 +62,19 @@
             </div>
         </div>
 
+        <form method="get" class="d-flex gap-2 mb-3" role="search">
+            <input type="hidden" name="conferenceId" value="@conference?.Id" />
+            <input type="search" name="q" value="@search" class="form-control"
+                   placeholder="@Localizer["SearchPlaceholder"]" aria-label="@Localizer["SearchPlaceholder"]" />
+            <button type="submit" class="btn btn-outline-primary text-nowrap">
+                <i class="fas fa-search me-1"></i>@Localizer["SearchButton"]
+            </button>
+            @if (!string.IsNullOrWhiteSpace(search))
+            {
+                <a href="?conferenceId=@conference?.Id" class="btn btn-outline-secondary text-nowrap">@Localizer["ClearSearch"]</a>
+            }
+        </form>
+
         <div class="modern-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -102,5 +117,10 @@
                 </div>
             </div>
         </div>
+
+        @if (pager != null)
+        {
+            <partial name="_AdminPager" model="pager" />
+        }
     }
 </div>

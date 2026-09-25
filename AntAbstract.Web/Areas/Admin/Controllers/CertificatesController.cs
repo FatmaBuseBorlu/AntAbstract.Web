@@ -1,6 +1,7 @@
 ﻿using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -88,7 +89,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             string? userEmail = null,
             CertificateType? type = null,
             bool onlyMissingFile = false,
-            bool onlyEmailNotSent = false)
+            bool onlyEmailNotSent = false,
+            int? page = null)
         {
             // Kurum zorunluluğu yalnızca kurum adminleri için geçerli;
             // SuperAdmin'in kurumu yok ama tüm kongrelere erişiyor.
@@ -160,9 +162,24 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 query = query.Where(x => x.EmailSentAt == null);
             }
 
+            // Eskiden Take(300) ile sessizce kesiliyordu: 300'den fazla
+            // sertifikası olan kongrede eskiler hiç görünmüyordu. Özet sayılar
+            // artık sayfaya değil, filtrenin tamamına göre.
+            ViewBag.Stats = new CertificateStats(
+                Total: await query.CountAsync(),
+                Author: await query.CountAsync(x => x.Type == CertificateType.Author),
+                Reviewer: await query.CountAsync(x => x.Type == CertificateType.Reviewer),
+                MissingFile: await query.CountAsync(x => x.FilePath == null || x.FilePath == ""),
+                EmailNotSent: await query.CountAsync(x => x.EmailSentAt == null));
+
+            var pager = PagerViewModel.For(page, ((CertificateStats)ViewBag.Stats).Total);
+            ViewBag.Pager = pager;
+
             var list = await query
                 .OrderByDescending(x => x.EligibleAt)
-                .Take(300)
+                .ThenBy(x => x.Id)
+                .Skip(pager.Skip)
+                .Take(pager.PageSize)
                 .ToListAsync();
 
             return View(list);
@@ -424,4 +441,6 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             return RedirectToAction("Index", new { conferenceId });
         }
     }
+
+    public record CertificateStats(int Total, int Author, int Reviewer, int MissingFile, int EmailNotSent);
 }

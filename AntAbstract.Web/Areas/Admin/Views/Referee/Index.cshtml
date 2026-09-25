@@ -11,6 +11,9 @@
     Layout = "_LayoutDashboard";
 
     var referees = Model?.ToList() ?? new List<AntAbstract.Domain.Entities.AppUser>();
+    // Model yalnızca bu sayfanın hakemleri; toplam sayı sayfalayıcıdan gelir.
+    var pager = ViewBag.Pager as AntAbstract.Web.Models.ViewModels.Shared.PagerViewModel;
+    var refereeTotal = pager?.TotalCount ?? referees.Count;
 
     var conferenceId = ViewBag.ConferenceId is Guid vbConferenceId
         ? vbConferenceId
@@ -166,7 +169,7 @@
 
                 <div>
                     <div class="referee-stat-number">
-                        @referees.Count
+                        @refereeTotal
                     </div>
 
                     <div class="referee-stat-label">
@@ -242,7 +245,7 @@
             </div>
 
             <div class="referee-count-pill">
-                @referees.Count @Localizer["Referee"]
+                @refereeTotal @Localizer["Referee"]
             </div>
         </div>
 
@@ -382,6 +385,11 @@
                     </tbody>
                 </table>
             </div>
+
+            @if (pager != null)
+            {
+                <partial name="_AdminPager" model="pager" />
+            }
         }
     </div>
 

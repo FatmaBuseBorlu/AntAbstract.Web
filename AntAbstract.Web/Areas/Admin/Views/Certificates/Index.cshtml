@@ -15,11 +15,14 @@
     Guid.TryParse(qConferenceId, out var bulkConferenceId);
 
     var certs = Model ?? new List<Certificate>();
-    int totalCount    = certs.Count;
-    int authorCount   = certs.Count(c => c.Type == CertificateType.Author);
-    int reviewerCount = certs.Count(c => c.Type == CertificateType.Reviewer);
-    int missingFile   = certs.Count(c => string.IsNullOrWhiteSpace(c.FilePath));
-    int emailNotSent  = certs.Count(c => c.EmailSentAt == null);
+    // Sayılar sayfadaki 50 satırdan değil, filtrenin tamamından (controller).
+    var stats = ViewBag.Stats as AntAbstract.Web.Areas.Admin.Controllers.CertificateStats;
+    var pager = ViewBag.Pager as AntAbstract.Web.Models.ViewModels.Shared.PagerViewModel;
+    int totalCount    = stats?.Total ?? certs.Count;
+    int authorCount   = stats?.Author ?? certs.Count(c => c.Type == CertificateType.Author);
+    int reviewerCount = stats?.Reviewer ?? certs.Count(c => c.Type == CertificateType.Reviewer);
+    int missingFile   = stats?.MissingFile ?? certs.Count(c => string.IsNullOrWhiteSpace(c.FilePath));
+    int emailNotSent  = stats?.EmailNotSent ?? certs.Count(c => c.EmailSentAt == null);
 
     string TypeLabel(CertificateType t) => t == CertificateType.Author ? "Yazar" : "Hakem";
     string TypeIconClass(CertificateType t) => t == CertificateType.Author ? "fa-user-graduate" : "fa-gavel";
@@ -243,6 +246,11 @@
                 </table>
             </div>
         </div>
+
+        @if (pager != null)
+        {
+            <partial name="_AdminPager" model="pager" />
+        }
     }
 
 </div>
