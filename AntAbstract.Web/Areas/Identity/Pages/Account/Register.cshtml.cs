@@ -137,7 +137,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
             public string? OtherDepartment { get; set; }
 
             [Required(ErrorMessage = "Şifre zorunludur.")]
-            [StringLength(100, ErrorMessage = "{0} en az {2} karakter olmalıdır.", MinimumLength = 6)]
+            // Identity kuralıyla aynı (Program.cs: en az 8, büyük/küçük harf, rakam);
+            // 6 yazıyordu, form geçip sunucu reddediyordu.
+            [StringLength(100, ErrorMessage = "Şifre en az {2} karakter olmalıdır.", MinimumLength = 8)]
             [DataType(DataType.Password)]
             public string Password { get; set; } = string.Empty;
 
@@ -272,8 +274,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 OrcidId = NormalizeOrcidId(externalLoginState?.OrcidId),
 
                 // Doğrulama e-postasındaki bağlantıya tıklanınca true olur;
-                // o zamana kadar giriş yapılamaz (SignIn.RequireConfirmedEmail).
-                EmailConfirmed = false
+                // o zamana kadar giriş yapılamaz. SMTP yoksa doğrulama
+                // istenmez (e-posta gidemez), hesap doğrulanmış açılır.
+                EmailConfirmed = !_confirmationSender.IsRequired
             };
 
             if (Input.ProfileImage == null || Input.ProfileImage.Length == 0)
@@ -333,6 +336,15 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                 var afterConfirmUrl = !string.IsNullOrWhiteSpace(automaticRegistrationRedirectUrl)
                     ? automaticRegistrationRedirectUrl
                     : returnUrl;
+
+                if (!_confirmationSender.IsRequired)
+                {
+                    // SMTP yok: eskisi gibi oturum aç ve devam et.
+                    await _signInManager.SignInAsync(user, isPersistent: false,
+                        authenticationMethod: externalLoginState?.Provider);
+
+                    return LocalRedirect(afterConfirmUrl);
+                }
 
                 var sent = await _confirmationSender.SendAsync(user, Url, Request.Scheme, afterConfirmUrl);
 

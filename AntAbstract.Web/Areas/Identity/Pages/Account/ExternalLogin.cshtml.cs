@@ -280,7 +280,8 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                     Input.Email,
                     CancellationToken.None);
 
-                user.EmailConfirmed = false;
+                // SMTP yoksa doğrulama istenmez (e-posta gidemez).
+                user.EmailConfirmed = !_confirmationSender.IsRequired;
                 user.FirstName = GetExternalFirstName(info);
                 user.LastName = GetExternalLastName(info);
                 user.OrcidId = NormalizeOrcidId(GetExternalOrcidId(info));
@@ -308,6 +309,14 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                         var afterConfirmUrl = !string.IsNullOrWhiteSpace(redirectAfterRegistration)
                             ? redirectAfterRegistration
                             : GetSafeReturnUrl(returnUrl);
+
+                        if (!_confirmationSender.IsRequired)
+                        {
+                            await _signInManager.SignInAsync(user, isPersistent: false,
+                                authenticationMethod: info.LoginProvider);
+
+                            return LocalRedirect(afterConfirmUrl);
+                        }
 
                         var sent = await _confirmationSender.SendAsync(
                             user, Url, Request.Scheme, afterConfirmUrl);

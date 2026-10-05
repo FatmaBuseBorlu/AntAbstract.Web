@@ -2,23 +2,42 @@ using System.Net;
 using System.Text.RegularExpressions;
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace AntAbstract.Web.Tests;
 
 /// <summary>
-/// Kayıtta e-posta hiç doğrulanmıyordu (EmailConfirmed = true). Artık
-/// doğrulanmamış hesapla giriş yapılamıyor ve kayıt sonrası sayfa
-/// doğrulama bağlantısını ekrana basmıyor.
+/// Kayıtta e-posta hiç doğrulanmıyordu (EmailConfirmed = true). Artık SMTP
+/// ayarlıyken doğrulanmamış hesapla giriş yapılamıyor; SMTP yokken doğrulama
+/// istenmiyor (e-posta gidemez, yoksa kimse giriş yapamazdı — canlıda yaşandı).
+/// Kayıt sonrası sayfa doğrulama bağlantısını ekrana basmıyor.
 /// </summary>
-public sealed class EmailConfirmationTests(AuthenticatedTestFactory factory) : IClassFixture<AuthenticatedTestFactory>
+public sealed class EmailConfirmationTests : IClassFixture<AuthenticatedTestFactory>
 {
     private const string Password = "Sifre1234";
 
-    private async Task CreateUserAsync(string email, bool confirmed)
+    private readonly WebApplicationFactory<Program> factory;
+
+    public EmailConfirmationTests(AuthenticatedTestFactory baseFactory)
     {
-        using var scope = factory.Services.CreateScope();
+        factory = baseFactory.WithWebHostBuilder(b => b.ConfigureAppConfiguration((_, c) =>
+            c.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Email:SmtpServer"] = "smtp.test.local",
+                ["Email:Username"] = "test",
+                ["Email:Password"] = "test"
+            })));
+        _noSmtp = baseFactory;
+    }
+
+    private readonly WebApplicationFactory<Program> _noSmtp;
+
+    private async Task CreateUserAsync(string email, bool confirmed, WebApplicationFactory<Program>? on = null)
+    {
+        using var scope = (on ?? factory).Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
         if (await users.FindByEmailAsync(email) != null)
@@ -56,6 +75,19 @@ public sealed class EmailConfirmationTests(AuthenticatedTestFactory factory) : I
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("doğrulanmadı", body);
+    }
+
+    [Fact]
+    public async Task WithoutSmtp_UnconfirmedUser_CanSignIn()
+    {
+        // SMTP yokken doğrulama e-postası gidemez; takılı kalan hesaplar girebilmeli.
+        const string email = "smtpsiz-dogrulanmamis@antabstract.local";
+        await CreateUserAsync(email, confirmed: false, on: _noSmtp);
+
+        var client = _noSmtp.CreateClient(new() { AllowAutoRedirect = false });
+        var response = await LoginAsync(client, email);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
     }
 
     [Fact]

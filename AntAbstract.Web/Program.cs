@@ -105,12 +105,15 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
 
     opt.User.RequireUniqueEmail = true;
 
-    // Kayıtta e-posta doğrulanmadan giriş yapılamaz. Mevcut kullanıcılar
-    // migration ile doğrulanmış sayıldı (hepsi zaten öyle işaretleniyordu).
-    opt.SignIn.RequireConfirmedEmail = true;
+    // Kayıtta e-posta doğrulanmadan giriş yapılamaz — ama yalnızca SMTP
+    // ayarlıysa; yoksa doğrulama e-postası gitmez ve kimse giriş yapamaz.
+    // Mevcut kullanıcılar migration ile doğrulanmış sayıldı.
+    opt.SignIn.RequireConfirmedEmail =
+        AntAbstract.Web.Infrastructure.SmtpAvailability.IsConfigured(builder.Configuration);
 })
 .AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddErrorDescriber<AntAbstract.Web.Security.LocalizedIdentityErrorDescriber>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

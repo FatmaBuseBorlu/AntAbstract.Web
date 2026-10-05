@@ -1,6 +1,5 @@
 using AntAbstract.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Globalization;
@@ -16,20 +15,29 @@ namespace AntAbstract.Web.Security
     public class EmailConfirmationSender
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly IEmailSender _emailSender;
+        private readonly AntAbstract.Application.Interfaces.IEmailQueue _queue;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<EmailConfirmationSender> _logger;
 
         public EmailConfirmationSender(
             UserManager<AppUser> userManager,
-            IEmailSender emailSender,
+            AntAbstract.Application.Interfaces.IEmailQueue queue,
+            IConfiguration configuration,
             ILogger<EmailConfirmationSender> logger)
         {
             _userManager = userManager;
-            _emailSender = emailSender;
+            _queue = queue;
+            _configuration = configuration;
             _logger = logger;
         }
 
-        /// <returns>E-posta kuyruğa/sunucuya teslim edildiyse true.</returns>
+        /// <summary>
+        /// Doğrulama zorunlu mu? SMTP ayarlı değilse hayır: kayıt hesabı
+        /// doğrulanmış açar ve oturum açar (bkz. SmtpAvailability).
+        /// </summary>
+        public bool IsRequired => AntAbstract.Web.Infrastructure.SmtpAvailability.IsConfigured(_configuration);
+
+        /// <returns>E-posta giden kutusuna yazıldıysa true (gönderim arka planda, hata olursa tekrar denenir).</returns>
         public async Task<bool> SendAsync(AppUser user, IUrlHelper url, string scheme, string? returnUrl)
         {
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -59,7 +67,7 @@ namespace AntAbstract.Web.Security
 
             try
             {
-                await _emailSender.SendEmailAsync(
+                _queue.Enqueue(new AntAbstract.Application.Interfaces.EmailQueueItem(
                     user.Email,
                     subject,
                     $"""
@@ -74,14 +82,14 @@ namespace AntAbstract.Web.Security
                         </p>
                         <p style="color:#64748b;font-size:13px">{ignore}</p>
                     </div>
-                    """);
+                    """));
 
                 return true;
             }
             catch (Exception ex)
             {
                 // Kayıt yine de tamamlanır; kullanıcı "yeniden gönder" ile tekrar deneyebilir.
-                _logger.LogError(ex, "Doğrulama e-postası gönderilemedi. UserId={UserId}", user.Id);
+                _logger.LogError(ex, "Doğrulama e-postası kuyruğa yazılamadı. UserId={UserId}", user.Id);
                 return false;
             }
         }
