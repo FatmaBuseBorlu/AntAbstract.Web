@@ -17,6 +17,9 @@
     var mailErrors    = (List<MailErrorRow>)ViewBag.RecentMailErrors;
     var wStats        = (WebhookStats)ViewBag.WebhookStats;
     var mStats        = (MailStats)ViewBag.MailStats;
+    var oStats        = ViewBag.OutboxStats as OutboxStats ?? new OutboxStats(0, 0, 0, null);
+    // 15 dakikadan uzun bekleyen e-posta: gönderici çalışmıyor (uygulama uykuda/SMTP yok).
+    var outboxStuck   = oStats.OldestPendingMinutes is > 15;
     var ratePolicies   = ViewBag.RateLimitPolicies as dynamic[];
     var rateRejections = ViewBag.RateLimitRejections as List<AntAbstract.Web.Infrastructure.RateLimitCounter.RateLimitRejection>
                          ?? new();
@@ -230,6 +233,32 @@
             <div>
                 <div class="health-stat-value">@(auditPending < 0 ? "—" : auditPending.ToString())</div>
                 <div class="health-stat-label">@Localizer["AuditQueue"] — @Localizer["PendingRecords"]</div>
+            </div>
+        </div>
+
+        <div class="health-stat-card">
+            <div class="health-stat-icon @(oStats.Failed > 0 || outboxStuck ? "si-red" : oStats.Pending > 0 ? "si-yellow" : "si-green")">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div>
+                <div class="health-stat-value">@oStats.Pending / @oStats.Failed</div>
+                <div class="health-stat-label">
+                    @Localizer["OutboxLabel"] — @Localizer["OutboxPendingFailed"]<br />
+                    @Localizer["OutboxSent24h"]: @oStats.SentLast24h
+                    @if (outboxStuck)
+                    {
+                        <br /><span class="text-danger fw-bold">@string.Format(Localizer["OutboxStuck"].Value, oStats.OldestPendingMinutes)</span>
+                    }
+                </div>
+                @if (oStats.Failed > 0)
+                {
+                    <form method="post" action="/Admin/Health/RetryFailedEmails" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.75rem;padding:2px 10px;">
+                            <i class="fas fa-redo me-1"></i>@Localizer["OutboxRetryFailed"]
+                        </button>
+                    </form>
+                }
             </div>
         </div>
 

@@ -30,25 +30,25 @@
 <!-- İstatistik Kartları -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center p-3">
+        <div class="modern-card text-center p-3">
             <div class="fs-2 fw-bold text-primary">@ViewBag.TotalCount</div>
             <div class="text-muted small">@Localizer["StatTotal"]</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center p-3">
+        <div class="modern-card text-center p-3">
             <div class="fs-2 fw-bold text-success">@ViewBag.PaidCount</div>
             <div class="text-muted small">@Localizer["StatPaid"]</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center p-3">
+        <div class="modern-card text-center p-3">
             <div class="fs-2 fw-bold text-warning">@ViewBag.ReceiptCount</div>
             <div class="text-muted small">@Localizer["StatReceipt"]</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-center p-3">
+        <div class="modern-card text-center p-3">
             <div class="fs-2 fw-bold text-secondary">@ViewBag.PendingCount</div>
             <div class="text-muted small">@Localizer["StatPending"]</div>
         </div>
@@ -56,7 +56,7 @@
 </div>
 
 <!-- Filtreler -->
-<div class="card border-0 shadow-sm mb-3">
+<div class="modern-card mb-3">
     <div class="card-body d-flex flex-wrap gap-2 align-items-center">
         <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="all"   asp-route-search="@search" class="@TabClass("all")">@Localizer["TabAll"] <span class="badge bg-light text-dark ms-1">@ViewBag.TotalCount</span></a>
         <a asp-action="Index" asp-route-slug="@slug" asp-route-conferenceId="@conference?.Id" asp-route-status="receipt" asp-route-search="@search" class="@TabClass("receipt")">⚠️ @Localizer["TabReceiptPending"] <span class="badge bg-warning text-dark ms-1">@ViewBag.ReceiptCount</span></a>
@@ -74,7 +74,7 @@
 </div>
 
 <!-- Kayıt Listesi -->
-<div class="card border-0 shadow-sm">
+<div class="modern-card">
     <div class="card-body p-0">
         @if (!Model.Any())
         {

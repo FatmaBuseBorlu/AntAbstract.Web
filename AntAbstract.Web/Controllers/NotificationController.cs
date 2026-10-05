@@ -8,11 +8,25 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
     public class NotificationController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<NotificationController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly INotificationService _notificationService;
         private readonly AppDbContext _context;
 
@@ -57,7 +71,7 @@ namespace AntAbstract.Web.Controllers
                 return BadRequest(new
                 {
                     ok = false,
-                    message = "Geçersiz bildirim."
+                    message = T("Msg_GecersizBildirim", "Geçersiz bildirim.")
                 });
             }
 
@@ -79,7 +93,7 @@ namespace AntAbstract.Web.Controllers
                 return NotFound(new
                 {
                     ok = false,
-                    message = "Bildirim bulunamadı veya bu bildirime erişim yetkiniz yok."
+                    message = T("Msg_BildirimBulunamadiVeyaBuBildirimeErisim", "Bildirim bulunamadı veya bu bildirime erişim yetkiniz yok.")
                 });
             }
 
@@ -95,7 +109,7 @@ namespace AntAbstract.Web.Controllers
         {
             if (id <= 0)
             {
-                TempData["ErrorMessage"] = "Geçersiz bildirim.";
+                TempData["ErrorMessage"] = T("Msg_GecersizBildirim", "Geçersiz bildirim.");
                 return Redirect("/Notification/Index");
             }
 
@@ -110,7 +124,7 @@ namespace AntAbstract.Web.Controllers
 
             if (!result)
             {
-                TempData["ErrorMessage"] = "Bildirim bulunamadı veya bu bildirime erişim yetkiniz yok.";
+                TempData["ErrorMessage"] = T("Msg_BildirimBulunamadiVeyaBuBildirimeErisim", "Bildirim bulunamadı veya bu bildirime erişim yetkiniz yok.");
             }
 
             return Redirect("/Notification/Index");

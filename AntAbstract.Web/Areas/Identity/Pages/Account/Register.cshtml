@@ -1001,6 +1001,12 @@
 
                             <input asp-for="Input.Password" class="form-control" placeholder="••••••••" />
 
+                            <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                                @(isEnglish
+                                    ? "At least 8 characters, with an uppercase letter, a lowercase letter and a digit."
+                                    : "En az 8 karakter; büyük harf, küçük harf ve rakam içermeli.")
+                            </small>
+
                             @if (isExternalLoginFlow)
                             {
                                 <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">

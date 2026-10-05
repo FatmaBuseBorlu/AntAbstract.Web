@@ -43,7 +43,8 @@ otomatik olarak değiştirilir. Plesk panelinde şu değerleri tanımla:
 | `PUBLIC_BASE_URL` | Sitenin public URL'i (ör: https://antabstract.com.tr) | ✅ |
 | `ORCID_CLIENT_ID` | ORCID OAuth client ID | ORCID kullanılıyorsa |
 | `ORCID_CLIENT_SECRET` | ORCID OAuth client secret | ORCID kullanılıyorsa |
-| `HEALTH_API_KEY` | Health endpoint API key | Opsiyonel |
+| `HEALTH_API_KEY` | Ayrıntılı durum adresi (`/Admin/Health/Status`) için API anahtarı. Anahtarsız `/health` bundan etkilenmez | Opsiyonel |
+| `SENTRY_DSN` | Sentry proje DSN'i. Boş bırakılırsa hata izleme kapalı kalır | Önerilir |
 | `JWT_SECRET_KEY` | JWT token imzalama anahtarı (min 32 karakter) | ✅ |
 | `BOOTSTRAP_ADMIN_EMAIL` | İlk kurulumda oluşturulacak SuperAdmin e-postası | SuperAdmin yoksa gerekli |
 | `BOOTSTRAP_ADMIN_PASSWORD` | İlk kurulum SuperAdmin şifresi (min 12 karakter) | SuperAdmin yoksa gerekli |
@@ -147,6 +148,20 @@ işaret ediyor — user-secrets dışında hiçbir yere gerçek credential yazma
 - [ ] HTTPS sertifikası aktif (Let's Encrypt veya Plesk SSL)
 - [ ] `Email:BaseUrl` production domain'e ayarlı (https://antabstract.com.tr)
 - [ ] wkhtmltopdf Linux'ta kurulu: `sudo apt-get install wkhtmltopdf` (kabul/ret mektubu PDF için)
+
+## E-posta Giden Kutusu ve Uygulamanın Uyumaması
+
+E-postalar önce veritabanındaki `EmailOutbox` tablosuna yazılır, arka plandaki
+gönderici oradan gönderir. Uygulama yeniden başlasa da e-posta kaybolmaz;
+SMTP hatasında 1 dk / 5 dk / 30 dk / 2 sa arayla 5 kez denenir. Durum:
+**Yönetim → Sistem Durumu → Giden kutusu** (başarısızları yeniden dene butonu orada).
+
+- [ ] **UptimeRobot (ücretsiz) → `https://antabstract.com.tr/health`, 5 dakikada bir.**
+  Turhost IIS boşta kalan uygulamayı kapatıyor; kapalıyken e-postalar tabloda
+  bekler, hatırlatmalar ve zamanlanmış duyurular çalışmaz. Düzenli ziyaret
+  uygulamayı uyanık tutar ve site düşerse haber verir.
+- İsteğe bağlı: `Email:MaxPerMinute` (varsayılan 30) — SMTP sağlayıcısının
+  dakika sınırına göre. Toplu duyuru bu hızla sırayla gider.
 
 ## Dikkat — Upload Dosyaları
 

@@ -15,5 +15,15 @@ namespace AntAbstract.Infrastructure.Services.Email
             string toEmail,
             string templateKey,
             Dictionary<string, string> placeholders);
+
+        /// <summary>
+        /// Şablonu işler ve arka plan kuyruğuna ekler; isteği SMTP'yi beklemeden
+        /// bırakır. Şablon yoksa/pasifse false döner. Kullanıcının yazdığı
+        /// değerler (ad, başlık) çağıran tarafından HTML-kodlanmalıdır.
+        /// </summary>
+        Task<bool> EnqueueTemplatedAsync(
+            string toEmail,
+            string templateKey,
+            Dictionary<string, string> placeholders);
     }
 }

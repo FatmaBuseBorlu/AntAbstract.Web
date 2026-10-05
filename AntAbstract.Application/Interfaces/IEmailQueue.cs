@@ -1,5 +1,4 @@
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace AntAbstract.Application.Interfaces
 {
@@ -9,12 +8,20 @@ namespace AntAbstract.Application.Interfaces
         string HtmlBody,
         int MaxRetries = 3);
 
+    /// <summary>
+    /// Gönderilecek e-postayı giden kutusuna (veritabanı) yazar; gönderimi arka
+    /// plandaki gönderici yapar. Yeniden başlatmada kaybolmaz, hata olursa
+    /// tekrar denenir.
+    /// </summary>
     public interface IEmailQueue
     {
-        /// <summary>E-postayı kuyruğa ekler. Non-blocking.</summary>
         void Enqueue(EmailQueueItem item);
 
-        /// <summary>Kuyruktaki bir sonraki e-postayı alır; kuyruk boşsa bekler.</summary>
-        Task<EmailQueueItem> DequeueAsync(CancellationToken cancellationToken);
+        /// <summary>Çok alıcılı gönderimde tek kayıtta yazar.</summary>
+        void EnqueueRange(IEnumerable<EmailQueueItem> items)
+        {
+            foreach (var item in items)
+                Enqueue(item);
+        }
     }
 }

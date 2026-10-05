@@ -8,6 +8,8 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -15,6 +17,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class ConferenceWizardController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<ConferenceWizardController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly TenantContext _tenantContext;
 
@@ -55,7 +69,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrWhiteSpace(title))
             {
-                ModelState.AddModelError("title", "Kongre adı zorunludur.");
+                ModelState.AddModelError("title", T("Msg_KongreAdiZorunludur", "Kongre adı zorunludur."));
                 ViewBag.Slug = slug;
                 return View("Step1");
             }
@@ -63,7 +77,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             var tenant = _tenantContext.Current;
             if (tenant == null)
             {
-                TempData["ErrorMessage"] = "Tenant bulunamadı.";
+                TempData["ErrorMessage"] = T("Msg_TenantBulunamadi", "Tenant bulunamadı.");
                 return Redirect($"/{slug}/Admin/Conferences");
             }
 
@@ -95,7 +109,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.Conferences.Add(conference);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kongre oluşturuldu. Devam edin.";
+            TempData["SuccessMessage"] = T("Msg_KongreOlusturulduDevamEdin", "Kongre oluşturuldu. Devam edin.");
             return Redirect($"/{slug}/Admin/ConferenceWizard/Step2/{conference.Id}");
         }
 
@@ -121,7 +135,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (startDate >= endDate)
             {
-                TempData["ErrorMessage"] = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
+                TempData["ErrorMessage"] = T("Msg_BitisTarihiBaslangicTarihindenSonraOlmalidir", "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.");
                 return Redirect($"/{slug}/Admin/ConferenceWizard/Step2/{id}");
             }
 

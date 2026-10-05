@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -338,7 +339,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         {
             if (!Enum.IsDefined(typeof(ConferencePageBlockType), model.BlockType))
             {
-                ModelState.AddModelError(nameof(model.BlockType), "Geçerli bir blok tipi seçiniz.");
+                ModelState.AddModelError(nameof(model.BlockType), T("Msg_GecerliBirBlokTipiSeciniz", "Geçerli bir blok tipi seçiniz."));
             }
 
             if (!ModelState.IsValid)
@@ -351,7 +352,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (blockTypeExists)
             {
-                ModelState.AddModelError(nameof(model.BlockType), "Bu blok tipi için zaten bir şablon tanımlı.");
+                ModelState.AddModelError(nameof(model.BlockType), T("Msg_BuBlokTipiIcinZatenBir", "Bu blok tipi için zaten bir şablon tanımlı."));
                 return View("CreateTemplate", model);
             }
 
@@ -363,7 +364,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.SiteSectionTemplates.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Site bölüm şablonu başarıyla oluşturuldu.";
+            TempData["SuccessMessage"] = T("Msg_SiteBolumSablonuBasariylaOlusturuldu", "Site bölüm şablonu başarıyla oluşturuldu.");
 
             return Redirect("/Admin/PageBlocks");
         }
@@ -395,7 +396,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (!Enum.IsDefined(typeof(ConferencePageBlockType), model.BlockType))
             {
-                ModelState.AddModelError(nameof(model.BlockType), "Geçerli bir blok tipi seçiniz.");
+                ModelState.AddModelError(nameof(model.BlockType), T("Msg_GecerliBirBlokTipiSeciniz", "Geçerli bir blok tipi seçiniz."));
             }
 
             if (!ModelState.IsValid)
@@ -416,7 +417,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (blockTypeExists)
             {
-                ModelState.AddModelError(nameof(model.BlockType), "Bu blok tipi başka bir şablonda kullanılıyor.");
+                ModelState.AddModelError(nameof(model.BlockType), T("Msg_BuBlokTipiBaskaBirSablonda", "Bu blok tipi başka bir şablonda kullanılıyor."));
                 return View("EditTemplate", model);
             }
 
@@ -431,7 +432,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Site bölüm şablonu başarıyla güncellendi.";
+            TempData["SuccessMessage"] = T("Msg_SiteBolumSablonuBasariylaGuncellendi", "Site bölüm şablonu başarıyla güncellendi.");
 
             return Redirect("/Admin/PageBlocks");
         }
@@ -455,8 +456,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = template.IsActive
-                ? "Şablon aktif hale getirildi."
-                : "Şablon pasif hale getirildi.";
+                ? T("Msg_SablonAktifHaleGetirildi", "Şablon aktif hale getirildi.")
+                : T("Msg_SablonPasifHaleGetirildi", "Şablon pasif hale getirildi.");
 
             return Redirect("/Admin/PageBlocks");
         }

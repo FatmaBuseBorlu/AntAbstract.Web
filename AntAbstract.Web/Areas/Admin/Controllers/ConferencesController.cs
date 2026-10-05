@@ -1,4 +1,5 @@
 ﻿using AntAbstract.Domain.Entities;
+using AntAbstract.Web.Infrastructure;
 using AntAbstract.Infrastructure.Context;
 using AntAbstract.Infrastructure.Services.Conferences;
 using AntAbstract.Web.Files;
@@ -38,6 +39,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IStringLocalizer<ConferencesController> _localizer;
         private readonly IUploadFileValidator _uploadFileValidator;
+        private readonly ParticipantNotifier _participantNotifier;
 
         public ConferencesController(
             AppDbContext context,
@@ -46,8 +48,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IAdminTenantAccessService tenantAccess,
             IWebHostEnvironment env,
             IStringLocalizer<ConferencesController> localizer,
-            IUploadFileValidator uploadFileValidator)
+            IUploadFileValidator uploadFileValidator,
+            ParticipantNotifier participantNotifier)
         {
+            _participantNotifier = participantNotifier;
             _context = context;
             _tenantContext = tenantContext;
             _selectedConferenceService = selectedConferenceService;
@@ -558,7 +562,8 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             IFormFile? BannerFile,
             IFormFile? WritingRulesFile,
             IFormFile? AbstractTemplateFile,
-            IFormFile? FullTextTemplateFile)
+            IFormFile? FullTextTemplateFile,
+            bool notifyParticipants = false)
         {
             if (_tenantContext.Current == null ||
                 !string.Equals(_tenantContext.Current.Slug, slug, StringComparison.OrdinalIgnoreCase))
@@ -636,6 +641,9 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return View(conference);
             }
 
+            // Katılımcıyı ilgilendiren alanlar: kaydetmeden önceki hâlleri.
+            var changes = CollectParticipantFacingChanges(existingConference, conference);
+
             existingConference.Title = conference.Title;
             existingConference.StartDate = conference.StartDate;
             existingConference.EndDate = conference.EndDate;
@@ -687,9 +695,57 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 "Success_ConferenceUpdated",
                 "Kongre başarıyla güncellendi.");
 
+            // Yönetici isterse, değişen tarih/yer/son tarih bilgisi kayıtlılara
+            // e-posta + sistem içi bildirim olarak gider. Her küçük düzeltmede
+            // otomatik gitmesin diye karar yöneticide.
+            if (notifyParticipants)
+            {
+                if (changes.Count == 0)
+                {
+                    TempData["InfoMessage"] = T(
+                        "Info_NoParticipantFacingChange",
+                        "Tarih, yer veya son tarihlerde değişiklik olmadığı için katılımcılara bildirim gönderilmedi.");
+                }
+                else
+                {
+                    var notified = await _participantNotifier.ConferenceUpdatedAsync(existingConference.Id, changes);
+
+                    TempData["SuccessMessage"] = string.Format(
+                        T("Success_ConferenceUpdatedNotified",
+                          "Kongre güncellendi ve {0} kayıtlı katılımcıya bildirim gönderildi."),
+                        notified);
+                }
+            }
+
             return Redirect(IsSuperAdminUser()
                 ? "/Admin/AllConferences"
                 : $"/{slug}/Admin/Conferences");
+        }
+
+        private static List<ParticipantNotifier.FieldChange> CollectParticipantFacingChanges(
+            Conference before, Conference after)
+        {
+            var changes = new List<ParticipantNotifier.FieldChange>();
+
+            static string D(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy") : "—";
+            static string DT(DateTime? d) => d.HasValue ? d.Value.ToString("dd.MM.yyyy HH:mm") : "—";
+            static string S(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v.Trim();
+
+            void Add(string tr, string en, string b, string a)
+            {
+                if (!string.Equals(b, a, StringComparison.Ordinal))
+                    changes.Add(new ParticipantNotifier.FieldChange(tr, en, b, a));
+            }
+
+            Add("Başlangıç tarihi", "Start date", D(before.StartDate), D(after.StartDate));
+            Add("Bitiş tarihi", "End date", D(before.EndDate), D(after.EndDate));
+            Add("Özet son tarihi", "Abstract deadline", DT(before.AbstractSubmissionDeadline), DT(after.AbstractSubmissionDeadline));
+            Add("Tam metin son tarihi", "Full-text deadline", DT(before.FullTextSubmissionDeadline), DT(after.FullTextSubmissionDeadline));
+            Add("Mekân", "Venue", S(before.Venue), S(after.Venue));
+            Add("Şehir", "City", S(before.City), S(after.City));
+            Add("Ülke", "Country", S(before.Country), S(after.Country));
+
+            return changes;
         }
 
         [HttpPost("/{slug}/Admin/Conferences/Delete")]

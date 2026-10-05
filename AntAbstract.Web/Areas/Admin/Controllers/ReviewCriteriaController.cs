@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -14,6 +16,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class ReviewCriteriaController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<ReviewCriteriaController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly IAdminTenantAccessService _tenantAccess;
 
@@ -79,7 +93,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             _context.ReviewCriteria.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kriter oluşturuldu.";
+            TempData["SuccessMessage"] = T("Msg_KriterOlusturuldu", "Kriter oluşturuldu.");
             return Redirect(IndexUrl(slug, conference.Id));
         }
 
@@ -126,7 +140,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
             criterion.IsActive = model.IsActive;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Kriter güncellendi.";
+            TempData["SuccessMessage"] = T("Msg_KriterGuncellendi", "Kriter güncellendi.");
             return Redirect(IndexUrl(slug, conference.Id));
         }
 
@@ -148,7 +162,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             if (criterion.Scores.Any())
             {
-                TempData["ErrorMessage"] = "Bu kriterin puanları var, silinemez. Pasif hale getirin.";
+                TempData["ErrorMessage"] = T("Msg_BuKriterinPuanlariVarSilinemezPasif", "Bu kriterin puanları var, silinemez. Pasif hale getirin.");
                 return Redirect(IndexUrl(slug, conference.Id));
             }
 

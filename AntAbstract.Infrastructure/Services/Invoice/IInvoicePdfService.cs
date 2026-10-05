@@ -4,6 +4,7 @@ namespace AntAbstract.Infrastructure.Services.Invoice
 {
     public interface IInvoicePdfService
     {
-        byte[] GenerateRegistrationInvoice(Registration registration);
+        /// <summary>Ödeme makbuzu (fatura değil). paymentMethod: Payment.PaymentMethod.</summary>
+        byte[] GenerateRegistrationInvoice(Registration registration, string? paymentMethod = null);
     }
 }

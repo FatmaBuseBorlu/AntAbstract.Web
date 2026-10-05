@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     var registration = ViewBag.Registration as AntAbstract.Domain.Entities.Registration;
     var slug = ViewBag.Slug as string ?? "";
@@ -25,7 +26,7 @@
                 <div class="alert alert-info border-0 rounded-3 mb-4" style="background:#f0f4ff">
                     <div class="row g-2">
                         <div class="col-6">
-                            <small class="text-muted d-block">Kongre</small>
+                            <small class="text-muted d-block">@Localizer["Kongre"]</small>
                             <strong>@(registration.Conference?.Title ?? "-")</strong>
                         </div>
                         <div class="col-6">

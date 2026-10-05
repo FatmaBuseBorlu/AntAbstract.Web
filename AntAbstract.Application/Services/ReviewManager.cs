@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace AntAbstract.Application.Services
 {
+    // Hakem ekranlari slug tasimayan adreslerden de aciliyor (/Review/...).
+    // Orada kiraci baglami bos kaliyor ve sorgu filtresi gorevi bulunamaz
+    // yapiyor; hakem degerlendirmesini gonderdiginde "gorev bulunamadi" ile
+    // geri donuyor ve yazdigi kayboluyordu. Kapsami her sorgunun kendi
+    // reviewerId / atama kimligi kosulu sagliyor.
     public class ReviewManager : IReviewService
     {
         private static readonly HashSet<string> AllowedRecommendations = new HashSet<string>
@@ -74,6 +79,7 @@ namespace AntAbstract.Application.Services
             }
 
             var existingAssignment = await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(ra =>
                     ra.SubmissionId == input.SubmissionId &&
                     ra.ReviewerId == input.ReviewerId);
@@ -159,6 +165,7 @@ namespace AntAbstract.Application.Services
             }
 
             var assignment = await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(ra => ra.Submission)
                     .ThenInclude(s => s.Conference)
@@ -235,6 +242,7 @@ namespace AntAbstract.Application.Services
             }
 
             var assignment = await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .Include(ra => ra.Review)
                 .FirstOrDefaultAsync(ra => ra.Id == input.ReviewAssignmentId);
 
@@ -299,6 +307,7 @@ namespace AntAbstract.Application.Services
             }
 
             var assignment = await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
                     x.ReviewerId == userId);
@@ -324,6 +333,7 @@ namespace AntAbstract.Application.Services
             }
 
             var assignments = await _context.ReviewAssignments
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(ra => ra.Review)
                 .Where(ra => ra.SubmissionId == submissionId)

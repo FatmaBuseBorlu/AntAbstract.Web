@@ -29,8 +29,13 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
         [TempData]
         public string StatusMessage { get; set; }
 
-        public async Task<IActionResult> OnGetAsync(string userId, string code)
+        // Kayıt sırasında başlayan kongre kaydına dönüş (giriş sonrası).
+        public string ReturnUrl { get; set; }
+
+        public async Task<IActionResult> OnGetAsync(string userId, string code, string returnUrl = null)
         {
+            ReturnUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(code))
             {
                 StatusMessage = _localizer["InvalidConfirmationRequest"];

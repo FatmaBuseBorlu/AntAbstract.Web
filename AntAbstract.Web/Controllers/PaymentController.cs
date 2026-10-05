@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 namespace AntAbstract.Web.Controllers
 {
     [Authorize]
@@ -805,9 +806,25 @@ namespace AntAbstract.Web.Controllers
                 var failUrl = $"{payTRBaseUrl}/{canonicalSlug}/payment/paytr-fail?paymentId={payment.Id}";
 
                 var amountKurus = (long)Math.Round(amount * 100);
-                var currencyCode = currency.ToUpperInvariant() == "EUR" ? "EUR"
-                                 : currency.ToUpperInvariant() == "USD" ? "USD"
-                                 : "TL";
+                // PayTR'nin kabul ettiği kodlar; tanımadığı kod TL'ye düşerdi ve
+                // 100 GBP'lik kayıt 100 TL olarak çekilirdi.
+                var currencyCode = currency.ToUpperInvariant() switch
+                {
+                    "EUR" => "EUR",
+                    "USD" => "USD",
+                    "GBP" => "GBP",
+                    "TRY" or "TL" => "TL",
+                    _ => null
+                };
+
+                if (currencyCode == null)
+                {
+                    TempData["ErrorMessage"] = T(
+                        "PayTRUnsupportedCurrency",
+                        "Bu kayıt türünün para birimi kartla ödemede desteklenmiyor. Lütfen kongre yönetimiyle iletişime geçin.");
+
+                    return Redirect(BuildUrl(canonicalSlug, $"/payment/checkout/{registration.Id}"));
+                }
 
                 var basketItem = new[] { new[] { registration.Conference?.Title ?? "Kongre Kaydı", amount.ToString("0.00"), "1" } };
                 var basketJson = System.Text.Json.JsonSerializer.Serialize(basketItem);
@@ -820,7 +837,8 @@ namespace AntAbstract.Web.Controllers
                     Currency = currencyCode,
                     UserName = $"{user.FirstName} {user.LastName}".Trim(),
                     UserAddress = payment.BillingAddress ?? "Belirtilmedi",
-                    UserPhone = "05000000000",
+                    // PayTR telefonu zorunlu tutuyor; kullanıcınınki yoksa yer tutucu.
+                    UserPhone = string.IsNullOrWhiteSpace(user.PhoneNumber) ? "05000000000" : user.PhoneNumber,
                     UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
                     OkUrl = okUrl,
                     FailUrl = failUrl,
@@ -1196,7 +1214,7 @@ namespace AntAbstract.Web.Controllers
             if (registration == null) return NotFound();
             if (registration.IsPaid)
             {
-                TempData["InfoMessage"] = "Bu kayıt zaten ödenmiş olarak işaretlenmiş.";
+                TempData["InfoMessage"] = T("Msg_BuKayitZatenOdenmisOlarakIsaretlenmis", "Bu kayıt zaten ödenmiş olarak işaretlenmiş.");
                 return RedirectToAction(nameof(My));
             }
 
@@ -1274,7 +1292,7 @@ namespace AntAbstract.Web.Controllers
             registration.Status = AntAbstract.Domain.Entities.RegistrationStatus.AwaitingApproval;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.";
+            TempData["SuccessMessage"] = T("Msg_MakbuzunuzBasariylaYuklendiYoneticiOnayindanSonra", "Makbuzunuz başarıyla yüklendi. Yönetici onayından sonra kaydınız aktif olacaktır.");
             return RedirectToAction(nameof(My));
         }
 
@@ -1317,7 +1335,7 @@ namespace AntAbstract.Web.Controllers
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                TempData["ErrorMessage"] = "PayTR oturumu geçersiz. Lütfen tekrar deneyin.";
+                TempData["ErrorMessage"] = T("Msg_PayTROturumuGecersizLutfenTekrarDeneyin", "PayTR oturumu geçersiz. Lütfen tekrar deneyin.");
                 return Redirect(BuildUrl(slug ?? GetSlug(), "/my-submissions"));
             }
 
@@ -1333,7 +1351,7 @@ namespace AntAbstract.Web.Controllers
         public IActionResult PayTRSuccess(Guid paymentId, string? slug = null)
         {
             var canonicalSlug = slug ?? GetSlug();
-            TempData["InfoMessage"] = "Ödemeniz işleniyor. Onay geldiğinde bildirim alacaksınız.";
+            TempData["InfoMessage"] = T("Msg_OdemenizIsleniyorOnayGeldigindeBildirimAlacaksiniz", "Ödemeniz işleniyor. Onay geldiğinde bildirim alacaksınız.");
             return Redirect(BuildUrl(canonicalSlug, $"/payment/success?id={paymentId}"));
         }
 
@@ -1342,7 +1360,7 @@ namespace AntAbstract.Web.Controllers
         [Authorize]
         public IActionResult PayTRFail(Guid paymentId, string? slug = null)
         {
-            TempData["ErrorMessage"] = "PayTR ödeme işlemi başarısız oldu veya iptal edildi.";
+            TempData["ErrorMessage"] = T("Msg_PayTROdemeIslemiBasarisizOlduVeya", "PayTR ödeme işlemi başarısız oldu veya iptal edildi.");
             return Redirect(BuildUrl(slug ?? GetSlug(), "/my-submissions"));
         }
 
@@ -1555,10 +1573,21 @@ namespace AntAbstract.Web.Controllers
                 return NotFound();
 
             if (!registration.IsPaid)
-                return BadRequest("Ödeme tamamlanmamış kayıtlar için fatura indirilemez.");
+                return BadRequest("Ödeme tamamlanmamış kayıtlar için makbuz indirilemez.");
 
-            var pdfBytes = _invoicePdfService.GenerateRegistrationInvoice(registration);
-            var fileName = $"Fatura-{registration.Id.ToString("N").Substring(0, 8).ToUpper()}.pdf";
+            // Makbuzdaki ödeme yöntemi: bu kayda ait son tamamlanan ödeme.
+            var paymentMethod = await _context.Payments
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(p => p.AppUserId == registration.AppUserId &&
+                            p.ConferenceId == registration.ConferenceId &&
+                            p.Status == PaymentStatus.Completed)
+                .OrderByDescending(p => p.PaymentDate)
+                .Select(p => p.PaymentMethod)
+                .FirstOrDefaultAsync();
+
+            var pdfBytes = _invoicePdfService.GenerateRegistrationInvoice(registration, paymentMethod);
+            var fileName = $"Makbuz-{registration.Id.ToString("N").Substring(0, 8).ToUpper()}.pdf";
 
             return File(pdfBytes, "application/pdf", fileName);
         }

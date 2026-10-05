@@ -77,10 +77,13 @@
         .Where(x => x.BlockType != ConferencePageBlockType.Hero)
         .ToList();
 
-    var slug = Model.Conference?.Tenant?.Slug
-        ?? Model.Conference?.Slug
+    // Kongre adresi önce: kurum adresi kurumun birden çok kongresi varken
+    // belirsiz (oturumdaki son kongre açılıyordu).
+    var slug = (string.IsNullOrWhiteSpace(Model.Conference?.Slug) ? null : Model.Conference.Slug)
+        ?? Model.Conference?.Tenant?.Slug
         ?? ViewContext.RouteData.Values["slug"]?.ToString()
         ?? "";
+    ViewData["ConferenceSlug"] = slug;
 
     var registrationUrl = string.IsNullOrWhiteSpace(slug)
         ? "#"

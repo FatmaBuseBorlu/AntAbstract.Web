@@ -1,6 +1,7 @@
 using AntAbstract.Application.Interfaces;
 using AntAbstract.Domain.Entities;
 using AntAbstract.Infrastructure.Context;
+using AntAbstract.Web.Models.ViewModels.Shared;
 using AntAbstract.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -130,7 +131,7 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         [HttpGet("/Admin/Attendance")]
         [HttpGet("/{slug}/Admin/Attendance")]
-        public async Task<IActionResult> Index(string? slug, Guid? conferenceId)
+        public async Task<IActionResult> Index(string? slug, Guid? conferenceId, string? q = null, int? page = null)
         {
             var conferences = await _tenantAccess
                 .GetAccessibleConferenceQueryAsync(User);
@@ -154,13 +155,33 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
                 return View(Array.Empty<Registration>());
             }
 
-            var registrations = await _context.Registrations
+            var paid = _context.Registrations
                 .AsNoTracking()
+                .Where(r => r.ConferenceId == conference.Id && r.IsPaid);
+
+            // Özet kartları aramadan bağımsız: kongrenin tamamını gösterir.
+            var totalRegistrations = await paid.CountAsync();
+            var totalCheckedIn = await paid.CountAsync(r => r.CheckedInAt.HasValue);
+
+            var filtered = paid;
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim();
+                filtered = filtered.Where(r =>
+                    (r.AppUser!.FirstName + " " + r.AppUser.LastName).Contains(term) ||
+                    r.AppUser.Email!.Contains(term));
+            }
+
+            var pager = PagerViewModel.For(page, await filtered.CountAsync());
+
+            var registrations = await filtered
                 .Include(r => r.AppUser)
                 .Include(r => r.RegistrationType)
-                .Where(r => r.ConferenceId == conference.Id && r.IsPaid)
                 .OrderBy(r => r.AppUser!.LastName)
                 .ThenBy(r => r.AppUser!.FirstName)
+                .ThenBy(r => r.Id)
+                .Skip(pager.Skip)
+                .Take(pager.PageSize)
                 .ToListAsync();
 
             // Slug için Tenant'ı ayrıca yükle
@@ -170,8 +191,10 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
             ViewBag.Conference = conference;
             ViewBag.Slug = slug ?? tenant?.Slug;
-            ViewBag.TotalCheckedIn = registrations.Count(r => r.CheckedInAt.HasValue);
-            ViewBag.TotalRegistrations = registrations.Count;
+            ViewBag.TotalCheckedIn = totalCheckedIn;
+            ViewBag.TotalRegistrations = totalRegistrations;
+            ViewBag.Search = q;
+            ViewBag.Pager = pager;
 
             return View(registrations);
         }

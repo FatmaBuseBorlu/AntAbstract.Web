@@ -1,4 +1,5 @@
 @model AntAbstract.Domain.Entities.EmailTemplate
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -40,8 +41,7 @@
                             <i class="fas fa-code me-1"></i>Kod
                         </button>
                         <button type="button" class="btn btn-outline-primary" id="btnWysiwygMode" onclick="switchMode('wysiwyg')">
-                            <i class="fas fa-paint-brush me-1"></i>Görsel
-                        </button>
+                            <i class="fas fa-paint-brush me-1"></i>@Localizer["Gorsel"]</button>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mb-2">

@@ -1803,9 +1803,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Assignment/Workload?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Assignment/Workload?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Assignment" && currentAction == "Workload" ? "active" : "")">
-                        <i class="fas fa-balance-scale text-info"></i>
-                        Yük Dengesi
-                    </a>
+                        <i class="fas fa-balance-scale text-info"></i>@Localizer["YukDengesi"]</a>
 
                     <a href="@decisionUrl"
                        class="nav-link @(currentController == "Decision" ? "active" : "")">
@@ -1837,9 +1835,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Payments/FinanceSummary?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Payments/FinanceSummary?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Payments" && currentAction == "FinanceSummary" ? "active" : "")">
-                        <i class="fas fa-chart-line text-success"></i>
-                        Finans Özeti
-                    </a>
+                        <i class="fas fa-chart-line text-success"></i>@Localizer["FinansOzeti"]</a>
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Attendance?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Attendance?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Attendance" && currentAction != "Badges" ? "active" : "")">
@@ -1849,9 +1845,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Attendance/Badges?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Attendance/Badges?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Attendance" && currentAction == "Badges" ? "active" : "")">
-                        <i class="fas fa-id-badge text-primary"></i>
-                        Yaka Kartı Baskı
-                    </a>
+                        <i class="fas fa-id-badge text-primary"></i>@Localizer["YakaKartiBaski"]</a>
 
                     <a href="@registrationTypesUrl"
                        class="nav-link @(currentController == "RegistrationTypes" ? "active" : "")">
@@ -1873,9 +1867,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Speakers?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Speakers?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Speakers" ? "active" : "")">
-                        <i class="fas fa-user-tie text-info"></i>
-                        Davetli Konuşmacılar
-                    </a>
+                        <i class="fas fa-user-tie text-info"></i>@Localizer["DavetliKonusmacilar"]</a>
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/Sponsors?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/Sponsors?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "Sponsors" ? "active" : "")">
@@ -1885,9 +1877,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
 
                     <a href="@(string.IsNullOrWhiteSpace(slug) ? $"/Admin/ReviewCriteria?conferenceId={selectedConferenceId}" : $"/{slug}/Admin/ReviewCriteria?conferenceId={selectedConferenceId}")"
                        class="nav-link @(currentController == "ReviewCriteria" ? "active" : "")">
-                        <i class="fas fa-star-half-alt text-warning"></i>
-                        Değerlendirme Kriterleri
-                    </a>
+                        <i class="fas fa-star-half-alt text-warning"></i>@Localizer["DegerlendirmeKriterleri"]</a>
 
                     <a href="@reportsUrl"
                        class="nav-link @(currentController == "Reports" ? "active" : "")">
@@ -1979,9 +1969,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                         : $"/{slug}/Admin/Attendance";
                     <a href="@attendanceListUrl"
                        class="nav-link @(currentController == "Attendance" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
-                        <i class="fas fa-clipboard-check text-info"></i>
-                        Katılımcı Listesi
-                    </a>
+                        <i class="fas fa-clipboard-check text-info"></i>@Localizer["KatilimciListesi"]</a>
                 }
             }
 
@@ -2106,7 +2094,7 @@ var profileImg = !string.IsNullOrWhiteSpace(user?.ProfileImagePath)
                 @await Component.InvokeAsync("Notification")
 
                 <button type="button" class="header-icon-btn" id="themeToggleBtn"
-                        onclick="toggleTheme()" title="Tema Değiştir">
+                        onclick="toggleTheme()" title="@Localizer["TemaDegistir"]">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
 

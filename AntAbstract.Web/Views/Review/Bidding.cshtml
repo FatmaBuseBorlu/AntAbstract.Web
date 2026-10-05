@@ -1,6 +1,7 @@
 ﻿@using AntAbstract.Domain.Entities
 @using AntAbstract.Web.Models.ViewModels.Review
 @model List<BiddingSubmissionRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = "Bildiri Teklifleri";
@@ -27,7 +28,7 @@
         <div class="bid-hero-left">
             <div class="bid-hero-icon"><i class="fas fa-hand-pointer"></i></div>
             <div>
-                <h1 class="bid-hero-title">Bildiri Teklifleri</h1>
+                <h1 class="bid-hero-title">@Localizer["BildiriTeklifleri"]</h1>
                 <p class="bid-hero-sub">@conferenceTitle</p>
             </div>
         </div>
@@ -45,14 +46,14 @@
             <div class="bsc-icon bsc-blue"><i class="fas fa-file-alt"></i></div>
             <div class="bsc-body">
                 <div class="bsc-value">@(Model?.Count ?? 0)</div>
-                <div class="bsc-label">Toplam Bildiri</div>
+                <div class="bsc-label">@Localizer["ToplamBildiri"]</div>
             </div>
         </div>
         <div class="bid-stat-card">
             <div class="bsc-icon bsc-green"><i class="fas fa-thumbs-up"></i></div>
             <div class="bsc-body">
                 <div class="bsc-value">@wantCount</div>
-                <div class="bsc-label">İncelemek İstiyorum</div>
+                <div class="bsc-label">@Localizer["IncelemekIstiyorum"]</div>
             </div>
         </div>
         <div class="bid-stat-card">
@@ -73,7 +74,7 @@
             <div class="bsc-icon bsc-gray"><i class="fas fa-circle-question"></i></div>
             <div class="bsc-body">
                 <div class="bsc-value">@unbiddedCount</div>
-                <div class="bsc-label">Belirtilmemiş</div>
+                <div class="bsc-label">@Localizer["Belirtilmemis"]</div>
             </div>
         </div>
     </div>
@@ -81,17 +82,13 @@
     @* Legend *@
     <div class="bid-legend mb-3">
         <span class="bid-legend-item">
-            <span class="bid-dot dot-green"></span> İncelemek İstiyorum
-        </span>
+            <span class="bid-dot dot-green"></span>@Localizer["IncelemekIstiyorum"]</span>
         <span class="bid-legend-item">
-            <span class="bid-dot dot-red"></span> Çıkar Çatışması
-        </span>
+            <span class="bid-dot dot-red"></span>@Localizer["CikarCatismasi"]</span>
         <span class="bid-legend-item">
-            <span class="bid-dot dot-orange"></span> Alanım Değil
-        </span>
+            <span class="bid-dot dot-orange"></span>@Localizer["AlanimDegil"]</span>
         <span class="bid-legend-item">
-            <span class="bid-dot dot-gray"></span> Belirtilmemiş
-        </span>
+            <span class="bid-dot dot-gray"></span>@Localizer["Belirtilmemis"]</span>
     </div>
 
     @* Cards *@

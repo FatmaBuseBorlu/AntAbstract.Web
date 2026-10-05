@@ -666,6 +666,31 @@ namespace AntAbstract.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // UseStatusCodePagesWithReExecute buraya düşer. Yalnızca sayfa isteklerinde
+        // 404 için tasarımlı sayfa gösterilir; API, dosya ve diğer kodlar boş kalır.
+        [Route("/status/{code:int}")]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult StatusCodePage(int code)
+        {
+            var original = HttpContext.Features
+                .Get<Microsoft.AspNetCore.Diagnostics.IStatusCodeReExecuteFeature>();
+
+            var path = original?.OriginalPath ?? "";
+            var wantsHtml = Request.Headers.Accept.ToString().Contains("text/html");
+
+            if (code != StatusCodes.Status404NotFound || original == null || !wantsHtml ||
+                path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/hubs", StringComparison.OrdinalIgnoreCase) ||
+                Path.HasExtension(path))
+            {
+                return StatusCode(code);
+            }
+
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            ViewBag.PageNotFound = true;
+            return View("ConferenceNotFound");
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

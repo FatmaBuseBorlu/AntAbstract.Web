@@ -17,20 +17,20 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
     public class ForgotPasswordModel : PageModel
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly IEmailSender _emailSender;
+        private readonly AntAbstract.Application.Interfaces.IEmailQueue _emailQueue;
         private readonly IAuditService _audit;
         private readonly ILogger<ForgotPasswordModel> _logger;
         private readonly IStringLocalizer<ForgotPasswordModel> _localizer;
 
         public ForgotPasswordModel(
             UserManager<AppUser> userManager,
-            IEmailSender emailSender,
+            AntAbstract.Application.Interfaces.IEmailQueue emailQueue,
             IAuditService audit,
             ILogger<ForgotPasswordModel> logger,
             IStringLocalizer<ForgotPasswordModel> localizer)
         {
             _userManager = userManager;
-            _emailSender = emailSender;
+            _emailQueue = emailQueue;
             _audit = audit;
             _logger = logger;
             _localizer = localizer;
@@ -92,7 +92,9 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
 
             // Konu ve gövde artık kaynak dosyasından: İngilizce seçili
             // kullanıcıya Türkçe e-posta gidiyordu.
-            await _emailSender.SendEmailAsync(
+            // Giden kutusu üzerinden: SMTP'ye doğrudan bağlanınca SMTP yokken
+            // ya da bir an cevap vermezken sayfa 500 veriyordu.
+            _emailQueue.Enqueue(new AntAbstract.Application.Interfaces.EmailQueueItem(
                 Input.Email,
                 _localizer["ResetEmailSubject"],
                 $"""
@@ -109,7 +111,7 @@ namespace AntAbstract.Web.Areas.Identity.Pages.Account
                         {_localizer["ResetEmailIgnore"].Value}
                     </p>
                 </div>
-                """);
+                """));
 
             _logger.LogInformation(
                 "Şifre sıfırlama bağlantısı gönderildi. UserId={UserId} IP={IP}",

@@ -1,4 +1,5 @@
 @model List<AntAbstract.Domain.Entities.Submission>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = "Poster Galerisi";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -12,14 +13,14 @@
             <i class="fas fa-image me-1"></i> Poster Galerisi
         </div>
         <h2 class="fw-900 mb-2">@confName</h2>
-        <p class="text-muted">Kabul edilen poster sunumları</p>
+        <p class="text-muted">@Localizer["KabulEdilenPosterSunumlari"]</p>
     </div>
 
     @if (!Model.Any())
     {
         <div class="text-center py-5 text-muted">
             <i class="fas fa-images fa-3x mb-3 d-block"></i>
-            <p class="fw-bold">Henüz poster bildirisi bulunmuyor.</p>
+            <p class="fw-bold">@Localizer["HenuzPosterBildirisiBulunmuyor"]</p>
         </div>
     }
     else
@@ -67,7 +68,6 @@
 
     <div class="text-center mt-4">
         <a href="/@slug/Program" class="btn btn-outline-secondary rounded-pill px-4">
-            <i class="fas fa-arrow-left me-1"></i> Programa Dön
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["ProgramaDon"]</a>
     </div>
 </div>

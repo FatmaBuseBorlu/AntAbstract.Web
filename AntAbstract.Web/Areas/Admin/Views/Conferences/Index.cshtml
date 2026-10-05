@@ -1,5 +1,6 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Conferences
 @model ConferencesIndexViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -92,8 +93,7 @@
                 }
             </p>
             <a href="@createUrl" class="btn conf-add-btn mt-2">
-                <i class="fas fa-plus"></i> Yeni Kongre Ekle
-            </a>
+                <i class="fas fa-plus"></i>@Localizer["YeniKongreEkle"]</a>
         </div>
     }
     else

@@ -4,6 +4,7 @@
 @using System.Collections.Generic
 @using System.Linq
 @using AntAbstract.Domain.Entities
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     Layout = null;
@@ -501,9 +502,7 @@
         <div class="toolbar-actions">
             <button type="button"
                     class="btn btn-primary"
-                    onclick="window.print()">
-                PDF Olarak Kaydet / 
-            </button>
+                    onclick="window.print()">@Localizer["PDFOlarakKaydet"]</button>
 
             <a href="@backUrl"
                class="btn">
@@ -512,9 +511,7 @@
 
             <button type="button"
                     class="btn"
-                    onclick="window.close()">
-                Kapat
-            </button>
+                    onclick="window.close()">@Localizer["Kapat"]</button>
         </div>
     </div>
 

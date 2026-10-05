@@ -1,4 +1,5 @@
-﻿@using System.Dynamic
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@using System.Dynamic
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -93,8 +94,7 @@
             <p class="text-muted small mb-0">@confTitle</p>
         </div>
         <a href="@AssignUrl" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i> Hakem Atama
-        </a>
+            <i class="fas fa-arrow-left me-1"></i>@Localizer["HakemAtama"]</a>
     </div>
 
 
@@ -107,7 +107,7 @@
                 </div>
                 <div>
                     <div class="wl-stat-value">@totalReferees</div>
-                    <div class="wl-stat-label">Hakem</div>
+                    <div class="wl-stat-label">@Localizer["Hakem"]</div>
                 </div>
             </div>
         </div>
@@ -254,8 +254,7 @@
         </div>
         <div class="card-footer bg-white border-top px-4 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
             <span class="text-muted small">
-                : <strong>@maxLoad </strong>
-                &nbsp;·&nbsp; Toplam atama: <strong>@totalAssigned</strong>
+                : <strong>@maxLoad </strong>@Localizer["NbspNbspToplamAtama"]<strong>@totalAssigned</strong>
                 &nbsp;·&nbsp; : <strong>@idle </strong>
             </span>
             <a href="@AssignUrl" class="btn btn-primary btn-sm">

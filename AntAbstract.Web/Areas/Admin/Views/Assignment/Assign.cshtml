@@ -1,6 +1,7 @@
 ﻿@using AntAbstract.Web.Models.ViewModels.Admin.Assignment
 @using Microsoft.AspNetCore.Http
 @model AssignReviewerViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -920,7 +921,7 @@
                                                 <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
                                                 <input type="hidden" name="reviewerId" value="@reviewer.Id" />
                                                 <input type="hidden" name="conferenceId" value="@conferenceId" />
-                                                <button type="submit" class="remove-action-btn" title="Hakemi Kaldır"
+                                                <button type="submit" class="remove-action-btn" title="@Localizer["HakemiKaldir"]"
                                                         onclick="return confirm('Bu hakemi bildiriden kaldırmak istediğinize emin misiniz?')">
                                                     <i class="fas fa-times"></i>
                                                 </button>
@@ -1058,7 +1059,7 @@
                                                 <input type="hidden" name="submissionId" value="@Model.Submission.Id" />
                                                 <input type="hidden" name="reviewerId" value="@reviewer.Id" />
                                                 <input type="hidden" name="conferenceId" value="@conferenceId" />
-                                                <button type="submit" class="remove-action-btn" title="Hakemi Kaldır"
+                                                <button type="submit" class="remove-action-btn" title="@Localizer["HakemiKaldir"]"
                                                         onclick="return confirm('Bu hakemi bildiriden kaldırmak istediğinize emin misiniz?')">
                                                     <i class="fas fa-times"></i>
                                                 </button>

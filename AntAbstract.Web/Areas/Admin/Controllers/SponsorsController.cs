@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AntAbstract.Web.Areas.Admin.Controllers
 {
@@ -15,6 +17,18 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
     [Authorize(Policy = AdminPolicies.TenantAdmin)]
     public class SponsorsController : Controller
     {
+        // Kurucu metoda dokunmadan çeviri: mesajlar eskiden doğrudan Türkçe
+        // yazılıydı, İngilizce seçili kullanıcıya da Türkçe dönüyorlardı.
+        private string T(string key, string fallback)
+        {
+            var value = HttpContext?.RequestServices
+                .GetService<IStringLocalizer<SponsorsController>>()?[key];
+
+            return value == null || value.ResourceNotFound || string.IsNullOrWhiteSpace(value.Value)
+                ? fallback
+                : value.Value;
+        }
+
         private readonly AppDbContext _context;
         private readonly IAdminTenantAccessService _tenantAccess;
 
@@ -45,11 +59,54 @@ namespace AntAbstract.Web.Areas.Admin.Controllers
 
         // ── Index ────────────────────────────────────────────────────────────
 
+        // Menü kongre seçilmemişken bu adrese bağlanıyordu ama denetleyicide
+        // yalnızca slug'lı rota tanımlıydı; bağlantı 404 veriyordu. Seçili
+        // kongre varsa kanonik adresine taşıyoruz, yoksa kongre seçimine
+        // gönderiyoruz — Kayıt Türleri'nde uygulanan yaklaşımın aynısı.
+        //
+        // Sorgu filtresi burada bilerek atlanıyor: slug yokken kiracı bağlamı
+        // boş kalıyor ve filtre kongreyi bulunamaz yapıyor. Kapsamı, altında
+        // açılan slug'lı ekranın kendi yetki kontrolü sağlıyor.
+        [HttpGet("/Admin/Sponsors")]
+        public async Task<IActionResult> IndexRoot(Guid? conferenceId)
+        {
+            var selectedId = conferenceId;
+
+            if (!selectedId.HasValue || selectedId.Value == Guid.Empty)
+            {
+                var stored = HttpContext.Session.GetString("SelectedConferenceId");
+
+                if (Guid.TryParse(stored, out var parsed))
+                {
+                    selectedId = parsed;
+                }
+            }
+
+            if (selectedId.HasValue && selectedId.Value != Guid.Empty)
+            {
+                var conference = await _context.Conferences
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Include(c => c.Tenant)
+                    .FirstOrDefaultAsync(c => c.Id == selectedId.Value);
+
+                var conferenceSlug = conference?.Tenant?.Slug ?? conference?.Slug;
+
+                if (conference != null && !string.IsNullOrWhiteSpace(conferenceSlug))
+                {
+                    return Redirect($"/{conferenceSlug}/Admin/Sponsors?conferenceId={conference.Id}");
+                }
+            }
+
+            return Redirect("/Admin/SelectConference?returnUrl=" +
+                Uri.EscapeDataString("/Admin/Sponsors"));
+        }
+
         [HttpGet("/{slug}/Admin/Sponsors")]
         public async Task<IActionResult> Index(string slug, Guid? conferenceId)
         {
             var conference = await GetConferenceAsync(slug, conferenceId);
-            if (conference == null) { TempData["ErrorMessage"] = "Kongre bulunamadı."; return Redirect($"/{slug}/Admin/Reports"); }
+            if (conference == null) { TempData["ErrorMessage"] = T("Msg_KongreBulunamadi", "Kongre bulunamadı."); return Redirect($"/{slug}/Admin/Reports"); }
             SetViewBag(conference, slug);
             var sponsors = await _context.Sponsors.AsNoTracking()
                 .Where(s => s.ConferenceId == conference.Id)

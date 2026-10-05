@@ -96,9 +96,13 @@
 
     var today = DateTime.Today;
 
+    // Kongre adresi önce: kurum adresi kurumun birden çok kongresi varken
+    // belirsiz; kart başka kongrenin kayıt ekranını açabiliyordu.
     string GetConferenceSlug(Conference conference)
     {
-        return conference.Tenant?.Slug ?? conference.Slug ?? "";
+        return string.IsNullOrWhiteSpace(conference.Slug)
+            ? conference.Tenant?.Slug ?? ""
+            : conference.Slug;
     }
 
     string GetWebsiteUrl(string tenantSlug, Guid conferenceId = default)

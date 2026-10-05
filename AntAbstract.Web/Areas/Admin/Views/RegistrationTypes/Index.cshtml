@@ -4,6 +4,7 @@
 
 
 @model AdminRegistrationTypesIndexModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 
 @{
     ViewData["Title"] = Localizer["PageTitle"].Value;
@@ -39,7 +40,7 @@
 
 
 
-    <div class="card border-0 shadow-sm">
+    <div class="modern-card">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
@@ -60,9 +61,7 @@
                             @Localizer["TableHeaderCurrency"]
                         </th>
 
-                        <th style="width:160px;">
-                            Son Tarih
-                        </th>
+                        <th style="width:160px;">@Localizer["SonTarih"]</th>
 
                         <th style="width:120px;">
                             @Localizer["TableHeaderUsage"]
@@ -141,7 +140,7 @@
                                         }
                                         else
                                         {
-                                            <span class="badge bg-info text-dark">Erken Kayıt</span>
+                                            <span class="badge bg-info text-dark">@Localizer["ErkenKayit"]</span>
                                             <div class="text-muted small">@item.Deadline.Value.ToString("dd.MM.yyyy")</div>
                                         }
                                     }
@@ -164,7 +163,7 @@
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success">Yazar</span>
+                                        <span class="badge bg-success">@Localizer["Yazar"]</span>
                                     }
                                 </td>
 
